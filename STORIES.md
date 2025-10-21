@@ -33,10 +33,33 @@ Stories are organized into 6 major epics, each with its own detailed documentati
 | [Epic 1: Transaction Import](./stories/epic-01-transaction-import.md) | 8 | 31 | ✅ Complete | 100% (31/31 pts) | CSV parsing & storage |
 | [Epic 2: Portfolio Calculation](./stories/epic-02-portfolio-calculation.md) | 5 | 26 | ✅ Complete | 100% (26/26 pts) | FIFO, P&L, currency |
 | [Epic 3: Live Market Data](./stories/epic-03-live-market-data.md) | 4 | 16 | ✅ Complete | 100% (16/16 pts) | Yahoo Finance, Redis |
-| [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 4 | 19 | 🔴 Not Started | 0% | Dashboard, charts |
+| [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 4 | 19 | 🟡 In Progress | 42% (8/19 pts) | Dashboard, auto-refresh |
 | [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | 🟡 In Progress | 85% (11/13 pts) | Docker, database |
 | [Epic 6: UI Modernization](./stories/epic-06-ui-modernization.md) | 7 | 18 | ✅ Complete | 100% (18/18 pts) | Sidebar, tabs, theme |
-| **Total** | **31** | **123** | **In Progress** | **~78%** (96/123 pts) | |
+| **Total** | **31** | **123** | **In Progress** | **~84%** (104/123 pts) | |
+
+## Recent Updates (Oct 21, 2025)
+
+### Critical Bug Fixes & Enhancements
+- **Fixed Currency-Specific Prices**: Crypto prices now fetch in correct currency (EUR vs USD)
+  - Issue: LINK showed $18.84 USD instead of €16.19 EUR
+  - Fix: Updated Yahoo Finance service to group crypto by currency and fetch currency-specific pairs
+  - Commit: `0dab98f`
+
+- **Fixed Staking Rewards Bug** (GitHub Issue #1)
+  - Issue: SOL position missing 0.17 SOL (50 staking reward transactions)
+  - Root Cause: Portfolio service ignored STAKING, AIRDROP, and MINING transaction types
+  - Fix: Added support for all reward transaction types in position calculations
+  - Impact: SOL position now 16.355795 (was 16.186295) - matches Revolut exactly
+  - Test Coverage: Added 2 comprehensive tests, all 13 portfolio service tests passing
+  - Commits: `f65eefb`
+
+- **Implemented Auto-Refresh**: Crypto prices now update every 60 seconds
+  - Feature: Configurable refresh intervals via environment variables
+  - Default: 60s for crypto (24/7 trading), 120s for stocks
+  - UI: Shows "Auto-refresh: 1m" badge with live timestamps
+  - Implementation: Fixed React hooks with useCallback to prevent stale closures
+  - Commits: `5c48a58`, `c142fcf`
 
 ### Current Sprint Focus
 **Active Epic**: Portfolio Visualization (Epic 4)
@@ -66,9 +89,12 @@ Stories are organized into 6 major epics, each with its own detailed documentati
   - F6.2-002 - Component Integration ✅
   - F6.3-001 - Design System ✅
   - F6.3-002 - Modern Styling ✅
+- 🟡 Epic 4: Portfolio Visualization (4 stories, 19 points) - **IN PROGRESS**
+  - ✅ F4.1-001 - Portfolio Summary View (3 pts) - **COMPLETE**
+  - ✅ F4.1-002 - Holdings Table (5 pts) - **COMPLETE**
 **Next Stories**:
-- F4.1-001 - Portfolio Summary View (3 pts)
-- F4.1-002 - Holdings Table (5 pts)
+- F4.2-001 - Portfolio Value Chart (8 pts)
+- F4.2-002 - Asset Allocation Pie Chart (3 pts)
 **Blockers**: None
 
 ## User Personas
@@ -95,15 +121,15 @@ Stories are organized into 6 major epics, each with its own detailed documentati
 
 ### [Epic 3: Live Market Data Integration](./stories/epic-03-live-market-data.md)
 - **Goal**: Real-time prices from Yahoo Finance
-- **Features**: Yahoo Finance integration, Redis caching, auto-refresh
+- **Features**: Yahoo Finance integration, Redis caching, auto-refresh, currency-specific price fetching
 - **Key Stories**: 4 stories, 16 points
-- **Status**: 🔴 Not Started
+- **Status**: ✅ Complete (100% complete - All features implemented with auto-refresh and currency fixes)
 
 ### [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md)
 - **Goal**: Interactive dashboard with charts
 - **Features**: Portfolio summary, holdings table, performance charts
 - **Key Stories**: 4 stories, 19 points
-- **Status**: 🔴 Not Started
+- **Status**: 🟡 In Progress (42% complete - Dashboard feature complete)
 
 ### [Epic 5: Infrastructure & DevOps](./stories/epic-05-infrastructure.md)
 - **Goal**: Docker environment with hot-reload
