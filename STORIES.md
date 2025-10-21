@@ -16,13 +16,14 @@ This document provides a high-level overview of all user stories for the Portfol
 
 ## Story Organization
 
-Stories are organized into 5 major epics, each with its own detailed documentation:
+Stories are organized into 6 major epics, each with its own detailed documentation:
 
 1. **[Epic 1: Transaction Import & Management](./stories/epic-01-transaction-import.md)** - CSV upload and parsing
 2. **[Epic 2: Portfolio Calculation Engine](./stories/epic-02-portfolio-calculation.md)** - FIFO calculations and P&L
 3. **[Epic 3: Live Market Data Integration](./stories/epic-03-live-market-data.md)** - Yahoo Finance and caching
 4. **[Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md)** - Dashboard and charts
 5. **[Epic 5: Infrastructure & DevOps](./stories/epic-05-infrastructure.md)** - Docker and development setup
+6. **[Epic 6: UI Modernization & Navigation](./stories/epic-06-ui-modernization.md)** - Modern sidebar and theme
 
 ## Overall Progress Tracking
 
@@ -34,7 +35,8 @@ Stories are organized into 5 major epics, each with its own detailed documentati
 | [Epic 3: Live Market Data](./stories/epic-03-live-market-data.md) | 4 | 16 | 🔴 Not Started | 0% | Yahoo Finance, Redis |
 | [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 4 | 19 | 🔴 Not Started | 0% | Dashboard, charts |
 | [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | 🟡 In Progress | 85% (11/13 pts) | Docker, database |
-| **Total** | **24** | **105** | **In Progress** | **~34%** (36/105 pts) | |
+| [Epic 6: UI Modernization](./stories/epic-06-ui-modernization.md) | 7 | 18 | 🔴 Not Started | 0% | Sidebar, tabs, theme |
+| **Total** | **31** | **123** | **In Progress** | **~29%** (36/123 pts) | |
 
 ### Current Sprint Focus
 **Active Epic**: Portfolio Calculation Engine (Epic 2)
@@ -89,6 +91,12 @@ Stories are organized into 5 major epics, each with its own detailed documentati
 - **Features**: Docker Compose, database schema, development tools
 - **Key Stories**: 3 stories, 13 points
 - **Status**: 🟢 Mostly Complete (85% complete - F5.1-001 and F5.2-001 done)
+
+### [Epic 6: UI Modernization & Navigation](./stories/epic-06-ui-modernization.md)
+- **Goal**: Modern, professional UI with icon sidebar and tab navigation
+- **Features**: Icon-only sidebar, tab-based content, clean light theme
+- **Key Stories**: 7 stories, 18 points
+- **Status**: 🔴 Not Started
 
 ## MVP Implementation Plan
 
