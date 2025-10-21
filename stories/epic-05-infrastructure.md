@@ -516,9 +516,14 @@ docker-compose exec -T postgres psql -U trader portfolio < backup.sql
 | Port conflicts | Services won't start | Configurable ports, port check script |
 
 ## Testing Strategy
+
+**⚠️ MANDATORY TESTING REQUIREMENT**:
+- **Minimum Coverage Threshold**: 85% code coverage for all modules
+- **No story is complete without passing tests meeting this threshold**
+
 1. **Infrastructure Tests**: Docker Compose validation
 2. **Database Tests**: Schema creation, migrations
-3. **Integration Tests**: Service communication
+3. **Integration Tests** (Required): Service communication
 4. **Performance Tests**: Startup time, reload speed
 5. **Developer Experience**: New developer onboarding
 
@@ -538,3 +543,4 @@ docker-compose exec -T postgres psql -U trader portfolio < backup.sql
 - [ ] Volume persistence working
 - [ ] Documentation for setup and troubleshooting
 - [ ] Works on Mac, Linux, and Windows (WSL2)
+- [ ] Unit test coverage ≥85% for database models and utilities (mandatory threshold)

@@ -36,9 +36,22 @@ portfolio-management/
 - **Frontend**: React 18, TypeScript, Vite
 - **Infrastructure**: Docker, Docker Compose
 
+## Testing Requirements
+
+**IMPORTANT**: All stories must include comprehensive testing with the following principles:
+
+- **Minimum Coverage Threshold**: 85% code coverage for all modules
+- **Test Types Required**:
+  - Unit tests (required for all business logic)
+  - Integration tests (required for API endpoints and database operations)
+  - End-to-end tests (required for critical user flows)
+- **TDD Approach**: Tests must be written before implementation code
+- **Definition of Done**: No story is considered complete without passing tests meeting the 85% threshold
+
 ## Development
 
 Check the [PRD.md](./PRD.md) for detailed requirements and technical specifications.
+See [STORIES.md](./STORIES.md) for the complete story breakdown and epic definitions.
 
 ## License
 

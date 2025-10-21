@@ -536,8 +536,13 @@ interface PortfolioState {
 | Mobile responsiveness | Poor mobile UX | Mobile-first design, touch testing |
 
 ## Testing Strategy
-1. **Unit Tests**: Component logic and calculations
-2. **Integration Tests**: API integration, real-time updates
+
+**⚠️ MANDATORY TESTING REQUIREMENT**:
+- **Minimum Coverage Threshold**: 85% code coverage for all modules
+- **No story is complete without passing tests meeting this threshold**
+
+1. **Unit Tests** (Required - 85% minimum coverage): Component logic and calculations
+2. **Integration Tests** (Required): API integration, real-time updates
 3. **Visual Regression Tests**: Chart rendering consistency
 4. **Performance Tests**: Large dataset rendering
 5. **E2E Tests**: Complete user flows
@@ -559,6 +564,6 @@ interface PortfolioState {
 - [ ] Responsive design for all screen sizes
 - [ ] Real-time price updates working
 - [ ] Performance meets requirements
-- [ ] 80% unit test coverage
+- [ ] Unit test coverage ≥85% (mandatory threshold)
 - [ ] Accessibility audit passed
 - [ ] Documentation for component usage

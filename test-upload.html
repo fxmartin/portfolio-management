@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test CSV Files for Portfolio Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h2 { color: #333; }
+        .file-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .create-btn { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        .create-btn:hover { background: #45a049; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Files for Portfolio Management App</h1>
+
+    <div class="file-section">
+        <h2>📊 Sample Revolut Stocks CSV</h2>
+        <p>Filename: <code>B5A12617-2B56-4A79-B83D-13C6715DC0BA.csv</code></p>
+        <button class="create-btn" onclick="downloadStocks()">Download Sample Stocks CSV</button>
+        <pre>Date,Type,Ticker,Quantity,Price,Amount
+2024-01-15,BUY,AAPL,10,150.00,1500.00
+2024-02-20,BUY,TSLA,5,200.00,1000.00
+2024-03-10,SELL,AAPL,5,160.00,800.00</pre>
+    </div>
+
+    <div class="file-section">
+        <h2>🥇 Sample Revolut Metals CSV</h2>
+        <p>Filename: <code>account-statement_2024-01-01_2024-12-31_en_abc123.csv</code></p>
+        <button class="create-btn" onclick="downloadMetals()">Download Sample Metals CSV</button>
+        <pre>Date,Type,Product,Quantity,Price,Amount
+2024-01-10,BUY,Gold,1.5,2000.00,3000.00
+2024-02-15,BUY,Silver,50,25.00,1250.00
+2024-03-20,SELL,Gold,0.5,2100.00,1050.00</pre>
+    </div>
+
+    <div class="file-section">
+        <h2>🪙 Sample Koinly Crypto CSV</h2>
+        <p>Filename: <code>Koinly Transactions.csv</code></p>
+        <button class="create-btn" onclick="downloadCrypto()">Download Sample Crypto CSV</button>
+        <pre>Date,Type,Asset,Quantity,Price,Amount
+2024-01-05,BUY,BTC,0.5,40000.00,20000.00
+2024-02-10,BUY,ETH,10,2500.00,25000.00
+2024-03-15,SELL,BTC,0.25,45000.00,11250.00</pre>
+    </div>
+
+    <script>
+        function downloadStocks() {
+            const content = `Date,Type,Ticker,Quantity,Price,Amount
+2024-01-15,BUY,AAPL,10,150.00,1500.00
+2024-02-20,BUY,TSLA,5,200.00,1000.00
+2024-03-10,SELL,AAPL,5,160.00,800.00`;
+            download('B5A12617-2B56-4A79-B83D-13C6715DC0BA.csv', content);
+        }
+
+        function downloadMetals() {
+            const content = `Date,Type,Product,Quantity,Price,Amount
+2024-01-10,BUY,Gold,1.5,2000.00,3000.00
+2024-02-15,BUY,Silver,50,25.00,1250.00
+2024-03-20,SELL,Gold,0.5,2100.00,1050.00`;
+            download('account-statement_2024-01-01_2024-12-31_en_abc123.csv', content);
+        }
+
+        function downloadCrypto() {
+            const content = `Date,Type,Asset,Quantity,Price,Amount
+2024-01-05,BUY,BTC,0.5,40000.00,20000.00
+2024-02-10,BUY,ETH,10,2500.00,25000.00
+2024-03-15,SELL,BTC,0.25,45000.00,11250.00`;
+            download('Koinly Transactions.csv', content);
+        }
+
+        function download(filename, content) {
+            const blob = new Blob([content], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

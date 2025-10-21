@@ -373,8 +373,13 @@ class CurrencyConverter:
 | Performance with large portfolios | Slow calculations | Caching, batch processing |
 
 ## Testing Strategy
-1. **Unit Tests**: Each calculation function isolated
-2. **Integration Tests**: Full calculation pipeline
+
+**⚠️ MANDATORY TESTING REQUIREMENT**:
+- **Minimum Coverage Threshold**: 85% code coverage for all modules
+- **No story is complete without passing tests meeting this threshold**
+
+1. **Unit Tests** (Required - 85% minimum coverage): Each calculation function isolated
+2. **Integration Tests** (Required): Full calculation pipeline
 3. **Reconciliation Tests**: Compare with Excel calculations
 4. **Edge Cases**: Zero positions, negative balances
 5. **Performance Tests**: 10,000 transaction portfolio
@@ -387,5 +392,5 @@ class CurrencyConverter:
 - [ ] Multi-currency support working
 - [ ] Calculations complete in <1 second for 1000 transactions
 - [ ] Audit trail for all calculations
-- [ ] 90% unit test coverage
+- [ ] Unit test coverage ≥85% (mandatory threshold)
 - [ ] Documentation with calculation examples

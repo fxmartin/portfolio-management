@@ -1,0 +1,109 @@
+/* Progress container */
+.progress-container {
+  width: 100%;
+}
+
+/* Size variations */
+.progress-small .progress-bar {
+  height: 4px;
+}
+
+.progress-medium .progress-bar {
+  height: 8px;
+}
+
+.progress-large .progress-bar {
+  height: 12px;
+}
+
+/* Progress label */
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.progress-percentage {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.progress-percentage-standalone {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Progress bar track */
+.progress-bar {
+  width: 100%;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Progress bar fill */
+.progress-fill {
+  height: 100%;
+  transition: width 0.3s ease-in-out;
+  border-radius: 9999px;
+}
+
+/* Color variations */
+.progress-primary .progress-fill {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.progress-success .progress-fill {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.progress-warning .progress-fill {
+  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.progress-error .progress-fill {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* Indeterminate animation */
+.progress-indeterminate {
+  width: 30% !important;
+  position: absolute;
+  animation: indeterminate 1.5s infinite linear;
+  background: inherit;
+}
+
+@keyframes indeterminate {
+  0% {
+    left: -30%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Accessibility - Focus styles */
+.progress-bar:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .progress-label,
+  .progress-percentage,
+  .progress-percentage-standalone {
+    color: #e5e7eb;
+  }
+
+  .progress-bar {
+    background-color: #374151;
+  }
+}

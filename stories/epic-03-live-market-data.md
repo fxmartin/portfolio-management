@@ -386,8 +386,13 @@ ws.send(JSON.stringify({
 | WebSocket connection issues | No real-time updates | Fallback to polling, auto-reconnect |
 
 ## Testing Strategy
-1. **Unit Tests**: Mock API responses and Redis
-2. **Integration Tests**: Live API with test tickers
+
+**⚠️ MANDATORY TESTING REQUIREMENT**:
+- **Minimum Coverage Threshold**: 85% code coverage for all modules
+- **No story is complete without passing tests meeting this threshold**
+
+1. **Unit Tests** (Required - 85% minimum coverage): Mock API responses and Redis
+2. **Integration Tests** (Required): Live API with test tickers
 3. **Load Tests**: 100+ tickers simultaneously
 4. **Failure Tests**: API down, Redis down scenarios
 5. **Real-time Tests**: WebSocket update latency
@@ -406,5 +411,5 @@ ws.send(JSON.stringify({
 - [ ] Real-time updates to frontend
 - [ ] Graceful handling of API failures
 - [ ] Performance meets requirements
-- [ ] 85% unit test coverage
+- [ ] Unit test coverage ≥85% (mandatory threshold)
 - [ ] Documentation includes API limits and caching strategy

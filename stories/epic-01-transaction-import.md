@@ -3,69 +3,104 @@
 ## Epic Overview
 **Epic ID**: EPIC-01
 **Epic Name**: Transaction Import & Management
-**Epic Description**: Enable importing and parsing of Revolut CSV exports with all transaction types
-**Business Value**: Automate the manual Excel cleanup process, save hours of manual data entry
-**User Impact**: Transform messy Revolut exports into structured, usable transaction data
-**Success Metrics**: Successfully parse 100+ transactions, categorize all transaction types correctly
-**Status**: 🔴 Not Started
+**Epic Description**: Enable importing and parsing of three specific CSV formats: Revolut metals (account-statement), Revolut stocks, and Koinly crypto transactions
+**Business Value**: Automate the import of metals, stocks, and crypto transactions from different sources
+**User Impact**: Seamlessly import transactions from Revolut (metals & stocks) and Koinly (crypto) exports
+**Success Metrics**: Successfully parse all three CSV formats, correctly categorize metals/stocks/crypto transactions
+**Status**: 🟡 In Progress (Started: 2025-10-21)
+
+## CSV File Specifications
+
+### 1. Metals Transactions (Revolut Account Statement)
+- **Filename Pattern**: `account-statement_YYYY-MM-DD_YYYY-MM-DD_en_XXXXXX.csv`
+- **Example**: `account-statement_2025-06-15_2025-10-21_en_4cab86.csv`
+- **Source**: Revolut App → Statements → Export
+- **Content**: Gold, Silver, and other precious metals transactions
+
+### 2. Stocks Transactions (Revolut Export)
+- **Filename Pattern**: `[UUID].csv`
+- **Example**: `B5A12617-2B56-4A79-B83D-13C6715DC0BA.csv`
+- **Source**: Revolut App → Stocks → Export
+- **Content**: Stock buy/sell transactions, dividends
+
+### 3. Crypto Transactions (Koinly Export)
+- **Filename**: `Koinly Transactions.csv`
+- **Source**: Koinly App (synced with Revolut crypto account)
+- **Content**: Cryptocurrency transactions for tax reporting
+- **Note**: Koinly provides enhanced tax-ready format with cost basis calculations
 
 ## Features in this Epic
-- Feature 1.1: CSV Upload Interface
-- Feature 1.2: Revolut CSV Parser
+- Feature 1.1: Multi-Format CSV Upload Interface
+- Feature 1.2: Three-Parser System (Metals, Stocks, Crypto)
 - Feature 1.3: Transaction Storage & Management
 
 ## Progress Tracking
 | Feature | Stories | Points | Status | Progress |
 |---------|---------|--------|--------|----------|
-| F1.1: CSV Upload Interface | 2 | 5 | 🔴 Not Started | 0% |
-| F1.2: Revolut CSV Parser | 2 | 13 | 🔴 Not Started | 0% |
-| F1.3: Transaction Storage | 1 | 5 | 🔴 Not Started | 0% |
-| **Total** | **5** | **23** | **Not Started** | **0%** |
+| F1.1: Multi-Format CSV Upload | 2 | 5 | ✅ Complete | 100% (5/5 pts) |
+| F1.2: Three-Parser System | 3 | 15 | 🔴 Not Started | 0% |
+| F1.3: Storage & DB Management | 2 | 8 | 🔴 Not Started | 0% |
+| **Total** | **7** | **28** | **In Progress** | **18% (5/28 pts)** |
 
 ---
 
-## Feature 1.1: CSV Upload Interface
-**Feature Description**: Web interface for uploading Revolut CSV files
-**User Value**: Simple drag-and-drop file upload without command-line tools
+## Feature 1.1: Multi-Format CSV Upload Interface
+**Feature Description**: Web interface for uploading three different CSV formats (metals, stocks, crypto)
+**User Value**: Single interface to import all transaction types with automatic format detection
 **Priority**: High
 **Complexity**: 5 story points
 
-### Story F1.1-001: File Upload Component
-**Status**: 🔴 Not Started
-**User Story**: As FX, I want to upload my Revolut CSV file through a web interface so that I don't need to use command-line tools
+### Story F1.1-001: Multi-File Upload Component
+**Status**: ✅ Complete (2025-10-21)
+**User Story**: As FX, I want to upload my metals, stocks, and crypto CSV files through a web interface with automatic format detection
 
 **Acceptance Criteria**:
 - **Given** I am on the portfolio dashboard
-- **When** I click the "Import CSV" button
+- **When** I click the "Import Transactions" button
 - **Then** a file picker dialog appears
-- **And** I can select only CSV files
-- **And** the selected file name is displayed
+- **And** I can select one or multiple CSV files
+- **And** the system auto-detects the file type based on filename pattern
+- **And** file types are displayed (Metals/Stocks/Crypto)
+- **And** I can review files before processing
 
 **Technical Requirements**:
-- React component with file input
-- File type validation (accept only .csv)
-- Max file size: 10MB
-- Display selected filename
+- React component with multi-file input
+- File type detection logic:
+  - `account-statement_*` → Metals
+  - UUID pattern → Stocks
+  - `Koinly*` → Crypto
+- Support for drag-and-drop
+- Max file size: 10MB per file
+- Display file list with type badges
 
 **Definition of Done**:
-- [ ] React component implemented with file input
-- [ ] File type validation (CSV only)
-- [ ] Upload progress indicator
-- [ ] Error handling for invalid files
-- [ ] Responsive design for mobile/desktop
-- [ ] Unit tests for validation logic
-- [ ] Integration test for file upload
+- [x] React component implemented with file input
+- [x] File type validation (CSV only)
+- [x] Upload progress indicator
+- [x] Error handling for invalid files
+- [x] Responsive design for mobile/desktop
+- [x] Unit tests for validation logic (21 tests passing)
+- [x] Integration test for file upload (15 tests passing)
 
 **Story Points**: 3
 **Priority**: Must Have
 **Dependencies**: None
 **Risk Level**: Low
-**Assigned To**: Unassigned
+**Assigned To**: Completed
+**Implementation Date**: 2025-10-21
+
+**Implementation Notes**:
+- Created `TransactionImport.tsx` component with full drag-and-drop support
+- Implemented `csv_parser.py` module for file type detection
+- Added `/api/import/upload` endpoint supporting multiple files
+- Color-coded badges: 🟡 METALS, 🟢 STOCKS, 🟣 CRYPTO
+- All 36 backend tests passing
+- All 17 frontend tests passing
 
 ---
 
 ### Story F1.1-002: Upload Status Feedback
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete (2025-10-21)
 **User Story**: As FX, I want to see the upload progress and status so that I know if my file was processed successfully
 
 **Acceptance Criteria**:
@@ -83,40 +118,53 @@
 - Error message mapping
 
 **Definition of Done**:
-- [ ] Progress bar component implemented
-- [ ] Success/error toast notifications
-- [ ] Upload status persists during processing
-- [ ] Clear error messages for troubleshooting
-- [ ] Retry mechanism for failed uploads
-- [ ] Accessibility: ARIA labels for screen readers
+- [x] Progress bar component implemented
+- [x] Success/error toast notifications
+- [x] Upload status persists during processing
+- [x] Clear error messages for troubleshooting
+- [x] Retry mechanism for failed uploads
+- [x] Accessibility: ARIA labels for screen readers
 
 **Story Points**: 2
 **Priority**: Must Have
 **Dependencies**: F1.1-001
 **Risk Level**: Low
-**Assigned To**: Unassigned
+**Assigned To**: Completed
+**Implementation Date**: 2025-10-21
+
+**Implementation Notes**:
+- Created `Toast.tsx` component with success, error, warning, and info types
+- Implemented `ProgressBar.tsx` with determinate and indeterminate modes
+- Added `useToast.ts` custom hook for toast management
+- Created `errorMessages.ts` utility for user-friendly error mapping
+- Enhanced TransactionImport component with full progress tracking
+- Added retry mechanism with up to 2 retry attempts
+- Full ARIA labels and keyboard navigation support
+- 62 unit and integration tests passing
+- Resolved ESM module import issues by co-locating types in Toast component
 
 ---
 
-## Feature 1.2: Revolut CSV Parser
-**Feature Description**: Parse and extract data from Revolut's specific CSV format
-**User Value**: Automatically understand and categorize all Revolut transaction types
+## Feature 1.2: Three-Parser System
+**Feature Description**: Parse and extract data from three different CSV formats (metals, stocks, crypto)
+**User Value**: Automatically parse different formats and normalize data for unified processing
 **Priority**: High
-**Complexity**: 13 story points
+**Complexity**: 15 story points
 
-### Story F1.2-001: Parse Transaction Types
+### Story F1.2-001: Parse Metals Transactions (Revolut Account Statement)
 **Status**: 🔴 Not Started
-**User Story**: As FX, I want the system to correctly identify all Revolut transaction types so that my portfolio calculations are accurate
+**User Story**: As FX, I want the system to parse my Revolut metals account statement so I can track my precious metals investments
 
 **Acceptance Criteria**:
-- **Given** a Revolut CSV file with mixed transaction types
+- **Given** an account-statement CSV file from Revolut
 - **When** the file is processed
-- **Then** BUY transactions are identified as purchases
-- **And** SELL transactions are identified as sales
-- **And** DIVIDEND transactions are tracked separately
-- **And** TOPUP/CARD_PAYMENT transactions are categorized as cash movements
-- **And** EXCHANGE transactions are identified as forex
-- **And** Unrecognized types are logged with line numbers
+- **Then** metals BUY transactions are identified (Gold, Silver, etc.)
+- **And** metals SELL transactions are captured
+- **And** metal type is extracted (XAU for Gold, XAG for Silver)
+- **And** quantity is in troy ounces
+- **And** prices are per troy ounce
+- **And** currency conversions are handled
+- **And** fees are captured if present
 
 **Technical Requirements**:
 - Python parser using pandas
@@ -155,20 +203,21 @@ TRANSACTION_TYPES = {
 
 ---
 
-### Story F1.2-002: Extract Transaction Details
+### Story F1.2-002: Parse Stocks Transactions (Revolut UUID Export)
 **Status**: 🔴 Not Started
-**User Story**: As FX, I want all transaction details extracted accurately so that I can track my investments properly
+**User Story**: As FX, I want the system to parse my Revolut stocks export so I can track my stock investments and dividends
 
 **Acceptance Criteria**:
-- **Given** a parsed Revolut transaction
-- **When** extracting transaction details
-- **Then** ticker symbol is correctly identified (cleaned of extra text)
-- **And** quantity is extracted as decimal number
-- **And** price per share is calculated correctly
-- **And** transaction date is parsed properly (handles multiple formats)
-- **And** currency is identified (USD, EUR, GBP)
-- **And** fees are captured if present
-- **And** Original CSV row is preserved for audit
+- **Given** a UUID-named CSV file from Revolut stocks export
+- **When** the file is processed
+- **Then** stock BUY transactions are identified
+- **And** stock SELL transactions are captured
+- **And** DIVIDEND transactions are tracked
+- **And** ticker symbols are extracted (e.g., AAPL, TSLA)
+- **And** fractional shares are handled
+- **And** price per share is captured
+- **And** transaction dates and times are parsed
+- **And** currency is identified (typically USD)
 
 **Technical Requirements**:
 - Regex patterns for ticker extraction
@@ -192,20 +241,65 @@ TRANSACTION_TYPES = {
 **Risk Level**: High
 **Assigned To**: Unassigned
 
-**Sample Revolut CSV Format**:
+**Expected Revolut Stocks CSV Format**:
 ```csv
-Date,Time,Type,Product,Ticker,Quantity,Price per share,Total Amount,Currency
-2024-10-15,14:30:00,BUY,Tesla Inc,TSLA,10,250.50,2505.00,USD
-2024-10-14,10:15:00,DIVIDEND,Apple Inc,AAPL,,0.24,24.00,USD
+Date,Time,Type,Product,Ticker,Quantity,Price per share,Total Amount,Currency,FX Rate
+2024-10-15,14:30:00,BUY,Tesla Inc,TSLA,10,250.50,2505.00,USD,1.0
+2024-10-14,10:15:00,DIVIDEND,Apple Inc,AAPL,,0.24,24.00,USD,1.0
 ```
 
 ---
 
-## Feature 1.3: Transaction Storage & Management
-**Feature Description**: Persist parsed transactions in PostgreSQL with data integrity
-**User Value**: Never lose transaction history, enable historical analysis
+### Story F1.2-003: Parse Crypto Transactions (Koinly Export)
+**Status**: 🔴 Not Started
+**User Story**: As FX, I want the system to parse my Koinly crypto export so I can track my cryptocurrency investments with tax calculations
+
+**Acceptance Criteria**:
+- **Given** a Koinly Transactions.csv file
+- **When** the file is processed
+- **Then** crypto BUY transactions are identified
+- **And** crypto SELL transactions are captured
+- **And** STAKING rewards are tracked
+- **And** crypto symbols are extracted (BTC, ETH, etc.)
+- **And** cost basis from Koinly is preserved
+- **And** tax lot information is captured
+- **And** transaction fees in crypto or fiat are handled
+- **And** USD equivalent values are captured
+
+**Technical Requirements**:
+- Koinly-specific CSV format parser
+- Tax lot tracking
+- Cost basis preservation
+- Multiple currency handling
+
+**Expected Koinly CSV Format**:
+```csv
+Date,Type,In Amount,In Currency,Out Amount,Out Currency,Fee Amount,Fee Currency,Net Value(USD),Label,Description,TxHash
+2024-01-15,Buy,0.5,BTC,25000,USD,10,USD,24990,,,0x123...
+2024-02-20,Staking,0.001,ETH,,,,,2.50,reward,,0x456...
+```
+
+**Definition of Done**:
+- [ ] Parser identifies Koinly format
+- [ ] All transaction types parsed
+- [ ] Cost basis preserved from Koinly
+- [ ] Tax lot information maintained
+- [ ] Unit tests with sample Koinly data
+- [ ] Handle Koinly-specific fields
+
+**Story Points**: 5
+**Priority**: Must Have
+**Dependencies**: F1.1-001
+**Risk Level**: Medium
+**Assigned To**: Unassigned
+
+---
+
+## Feature 1.3: Transaction Storage & Database Management
+**Feature Description**: Persist parsed transactions in PostgreSQL with data integrity and provide database reset capability
+**User Value**: Reliable transaction storage with ability to start fresh when needed for testing or clean imports
 **Priority**: High
-**Complexity**: 5 story points
+**Complexity**: 8 story points
 
 ### Story F1.3-001: Store Transactions in Database
 **Status**: 🔴 Not Started
@@ -233,23 +327,29 @@ Date,Time,Type,Product,Ticker,Quantity,Price per share,Total Amount,Currency
 CREATE TABLE transactions (
     id SERIAL PRIMARY KEY,
     transaction_date TIMESTAMP NOT NULL,
-    transaction_type VARCHAR(20) NOT NULL,
-    ticker VARCHAR(10),
+    asset_type VARCHAR(10) NOT NULL, -- 'METAL', 'STOCK', 'CRYPTO'
+    transaction_type VARCHAR(20) NOT NULL, -- 'BUY', 'SELL', 'DIVIDEND', 'STAKING'
+    symbol VARCHAR(20) NOT NULL, -- 'XAU', 'AAPL', 'BTC', etc.
     quantity DECIMAL(18,8),
-    price DECIMAL(18,8),
+    price_per_unit DECIMAL(18,8),
     total_amount DECIMAL(18,8),
     currency VARCHAR(3),
     fee DECIMAL(18,8),
-    raw_description TEXT,
+    cost_basis DECIMAL(18,8), -- From Koinly for crypto
+    tax_lot_id VARCHAR(100), -- For tax tracking
+    raw_data JSONB, -- Original CSV row for audit
     source_file VARCHAR(255),
+    source_type VARCHAR(10), -- 'REVOLUT', 'KOINLY'
     import_timestamp TIMESTAMP DEFAULT NOW(),
     created_at TIMESTAMP DEFAULT NOW(),
-    UNIQUE(transaction_date, ticker, quantity, transaction_type)
+    UNIQUE(transaction_date, symbol, quantity, transaction_type, asset_type)
 );
 
-CREATE INDEX idx_transactions_ticker ON transactions(ticker);
+CREATE INDEX idx_transactions_symbol ON transactions(symbol);
 CREATE INDEX idx_transactions_date ON transactions(transaction_date);
 CREATE INDEX idx_transactions_type ON transactions(transaction_type);
+CREATE INDEX idx_transactions_asset_type ON transactions(asset_type);
+CREATE INDEX idx_transactions_source ON transactions(source_file);
 ```
 
 **Definition of Done**:
@@ -270,18 +370,188 @@ CREATE INDEX idx_transactions_type ON transactions(transaction_type);
 
 ---
 
+### Story F1.3-002: Database Reset Functionality
+**Status**: 🔴 Not Started
+**User Story**: As FX, I want to reset the database and clear all transactions so that I can start fresh with clean imports or fix import mistakes
+
+**Acceptance Criteria**:
+- **Given** I have transactions in the database
+- **When** I trigger the reset function
+- **Then** a confirmation dialog appears with warning
+- **And** I must confirm the action (type "DELETE ALL" or similar)
+- **And** all transactions are deleted from the database
+- **And** all positions are cleared
+- **And** all price history is cleared
+- **And** all portfolio snapshots are removed
+- **And** import metadata is reset
+- **And** a success message confirms the reset
+- **And** an audit log entry is created with timestamp
+
+**Technical Requirements**:
+- API endpoint for database reset
+- Frontend confirmation modal
+- Database transaction for atomic deletion
+- Cascade delete for related tables
+- Audit logging for reset operations
+
+**Safety Features**:
+```python
+class DatabaseResetService:
+    def reset_database(self, confirmation_code: str):
+        # Require explicit confirmation
+        if confirmation_code != "DELETE_ALL_TRANSACTIONS":
+            raise ValueError("Invalid confirmation code")
+
+        # Log the reset operation
+        self.log_reset_operation()
+
+        # Perform atomic deletion
+        with db.begin():
+            db.execute("TRUNCATE TABLE transactions CASCADE")
+            db.execute("TRUNCATE TABLE positions CASCADE")
+            db.execute("TRUNCATE TABLE price_history CASCADE")
+            db.execute("TRUNCATE TABLE portfolio_snapshots CASCADE")
+
+        return {"status": "success", "message": "Database reset complete"}
+```
+
+**API Endpoint**:
+```python
+@app.post("/api/database/reset")
+async def reset_database(
+    confirmation: str = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    if confirmation != "DELETE_ALL_TRANSACTIONS":
+        raise HTTPException(status_code=400, detail="Invalid confirmation")
+
+    # Create audit log
+    audit_log.info(f"Database reset initiated by {current_user.id}")
+
+    # Perform reset
+    result = DatabaseResetService().reset_database(confirmation)
+
+    return result
+```
+
+**Frontend Component**:
+```typescript
+const DatabaseResetModal: React.FC = () => {
+  const [confirmText, setConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleReset = async () => {
+    if (confirmText !== 'DELETE ALL TRANSACTIONS') {
+      alert('Please type exactly: DELETE ALL TRANSACTIONS');
+      return;
+    }
+
+    if (!window.confirm('This will permanently delete ALL transactions. Are you absolutely sure?')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await axios.post('/api/database/reset', {
+        confirmation: 'DELETE_ALL_TRANSACTIONS'
+      });
+      window.location.reload(); // Refresh to show empty state
+    } catch (error) {
+      alert('Reset failed: ' + error.message);
+    }
+    setIsDeleting(false);
+  };
+
+  return (
+    <Modal>
+      <h2>⚠️ Dangerous Operation</h2>
+      <p>This will permanently delete:</p>
+      <ul>
+        <li>All imported transactions</li>
+        <li>All manually entered transactions</li>
+        <li>All position calculations</li>
+        <li>All price history</li>
+        <li>All portfolio snapshots</li>
+      </ul>
+      <p>Type <code>DELETE ALL TRANSACTIONS</code> to confirm:</p>
+      <input
+        type="text"
+        value={confirmText}
+        onChange={(e) => setConfirmText(e.target.value)}
+        placeholder="Type confirmation here"
+      />
+      <button
+        onClick={handleReset}
+        disabled={isDeleting || confirmText !== 'DELETE ALL TRANSACTIONS'}
+        className="danger-button"
+      >
+        {isDeleting ? 'Deleting...' : 'Reset Database'}
+      </button>
+    </Modal>
+  );
+};
+```
+
+**Definition of Done**:
+- [ ] API endpoint for database reset implemented
+- [ ] Confirmation mechanism requires exact text
+- [ ] Frontend modal with warnings
+- [ ] All tables cleared (transactions, positions, history, snapshots)
+- [ ] Atomic transaction ensures all-or-nothing
+- [ ] Audit log captures reset operations
+- [ ] Unit tests for reset logic
+- [ ] Integration test confirms full cleanup
+- [ ] Documentation includes warnings
+
+**Story Points**: 3
+**Priority**: Should Have
+**Dependencies**: F1.3-001
+**Risk Level**: High (Destructive operation)
+**Assigned To**: Unassigned
+
+---
+
 ## Technical Design Notes
 
-### CSV Processing Pipeline
+### Multi-Format CSV Processing Pipeline
 ```python
-1. Upload: File received via FastAPI endpoint
-2. Validation: Check file format and size
-3. Parsing: Read CSV with pandas
-4. Type Detection: Identify transaction types
-5. Extraction: Parse details from each row
-6. Validation: Verify required fields
-7. Storage: Batch insert to PostgreSQL
-8. Response: Return success/error summary
+1. Upload: Multiple files received via FastAPI endpoint
+2. Format Detection: Identify file type (Metals/Stocks/Crypto)
+3. Parser Selection: Route to appropriate parser
+4. Parsing: Read CSV with pandas using format-specific logic
+5. Normalization: Convert to unified transaction format
+6. Validation: Verify required fields per format
+7. Storage: Batch insert to PostgreSQL with asset_type field
+8. Response: Return summary per file type
+```
+
+### File Type Detection Logic
+```python
+def detect_csv_type(filename: str) -> str:
+    if filename.startswith('account-statement_'):
+        return 'METALS'
+    elif re.match(r'^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}\.csv$', filename, re.I):
+        return 'STOCKS'
+    elif 'koinly' in filename.lower():
+        return 'CRYPTO'
+    else:
+        raise ValueError(f"Unknown CSV format: {filename}")
+```
+
+### Unified Transaction Model
+```python
+class UnifiedTransaction:
+    date: datetime
+    asset_type: str  # 'METAL', 'STOCK', 'CRYPTO'
+    transaction_type: str  # 'BUY', 'SELL', 'DIVIDEND', 'STAKING'
+    symbol: str  # 'XAU', 'AAPL', 'BTC'
+    quantity: Decimal
+    price_per_unit: Decimal
+    total_amount: Decimal
+    currency: str
+    fee: Decimal
+    source_file: str
+    raw_data: dict  # Original row data for audit
 ```
 
 ### Error Handling Strategy
@@ -312,20 +582,47 @@ CREATE INDEX idx_transactions_type ON transactions(transaction_type);
 | Malformed CSV data | Partial imports | Row-by-row validation, error reporting |
 
 ## Testing Strategy
-1. **Unit Tests**: Each parser function with mock data
-2. **Integration Tests**: Full upload-to-database flow
-3. **Performance Tests**: 10,000 transaction file processing
-4. **Edge Cases**: Empty files, wrong format, corrupted data
-5. **User Acceptance**: Import actual Revolut export file
+
+**⚠️ MANDATORY TESTING REQUIREMENT**:
+- **Minimum Coverage Threshold**: 85% code coverage for all modules
+- **No story is complete without passing tests meeting this threshold**
+
+1. **Unit Tests** (Required - 85% minimum coverage): Each parser function with mock data
+   - Metals parser with account-statement format
+   - Stocks parser with UUID format
+   - Crypto parser with Koinly format
+2. **Integration Tests** (Required): Full upload-to-database flow
+   - Multi-file upload handling
+   - Format detection accuracy
+3. **Performance Tests**:
+   - 10,000 transaction file processing
+   - Multiple large files simultaneously
+4. **Edge Cases**:
+   - Empty files, wrong format, corrupted data
+   - Mixed file types in single upload
+   - Duplicate detection across file types
+5. **User Acceptance**:
+   - Import actual Revolut metals export
+   - Import actual Revolut stocks export
+   - Import actual Koinly crypto export
 
 ## Definition of Done for Epic
-- [ ] All 5 stories completed
-- [ ] Can upload Revolut CSV via web interface
-- [ ] All transaction types correctly identified
-- [ ] Transaction details accurately extracted
-- [ ] Data persisted to PostgreSQL
+- [ ] All 7 stories completed (2/7 complete)
+- [x] Can upload multiple CSV files via web interface ✅
+- [x] Auto-detection of file types (Metals/Stocks/Crypto) ✅
+- [x] Upload progress feedback with progress bars ✅
+- [x] Toast notifications for success/error/warning messages ✅
+- [x] Retry mechanism for failed uploads ✅
+- [ ] Three parsers working correctly:
+  - [ ] Metals parser handles account-statement format
+  - [ ] Stocks parser handles UUID format
+  - [ ] Crypto parser handles Koinly format
+- [ ] All transaction types correctly identified per format
+- [ ] Data normalized to unified transaction model
+- [ ] Data persisted to PostgreSQL with asset_type field
+- [ ] Database reset functionality with safety confirmations
 - [ ] Duplicate imports handled gracefully
 - [ ] Performance meets requirements (<5 seconds for 10,000 rows)
-- [ ] Error handling comprehensive
-- [ ] Unit test coverage >80%
-- [ ] Documentation complete
+- [x] Error handling comprehensive (for upload component with user-friendly messages) ✅
+- [x] Unit test coverage ≥85% (mandatory threshold) - Upload and feedback component tests complete ✅
+- [ ] Documentation complete with sample files

@@ -9,6 +9,10 @@ import uvicorn
 # Will add imports as we build out the modules
 # from .database import init_db
 # from .routers import transactions, portfolio, prices
+try:
+    from .import_router import router as import_router
+except ImportError:
+    from import_router import router as import_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,6 +38,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(import_router)
 
 @app.get("/")
 async def root():

@@ -6,6 +6,14 @@ This document provides a high-level overview of all user stories for the Portfol
 
 **Project Goal**: Build a personal portfolio tracker that imports Revolut transactions and displays real-time portfolio performance with live market data.
 
+## Testing Requirements
+
+**⚠️ CRITICAL**: Every story MUST include comprehensive testing to be considered complete:
+- **Minimum Coverage**: 85% code coverage threshold for all modules
+- **Test Types**: Unit tests AND integration tests are mandatory for every story
+- **TDD Approach**: Write tests BEFORE implementation code
+- **No Exceptions**: A story is NOT complete without passing tests meeting the 85% threshold
+
 ## Story Organization
 
 Stories are organized into 5 major epics, each with its own detailed documentation:
@@ -21,17 +29,18 @@ Stories are organized into 5 major epics, each with its own detailed documentati
 ### Epic Status Overview
 | Epic | Stories | Points | Status | Progress | Details |
 |------|---------|--------|--------|----------|---------|
-| [Epic 1: Transaction Import](./stories/epic-01-transaction-import.md) | 5 | 23 | 🔴 Not Started | 0% | CSV parsing & storage |
+| [Epic 1: Transaction Import](./stories/epic-01-transaction-import.md) | 5 | 23 | 🟡 In Progress | 22% (5/23 pts) | CSV parsing & storage |
 | [Epic 2: Portfolio Calculation](./stories/epic-02-portfolio-calculation.md) | 5 | 26 | 🔴 Not Started | 0% | FIFO, P&L, currency |
 | [Epic 3: Live Market Data](./stories/epic-03-live-market-data.md) | 4 | 16 | 🔴 Not Started | 0% | Yahoo Finance, Redis |
 | [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 4 | 19 | 🔴 Not Started | 0% | Dashboard, charts |
 | [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | 🟡 In Progress | 50% | Docker, database |
-| **Total** | **21** | **97** | **In Progress** | **~7%** | |
+| **Total** | **21** | **97** | **In Progress** | **~10%** (10/97 pts) | |
 
 ### Current Sprint Focus
-**Active Epic**: Infrastructure (Epic 5)
-**Current Story**: F5.2-001 - Database Schema Setup
-**Blockers**: None
+**Active Epic**: Transaction Import (Epic 1)
+**Current Story**: F1.1-002 - Upload Status Feedback - ✅ COMPLETE
+**Next Story**: F1.2-001 - Parse Metals Transactions (Revolut Account Statement)
+**Blockers**: Database schema not implemented (F5.2-001)
 
 ## User Personas
 
@@ -47,7 +56,7 @@ Stories are organized into 5 major epics, each with its own detailed documentati
 - **Goal**: Parse Revolut CSV exports and store transactions
 - **Features**: CSV upload, Revolut parser, transaction storage
 - **Key Stories**: 5 stories, 23 points
-- **Status**: 🔴 Not Started
+- **Status**: 🟡 In Progress (22% complete - F1.1-001 and F1.1-002 done)
 
 ### [Epic 2: Portfolio Calculation Engine](./stories/epic-02-portfolio-calculation.md)
 - **Goal**: Calculate FIFO cost basis and P&L
@@ -85,8 +94,8 @@ Stories are organized into 5 major epics, each with its own detailed documentati
 
 #### Day 2: CSV Import (18 points)
 **Goal**: Implement Revolut CSV parsing and storage
-- 🔴 F1.1-001: File Upload Component (3 pts)
-- 🔴 F1.1-002: Upload Status Feedback (2 pts)
+- ✅ F1.1-001: File Upload Component (3 pts) - **COMPLETE**
+- ✅ F1.1-002: Upload Status Feedback (2 pts) - **COMPLETE**
 - 🔴 F1.2-001: Parse Transaction Types (5 pts)
 - 🔴 F1.2-002: Extract Transaction Details (8 pts)
 

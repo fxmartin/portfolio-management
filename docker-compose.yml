@@ -48,7 +48,7 @@ services:
     volumes:
       - ./backend:/app
       - ./data:/data  # For CSV uploads
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    # Command is set in Dockerfile
 
   frontend:
     build:
