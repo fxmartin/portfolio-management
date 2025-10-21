@@ -29,22 +29,25 @@ Stories are organized into 5 major epics, each with its own detailed documentati
 ### Epic Status Overview
 | Epic | Stories | Points | Status | Progress | Details |
 |------|---------|--------|--------|----------|---------|
-| [Epic 1: Transaction Import](./stories/epic-01-transaction-import.md) | 8 | 31 | 🟡 In Progress | 81% (25/31 pts) | CSV parsing & storage |
+| [Epic 1: Transaction Import](./stories/epic-01-transaction-import.md) | 8 | 31 | ✅ Complete | 100% (31/31 pts) | CSV parsing & storage |
 | [Epic 2: Portfolio Calculation](./stories/epic-02-portfolio-calculation.md) | 5 | 26 | 🔴 Not Started | 0% | FIFO, P&L, currency |
 | [Epic 3: Live Market Data](./stories/epic-03-live-market-data.md) | 4 | 16 | 🔴 Not Started | 0% | Yahoo Finance, Redis |
 | [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 4 | 19 | 🔴 Not Started | 0% | Dashboard, charts |
 | [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | 🟡 In Progress | 85% (11/13 pts) | Docker, database |
-| **Total** | **24** | **105** | **In Progress** | **~33%** (35/105 pts) | |
+| **Total** | **24** | **105** | **In Progress** | **~34%** (36/105 pts) | |
 
 ### Current Sprint Focus
-**Active Epic**: Transaction Import (Epic 1)
-**Completed Stories**:
-- F1.1-001 & F1.1-002 - Upload Component ✅
-- F1.2-001, F1.2-002, F1.2-003 - All Parsers Complete ✅
-- F1.3-001 - Store Transactions in Database ✅
+**Active Epic**: Portfolio Calculation Engine (Epic 2)
+**Completed Epics**:
+- ✅ Epic 1: Transaction Import (8 stories, 31 points) - **100% COMPLETE**
+  - F1.1-001 & F1.1-002 - Upload Component ✅
+  - F1.2-001, F1.2-002, F1.2-003 - All Parsers ✅
+  - F1.3-001 - Store Transactions ✅
+  - F1.3-002 - Database Reset ✅
+  - F1.3-003 - Database Statistics ✅
 **Next Stories**:
-- F1.3-002 - Database Reset Functionality
-- F1.3-003 - Database Statistics Dashboard (NEW)
+- F2.1-001 - Implement FIFO Algorithm (8 pts)
+- F2.2-001 - Calculate Current Holdings (5 pts)
 **Blockers**: None
 
 ## User Personas
@@ -59,9 +62,9 @@ Stories are organized into 5 major epics, each with its own detailed documentati
 
 ### [Epic 1: Transaction Import & Management](./stories/epic-01-transaction-import.md)
 - **Goal**: Parse Revolut CSV exports and store transactions
-- **Features**: CSV upload, Three-parser system (Metals, Stocks, Crypto), transaction storage
-- **Key Stories**: 7 stories, 28 points
-- **Status**: 🟡 In Progress (71% complete - F1.1 and F1.2 features complete)
+- **Features**: CSV upload, Three-parser system (Metals, Stocks, Crypto), transaction storage, database management
+- **Key Stories**: 8 stories, 31 points
+- **Status**: ✅ Complete (100% complete - All features implemented and tested)
 
 ### [Epic 2: Portfolio Calculation Engine](./stories/epic-02-portfolio-calculation.md)
 - **Goal**: Calculate FIFO cost basis and P&L
