@@ -6,20 +6,33 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import uvicorn
 
-# Will add imports as we build out the modules
-# from .database import init_db
-# from .routers import transactions, portfolio, prices
+# Import database and routers
 try:
+    from .database import init_db_async, test_connection
     from .import_router import router as import_router
 except ImportError:
+    from database import init_db_async, test_connection
     from import_router import router as import_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     print("Starting Portfolio Management API...")
-    # await init_db()
+
+    # Test database connection
+    if await test_connection():
+        print("✓ Database connection successful")
+    else:
+        print("✗ Database connection failed")
+
+    # Initialize database tables if needed
+    if await init_db_async():
+        print("✓ Database tables ready")
+    else:
+        print("✗ Database initialization failed")
+
     yield
+
     # Shutdown
     print("Shutting down Portfolio Management API...")
 

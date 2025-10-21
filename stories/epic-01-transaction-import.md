@@ -38,8 +38,8 @@
 | Feature | Stories | Points | Status | Progress |
 |---------|---------|--------|--------|----------|
 | F1.1: Multi-Format CSV Upload | 2 | 5 | ✅ Complete | 100% (5/5 pts) |
-| F1.2: Three-Parser System | 3 | 15 | 🔴 Not Started | 0% |
-| F1.3: Storage & DB Management | 2 | 8 | 🔴 Not Started | 0% |
+| F1.2: Three-Parser System | 3 | 15 | 🟢 Ready (DB Schema ✅) | 0% |
+| F1.3: Storage & DB Management | 2 | 8 | 🟢 Ready (DB Schema ✅) | 0% |
 | **Total** | **7** | **28** | **In Progress** | **18% (5/28 pts)** |
 
 ---
@@ -152,7 +152,7 @@
 **Complexity**: 15 story points
 
 ### Story F1.2-001: Parse Metals Transactions (Revolut Account Statement)
-**Status**: 🔴 Not Started
+**Status**: 🟢 Ready to Start (Database schema implemented ✅)
 **User Story**: As FX, I want the system to parse my Revolut metals account statement so I can track my precious metals investments
 
 **Acceptance Criteria**:
@@ -204,7 +204,7 @@ TRANSACTION_TYPES = {
 ---
 
 ### Story F1.2-002: Parse Stocks Transactions (Revolut UUID Export)
-**Status**: 🔴 Not Started
+**Status**: 🟢 Ready to Start (Database schema implemented ✅)
 **User Story**: As FX, I want the system to parse my Revolut stocks export so I can track my stock investments and dividends
 
 **Acceptance Criteria**:
@@ -251,7 +251,7 @@ Date,Time,Type,Product,Ticker,Quantity,Price per share,Total Amount,Currency,FX 
 ---
 
 ### Story F1.2-003: Parse Crypto Transactions (Koinly Export)
-**Status**: 🔴 Not Started
+**Status**: 🟢 Ready to Start (Database schema implemented ✅)
 **User Story**: As FX, I want the system to parse my Koinly crypto export so I can track my cryptocurrency investments with tax calculations
 
 **Acceptance Criteria**:
@@ -302,7 +302,7 @@ Date,Type,In Amount,In Currency,Out Amount,Out Currency,Fee Amount,Fee Currency,
 **Complexity**: 8 story points
 
 ### Story F1.3-001: Store Transactions in Database
-**Status**: 🔴 Not Started
+**Status**: 🟢 Ready to Start (Database schema implemented ✅)
 **User Story**: As FX, I want all my transactions stored persistently so that I don't need to re-import my CSV files
 
 **Acceptance Criteria**:
@@ -569,8 +569,8 @@ class UnifiedTransaction:
 ---
 
 ## Dependencies
-- **External**: FastAPI file upload, PostgreSQL connection (Epic 5)
-- **Internal**: Database schema must exist before storage
+- **External**: FastAPI file upload, ~~PostgreSQL connection (Epic 5)~~ ✅ COMPLETE
+- **Internal**: ~~Database schema must exist before storage~~ ✅ COMPLETE (F5.2-001)
 - **Libraries**: pandas, SQLAlchemy, python-multipart
 
 ## Risks & Mitigations

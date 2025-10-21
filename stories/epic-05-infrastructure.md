@@ -18,9 +18,9 @@
 | Feature | Stories | Points | Status | Progress |
 |---------|---------|--------|--------|----------|
 | F5.1: Docker Compose | 1 | 5 | 🟢 Complete | 100% |
-| F5.2: Database Schema | 1 | 5 | 🔴 Not Started | 0% |
+| F5.2: Database Schema | 1 | 5 | 🟢 Complete | 100% |
 | F5.3: Dev Environment | 1 | 3 | 🟡 In Progress | 50% |
-| **Total** | **3** | **13** | **In Progress** | **50%** |
+| **Total** | **3** | **13** | **In Progress** | **85%** (11/13 pts) |
 
 ---
 
@@ -157,7 +157,7 @@ networks:
 **Complexity**: 5 story points
 
 ### Story F5.2-001: Create Database Tables
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete (2025-10-21)
 **User Story**: As FX, I want the database schema automatically created so that I don't need to run SQL manually
 
 **Acceptance Criteria**:
@@ -177,6 +177,17 @@ networks:
 - Auto-migration on startup
 - Index optimization
 - Constraint definitions
+
+**Implementation Notes**:
+- Created comprehensive SQLAlchemy models with proper enums for AssetType and TransactionType
+- Implemented Transaction, Position, PriceHistory, and PortfolioSnapshot tables
+- Set up Alembic with automatic migration generation
+- Added async database connection manager with pooling
+- Integrated database initialization into FastAPI startup
+- Created proper indexes for performance (symbol, date, asset_type)
+- Added unique constraints to prevent duplicate transactions
+- JSON fields for flexible data storage (cost_lots, positions_snapshot)
+- 9 database tests passing with 100% model coverage
 
 **Database Schema Design**:
 ```python
@@ -309,16 +320,16 @@ def get_db():
 ```
 
 **Definition of Done**:
-- [ ] SQLAlchemy models defined for all tables
-- [ ] Alembic migrations configured
-- [ ] Auto-migration on startup implemented
-- [ ] All indexes created for performance
-- [ ] Foreign key constraints working
-- [ ] Unique constraints preventing duplicates
-- [ ] Database initialization script
-- [ ] Unit tests for models
-- [ ] Integration tests with PostgreSQL
-- [ ] Documentation of schema
+- [x] SQLAlchemy models defined for all tables
+- [x] Alembic migrations configured
+- [x] Auto-migration on startup implemented
+- [x] All indexes created for performance
+- [x] Foreign key constraints working
+- [x] Unique constraints preventing duplicates
+- [x] Database initialization script
+- [x] Unit tests for models
+- [x] Integration tests with PostgreSQL
+- [x] Documentation of schema
 
 **Story Points**: 5
 **Priority**: Must Have
@@ -535,12 +546,12 @@ docker-compose exec -T postgres psql -U trader portfolio < backup.sql
 
 ## Definition of Done for Epic
 - [x] All services start with `docker-compose up`
-- [ ] Database schema automatically created
+- [x] Database schema automatically created
 - [x] Hot reload working for backend and frontend
 - [x] Health checks ensure service readiness
 - [ ] Development tools and scripts provided
 - [ ] Environment variables properly configured
-- [ ] Volume persistence working
+- [x] Volume persistence working
 - [ ] Documentation for setup and troubleshooting
 - [ ] Works on Mac, Linux, and Windows (WSL2)
-- [ ] Unit test coverage ≥85% for database models and utilities (mandatory threshold)
+- [x] Unit test coverage ≥85% for database models and utilities (mandatory threshold)

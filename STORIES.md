@@ -33,14 +33,14 @@ Stories are organized into 5 major epics, each with its own detailed documentati
 | [Epic 2: Portfolio Calculation](./stories/epic-02-portfolio-calculation.md) | 5 | 26 | 🔴 Not Started | 0% | FIFO, P&L, currency |
 | [Epic 3: Live Market Data](./stories/epic-03-live-market-data.md) | 4 | 16 | 🔴 Not Started | 0% | Yahoo Finance, Redis |
 | [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 4 | 19 | 🔴 Not Started | 0% | Dashboard, charts |
-| [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | 🟡 In Progress | 50% | Docker, database |
-| **Total** | **21** | **97** | **In Progress** | **~10%** (10/97 pts) | |
+| [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | 🟡 In Progress | 85% (11/13 pts) | Docker, database |
+| **Total** | **21** | **97** | **In Progress** | **~15%** (15/97 pts) | |
 
 ### Current Sprint Focus
 **Active Epic**: Transaction Import (Epic 1)
-**Current Story**: F1.1-002 - Upload Status Feedback - ✅ COMPLETE
-**Next Story**: F1.2-001 - Parse Metals Transactions (Revolut Account Statement)
-**Blockers**: Database schema not implemented (F5.2-001)
+**Current Story**: F1.2-001 - Parse Metals Transactions (Ready to start)
+**Next Story**: F1.2-002 - Parse Stocks Transactions
+**Blockers**: None - Database schema implemented ✅
 
 ## User Personas
 
@@ -80,7 +80,7 @@ Stories are organized into 5 major epics, each with its own detailed documentati
 - **Goal**: Docker environment with hot-reload
 - **Features**: Docker Compose, database schema, development tools
 - **Key Stories**: 3 stories, 13 points
-- **Status**: 🟡 In Progress (50% complete)
+- **Status**: 🟢 Mostly Complete (85% complete - F5.1-001 and F5.2-001 done)
 
 ## MVP Implementation Plan
 
@@ -89,7 +89,7 @@ Stories are organized into 5 major epics, each with its own detailed documentati
 #### Day 1: Foundation (13 points)
 **Goal**: Set up development environment and basic structure
 - ✅ F5.1-001: Multi-Service Docker Setup (5 pts) - **COMPLETE**
-- 🔴 F5.2-001: Create Database Tables (5 pts)
+- ✅ F5.2-001: Create Database Tables (5 pts) - **COMPLETE**
 - 🟡 F5.3-001: Hot Reload Setup (3 pts) - **IN PROGRESS**
 
 #### Day 2: CSV Import (18 points)
