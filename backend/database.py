@@ -74,8 +74,8 @@ async def init_db_async():
 
 
 @contextmanager
-def get_db():
-    """Dependency for synchronous database sessions"""
+def get_db_context():
+    """Context manager for synchronous database sessions"""
     db = SessionLocal()
     try:
         yield db
@@ -83,6 +83,14 @@ def get_db():
     except Exception:
         db.rollback()
         raise
+    finally:
+        db.close()
+
+def get_db():
+    """Dependency for FastAPI synchronous database sessions"""
+    db = SessionLocal()
+    try:
+        yield db
     finally:
         db.close()
 

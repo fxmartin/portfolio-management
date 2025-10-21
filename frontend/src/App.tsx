@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import TransactionImport from './components/TransactionImport'
+import { DatabaseResetModal, useDatabaseReset } from './components/DatabaseResetModal'
 import './App.css'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
@@ -27,6 +28,7 @@ interface Portfolio {
 function App() {
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null)
   const [showImport, setShowImport] = useState(false)
+  const { isModalOpen, openResetModal, closeResetModal, handleReset } = useDatabaseReset()
 
   useEffect(() => {
     fetchPortfolio()
@@ -47,17 +49,31 @@ function App() {
     }
   }
 
+  const onDatabaseReset = () => {
+    // Callback after successful database reset
+    handleReset()
+    // Refresh portfolio data
+    fetchPortfolio()
+  }
+
   return (
     <div className="app">
       <h1>Portfolio Management</h1>
 
-      {/* Toggle Import Section */}
-      <div className="import-toggle">
+      {/* Action Buttons */}
+      <div className="action-buttons">
         <button
           className="toggle-import-btn"
           onClick={() => setShowImport(!showImport)}
         >
           {showImport ? 'Hide Import' : 'Import Transactions'}
+        </button>
+        <button
+          className="reset-database-btn"
+          onClick={openResetModal}
+          title="Clear all data and start fresh"
+        >
+          Reset Database
         </button>
       </div>
 
@@ -116,6 +132,13 @@ function App() {
           <p>Loading portfolio...</p>
         )}
       </div>
+
+      {/* Database Reset Modal */}
+      <DatabaseResetModal
+        isOpen={isModalOpen}
+        onClose={closeResetModal}
+        onReset={onDatabaseReset}
+      />
     </div>
   )
 }

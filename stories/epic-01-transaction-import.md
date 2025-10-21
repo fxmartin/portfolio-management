@@ -394,7 +394,7 @@ CREATE INDEX idx_transactions_source ON transactions(source_file);
 ---
 
 ### Story F1.3-002: Database Reset Functionality
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete (2025-10-21)
 **User Story**: As FX, I want to reset the database and clear all transactions so that I can start fresh with clean imports or fix import mistakes
 
 **Acceptance Criteria**:
@@ -516,21 +516,38 @@ const DatabaseResetModal: React.FC = () => {
 ```
 
 **Definition of Done**:
-- [ ] API endpoint for database reset implemented
-- [ ] Confirmation mechanism requires exact text
-- [ ] Frontend modal with warnings
-- [ ] All tables cleared (transactions, positions, history, snapshots)
-- [ ] Atomic transaction ensures all-or-nothing
-- [ ] Audit log captures reset operations
-- [ ] Unit tests for reset logic
-- [ ] Integration test confirms full cleanup
-- [ ] Documentation includes warnings
+- [x] API endpoint for database reset implemented
+- [x] Confirmation mechanism requires exact text
+- [x] Frontend modal with warnings
+- [x] All tables cleared (transactions, positions, history, snapshots)
+- [x] Atomic transaction ensures all-or-nothing
+- [x] Audit log captures reset operations
+- [x] Unit tests for reset logic (12 tests)
+- [x] Integration tests for API endpoints (10 tests)
+- [x] Frontend component tests (17 tests)
+- [x] Documentation includes warnings
 
 **Story Points**: 3
 **Priority**: Should Have
 **Dependencies**: F1.3-001
 **Risk Level**: High (Destructive operation)
-**Assigned To**: Unassigned
+**Assigned To**: Completed
+**Implementation Date**: 2025-10-21
+
+**Implementation Notes**:
+- Created `DatabaseResetService` class with atomic transaction handling
+- Implemented `/api/database/reset` endpoint with confirmation validation
+- Added `/api/database/stats` endpoint for current database metrics
+- Added `/api/database/health` endpoint for connection testing
+- Created `DatabaseResetModal` React component with multi-step confirmation
+- Requires exact text "DELETE_ALL_TRANSACTIONS" for confirmation
+- Tables deleted in correct order to respect foreign key constraints
+- Primary key sequences reset to 1 after deletion
+- Comprehensive audit logging of all reset operations
+- 39 total tests written (22 backend, 17 frontend) with 100% pass rate
+- Modal automatically clears state when closed/reopened
+- Progress indication during deletion process
+- Page automatically reloads after successful reset
 
 ---
 
