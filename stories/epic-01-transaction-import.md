@@ -32,15 +32,15 @@
 ## Features in this Epic
 - Feature 1.1: Multi-Format CSV Upload Interface
 - Feature 1.2: Three-Parser System (Metals, Stocks, Crypto)
-- Feature 1.3: Transaction Storage & Management
+- Feature 1.3: Transaction Storage & Management (including Database Statistics)
 
 ## Progress Tracking
 | Feature | Stories | Points | Status | Progress |
 |---------|---------|--------|--------|----------|
 | F1.1: Multi-Format CSV Upload | 2 | 5 | ✅ Complete | 100% (5/5 pts) |
 | F1.2: Three-Parser System | 3 | 15 | ✅ Complete | 100% (15/15 pts) |
-| F1.3: Storage & DB Management | 2 | 8 | 🟢 Ready (DB Schema ✅) | 0% |
-| **Total** | **7** | **28** | **In Progress** | **71% (20/28 pts)** |
+| F1.3: Storage & DB Management | 3 | 11 | 🟡 In Progress | 45% (5/11 pts) |
+| **Total** | **8** | **31** | **In Progress** | **81% (25/31 pts)** |
 
 ---
 
@@ -319,13 +319,13 @@ Date,Type,In Amount,In Currency,Out Amount,Out Currency,Fee Amount,Fee Currency,
 ---
 
 ## Feature 1.3: Transaction Storage & Database Management
-**Feature Description**: Persist parsed transactions in PostgreSQL with data integrity and provide database reset capability
-**User Value**: Reliable transaction storage with ability to start fresh when needed for testing or clean imports
+**Feature Description**: Persist parsed transactions in PostgreSQL with data integrity, provide database reset capability, and display comprehensive statistics
+**User Value**: Reliable transaction storage with visibility into imported data and ability to start fresh when needed
 **Priority**: High
 **Complexity**: 8 story points
 
 ### Story F1.3-001: Store Transactions in Database
-**Status**: 🟢 Ready to Start (Database schema implemented ✅)
+**Status**: ✅ Complete (2025-10-21)
 **User Story**: As FX, I want all my transactions stored persistently so that I don't need to re-import my CSV files
 
 **Acceptance Criteria**:
@@ -376,20 +376,33 @@ CREATE INDEX idx_transactions_source ON transactions(source_file);
 ```
 
 **Definition of Done**:
-- [ ] Database schema created for transactions
-- [ ] SQLAlchemy models implemented
-- [ ] Duplicate detection logic with user override option
-- [ ] Transaction integrity constraints
-- [ ] Database migration scripts
-- [ ] Bulk insert optimization (1000+ records)
-- [ ] Unit tests for CRUD operations
-- [ ] Integration tests with PostgreSQL
+- [x] Database schema created for transactions ✅
+- [x] SQLAlchemy models implemented ✅
+- [x] Duplicate detection logic with user override option ✅
+- [x] Transaction integrity constraints ✅
+- [x] Database migration scripts ✅
+- [x] Bulk insert optimization (1000+ records) ✅
+- [x] Unit tests for CRUD operations ✅
+- [x] Integration tests with PostgreSQL ✅
 
 **Story Points**: 5
 **Priority**: Must Have
 **Dependencies**: F1.2-002, F5.2-001 (Database Schema Setup)
 **Risk Level**: Medium
-**Assigned To**: Unassigned
+**Assigned To**: Completed
+**Implementation Date**: 2025-10-21
+
+**Implementation Notes**:
+- Created `TransactionService` class for database operations
+- Implemented duplicate detection based on unique constraint
+- Added support for three duplicate strategies: skip, update, force
+- Created `/api/import/upload` endpoint with batch processing
+- Added `/api/import/summary` for transaction statistics
+- Added `/api/import/check-duplicates` for pre-import validation
+- Comprehensive error handling with detailed per-transaction feedback
+- 12 unit tests for transaction service (100% pass rate)
+- Integration tests for complete import flow
+- Tested with real Revolut metals CSV - successfully stored 3 transactions
 
 ---
 
@@ -548,6 +561,129 @@ const DatabaseResetModal: React.FC = () => {
 - Modal automatically clears state when closed/reopened
 - Progress indication during deletion process
 - Page automatically reloads after successful reset
+
+---
+
+### Story F1.3-003: Database Statistics Dashboard
+**Status**: ✅ Complete
+**User Story**: As FX, I want to see database statistics at a glance so that I can understand how much data has been imported and monitor the system's state
+
+**Acceptance Criteria**:
+- **Given** I am on the portfolio dashboard
+- **When** I click the "Database Stats" button
+- **Then** I see a modal or panel showing:
+  - Total number of transactions
+  - Breakdown by asset type (Metals, Stocks, Crypto)
+  - Breakdown by transaction type (BUY, SELL, DIVIDEND, etc.)
+  - Date range of transactions (earliest to latest)
+  - Number of unique symbols/assets
+  - Total records across all tables
+  - Database connection health status
+- **And** Statistics update in real-time when new imports occur
+- **And** I can refresh the statistics manually
+- **And** Numbers are formatted for readability (e.g., 1,234)
+
+**Technical Requirements**:
+- React component for statistics display
+- Use existing `/api/database/stats` endpoint
+- Add `/api/import/summary` integration for detailed breakdown
+- Card-based layout with icons for each metric
+- Auto-refresh every 30 seconds (optional toggle)
+- Loading states during data fetch
+- Error handling for failed API calls
+
+**UI/UX Design**:
+```typescript
+interface DatabaseStats {
+  transactions: {
+    total: number;
+    byAssetType: Record<string, number>;
+    byTransactionType: Record<string, number>;
+    dateRange: { earliest: string; latest: string };
+  };
+  symbols: {
+    total: number;
+    topSymbols: Array<{ symbol: string; count: number }>;
+  };
+  database: {
+    tablesCount: Record<string, number>;
+    totalRecords: number;
+    isHealthy: boolean;
+    lastImport?: string;
+  };
+}
+```
+
+**Component Structure**:
+```tsx
+<DatabaseStatsModal>
+  <StatsHeader>
+    <Title>Database Statistics</Title>
+    <RefreshButton onClick={handleRefresh} />
+    <AutoRefreshToggle checked={autoRefresh} />
+  </StatsHeader>
+
+  <StatsGrid>
+    <StatCard icon="📊" title="Total Transactions">
+      {formatNumber(stats.transactions.total)}
+    </StatCard>
+
+    <StatCard icon="📈" title="Asset Types">
+      <PieChart data={stats.transactions.byAssetType} />
+    </StatCard>
+
+    <StatCard icon="📅" title="Date Range">
+      {formatDateRange(stats.transactions.dateRange)}
+    </StatCard>
+
+    <StatCard icon="💼" title="Unique Assets">
+      {stats.symbols.total} symbols
+    </StatCard>
+
+    <StatCard icon="🗄️" title="Database Health">
+      <HealthIndicator status={stats.database.isHealthy} />
+    </StatCard>
+  </StatsGrid>
+
+  <DetailsSection>
+    <TransactionBreakdown data={stats.transactions.byTransactionType} />
+    <TopSymbolsList symbols={stats.symbols.topSymbols} />
+  </DetailsSection>
+</DatabaseStatsModal>
+```
+
+**Definition of Done**:
+- [x] React component created with modal/panel display
+- [x] Integration with `/api/database/stats/detailed` endpoint
+- [x] Card-based responsive layout
+- [x] Number formatting utilities
+- [x] Auto-refresh functionality with toggle
+- [x] Loading and error states
+- [x] Unit tests for component logic (17 tests)
+- [x] Unit tests for backend (8 tests)
+- [x] Accessibility: keyboard navigation and ARIA labels
+- [x] Mobile-responsive design
+
+**Story Points**: 3
+**Priority**: Should Have
+**Dependencies**: F1.3-001 (Database storage must be working)
+**Risk Level**: Low
+**Assigned To**: Completed
+**Implementation Date**: 2025-10-21
+
+**Implementation Notes**:
+- Created `/api/database/stats/detailed` endpoint with comprehensive breakdown
+- Enhanced `DatabaseResetService.get_detailed_stats()` method
+- Created `DatabaseStats` React component with card-based layout
+- Displays breakdown by asset type, transaction type, top symbols
+- Shows date ranges, unique symbol count, and database health
+- Auto-refresh toggle with configurable interval (default: 30s)
+- Number formatting with thousand separators
+- Icons for visual clarity (🏆 Metals, 📈 Stocks, ₿ Crypto)
+- Responsive CSS Grid layout for mobile/desktop
+- 25 total tests written (8 backend, 17 frontend) with 100% pass rate
+- Graceful error handling and fallback UI states
+- Modal overlay pattern for better UX
 
 ---
 

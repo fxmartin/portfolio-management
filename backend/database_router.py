@@ -86,6 +86,32 @@ def get_database_stats(db: Session = Depends(get_db)):
         )
 
 
+@router.get("/stats/detailed", response_model=Dict)
+def get_detailed_database_stats(db: Session = Depends(get_db)):
+    """
+    Get detailed database statistics with breakdowns by type.
+
+    Returns comprehensive information about:
+    - Breakdown by asset type (Metals, Stocks, Crypto)
+    - Breakdown by transaction type (BUY, SELL, DIVIDEND, etc.)
+    - Unique symbols/assets count
+    - Top symbols by transaction count
+    - Last import timestamp
+    - Database health status
+    """
+    try:
+        service = DatabaseResetService(db)
+        stats = service.get_detailed_stats()
+        return stats
+
+    except Exception as e:
+        logger.error(f"Failed to get detailed database stats: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get detailed database statistics: {str(e)}"
+        )
+
+
 @router.get("/health", response_model=Dict)
 def check_database_health(db: Session = Depends(get_db)):
     """

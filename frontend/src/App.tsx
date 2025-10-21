@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import TransactionImport from './components/TransactionImport'
 import { DatabaseResetModal, useDatabaseReset } from './components/DatabaseResetModal'
+import DatabaseStats from './components/DatabaseStats'
 import './App.css'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
@@ -28,6 +29,7 @@ interface Portfolio {
 function App() {
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null)
   const [showImport, setShowImport] = useState(false)
+  const [showStats, setShowStats] = useState(false)
   const { isModalOpen, openResetModal, closeResetModal, handleReset } = useDatabaseReset()
 
   useEffect(() => {
@@ -67,6 +69,13 @@ function App() {
           onClick={() => setShowImport(!showImport)}
         >
           {showImport ? 'Hide Import' : 'Import Transactions'}
+        </button>
+        <button
+          className="database-stats-btn"
+          onClick={() => setShowStats(true)}
+          title="View database statistics"
+        >
+          Database Stats
         </button>
         <button
           className="reset-database-btn"
@@ -138,6 +147,13 @@ function App() {
         isOpen={isModalOpen}
         onClose={closeResetModal}
         onReset={onDatabaseReset}
+      />
+
+      {/* Database Stats Modal */}
+      <DatabaseStats
+        isOpen={showStats}
+        onClose={() => setShowStats(false)}
+        autoRefresh={false}
       />
     </div>
   )

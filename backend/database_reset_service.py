@@ -135,10 +135,10 @@ class DatabaseResetService:
                     FROM transactions
                 """)).first()
 
-                if result:
+                if result and result.earliest and result.latest:
                     stats["transaction_date_range"] = {
-                        "earliest": result.earliest.isoformat() if result.earliest else None,
-                        "latest": result.latest.isoformat() if result.latest else None
+                        "earliest": result.earliest.isoformat() if hasattr(result.earliest, 'isoformat') else str(result.earliest),
+                        "latest": result.latest.isoformat() if hasattr(result.latest, 'isoformat') else str(result.latest)
                     }
 
             return stats
@@ -150,4 +150,113 @@ class DatabaseResetService:
                 "table_counts": {},
                 "total_records": 0,
                 "database_ready": False
+            }
+
+    def get_detailed_stats(self) -> Dict:
+        """Get detailed database statistics including breakdowns by type"""
+        try:
+            basic_stats = self.get_database_stats()
+
+            # Initialize detailed stats structure
+            detailed_stats = {
+                "transactions": {
+                    "total": basic_stats["table_counts"].get("transactions", 0),
+                    "byAssetType": {},
+                    "byTransactionType": {},
+                    "dateRange": {}
+                },
+                "symbols": {
+                    "total": 0,
+                    "topSymbols": []
+                },
+                "database": {
+                    "tablesCount": basic_stats["table_counts"],
+                    "totalRecords": basic_stats["total_records"],
+                    "isHealthy": basic_stats["database_ready"],
+                    "lastImport": None
+                }
+            }
+
+            # Only query if we have transactions
+            if basic_stats["table_counts"].get("transactions", 0) > 0:
+                # Get breakdown by asset type
+                result = self.db.execute(text("""
+                    SELECT asset_type, COUNT(*) as count
+                    FROM transactions
+                    GROUP BY asset_type
+                """))
+                for row in result:
+                    detailed_stats["transactions"]["byAssetType"][row.asset_type] = row.count
+
+                # Get breakdown by transaction type
+                result = self.db.execute(text("""
+                    SELECT transaction_type, COUNT(*) as count
+                    FROM transactions
+                    GROUP BY transaction_type
+                """))
+                for row in result:
+                    detailed_stats["transactions"]["byTransactionType"][row.transaction_type] = row.count
+
+                # Get date range
+                result = self.db.execute(text("""
+                    SELECT MIN(transaction_date) as earliest,
+                           MAX(transaction_date) as latest
+                    FROM transactions
+                """)).first()
+                if result and result.earliest and result.latest:
+                    detailed_stats["transactions"]["dateRange"] = {
+                        "earliest": result.earliest.isoformat() if hasattr(result.earliest, 'isoformat') else str(result.earliest),
+                        "latest": result.latest.isoformat() if hasattr(result.latest, 'isoformat') else str(result.latest)
+                    }
+
+                # Get unique symbols count
+                result = self.db.execute(text("""
+                    SELECT COUNT(DISTINCT symbol) as count
+                    FROM transactions
+                """)).scalar()
+                detailed_stats["symbols"]["total"] = result or 0
+
+                # Get top symbols by transaction count
+                result = self.db.execute(text("""
+                    SELECT symbol, COUNT(*) as count
+                    FROM transactions
+                    GROUP BY symbol
+                    ORDER BY count DESC
+                    LIMIT 10
+                """))
+                detailed_stats["symbols"]["topSymbols"] = [
+                    {"symbol": row.symbol, "count": row.count}
+                    for row in result
+                ]
+
+                # Get last import timestamp
+                result = self.db.execute(text("""
+                    SELECT MAX(import_timestamp) as last_import
+                    FROM transactions
+                """)).scalar()
+                if result:
+                    detailed_stats["database"]["lastImport"] = result.isoformat() if hasattr(result, 'isoformat') else str(result)
+
+            return detailed_stats
+
+        except Exception as e:
+            logger.error(f"Error getting detailed database stats: {e}")
+            return {
+                "error": str(e),
+                "transactions": {
+                    "total": 0,
+                    "byAssetType": {},
+                    "byTransactionType": {},
+                    "dateRange": {}
+                },
+                "symbols": {
+                    "total": 0,
+                    "topSymbols": []
+                },
+                "database": {
+                    "tablesCount": {},
+                    "totalRecords": 0,
+                    "isHealthy": False,
+                    "lastImport": None
+                }
             }
