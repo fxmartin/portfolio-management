@@ -29,6 +29,10 @@ class TransactionType(str, enum.Enum):
     TRANSFER = "TRANSFER"
     CASH_IN = "CASH_IN"
     CASH_OUT = "CASH_OUT"
+    AIRDROP = "AIRDROP"
+    MINING = "MINING"
+    DEPOSIT = "DEPOSIT"
+    WITHDRAWAL = "WITHDRAWAL"
 
 
 class Transaction(Base):

@@ -29,18 +29,20 @@ Stories are organized into 5 major epics, each with its own detailed documentati
 ### Epic Status Overview
 | Epic | Stories | Points | Status | Progress | Details |
 |------|---------|--------|--------|----------|---------|
-| [Epic 1: Transaction Import](./stories/epic-01-transaction-import.md) | 5 | 23 | 🟡 In Progress | 22% (5/23 pts) | CSV parsing & storage |
+| [Epic 1: Transaction Import](./stories/epic-01-transaction-import.md) | 7 | 28 | 🟡 In Progress | 71% (20/28 pts) | CSV parsing & storage |
 | [Epic 2: Portfolio Calculation](./stories/epic-02-portfolio-calculation.md) | 5 | 26 | 🔴 Not Started | 0% | FIFO, P&L, currency |
 | [Epic 3: Live Market Data](./stories/epic-03-live-market-data.md) | 4 | 16 | 🔴 Not Started | 0% | Yahoo Finance, Redis |
 | [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 4 | 19 | 🔴 Not Started | 0% | Dashboard, charts |
 | [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | 🟡 In Progress | 85% (11/13 pts) | Docker, database |
-| **Total** | **21** | **97** | **In Progress** | **~15%** (15/97 pts) | |
+| **Total** | **23** | **102** | **In Progress** | **~31%** (31/102 pts) | |
 
 ### Current Sprint Focus
 **Active Epic**: Transaction Import (Epic 1)
-**Current Story**: F1.2-001 - Parse Metals Transactions (Ready to start)
-**Next Story**: F1.2-002 - Parse Stocks Transactions
-**Blockers**: None - Database schema implemented ✅
+**Completed Stories**:
+- F1.1-001 & F1.1-002 - Upload Component ✅
+- F1.2-001, F1.2-002, F1.2-003 - All Parsers Complete ✅
+**Next Story**: F1.3-001 - Store Transactions in Database
+**Blockers**: None
 
 ## User Personas
 
@@ -54,9 +56,9 @@ Stories are organized into 5 major epics, each with its own detailed documentati
 
 ### [Epic 1: Transaction Import & Management](./stories/epic-01-transaction-import.md)
 - **Goal**: Parse Revolut CSV exports and store transactions
-- **Features**: CSV upload, Revolut parser, transaction storage
-- **Key Stories**: 5 stories, 23 points
-- **Status**: 🟡 In Progress (22% complete - F1.1-001 and F1.1-002 done)
+- **Features**: CSV upload, Three-parser system (Metals, Stocks, Crypto), transaction storage
+- **Key Stories**: 7 stories, 28 points
+- **Status**: 🟡 In Progress (71% complete - F1.1 and F1.2 features complete)
 
 ### [Epic 2: Portfolio Calculation Engine](./stories/epic-02-portfolio-calculation.md)
 - **Goal**: Calculate FIFO cost basis and P&L

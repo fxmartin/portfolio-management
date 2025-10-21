@@ -32,8 +32,8 @@ class TestImportEndpoints:
 
     def test_upload_single_metals_file(self):
         """Test uploading a single metals CSV file"""
-        # Create a mock CSV file
-        csv_content = b"Date,Type,Product,Quantity,Price,Total\n2024-01-01,BUY,Gold,1.5,2000,3000"
+        # Create a mock CSV file with proper Revolut metals format
+        csv_content = b"Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance\nExchange,Current,2024-01-01 10:00:00,2024-01-01 10:00:00,Exchanged to XAU,0.5,0.001,XAU,COMPLETED,0.499"
         file = io.BytesIO(csv_content)
 
         files = [
@@ -59,7 +59,7 @@ class TestImportEndpoints:
 
     def test_upload_single_stocks_file(self):
         """Test uploading a single stocks CSV file"""
-        csv_content = b"Date,Type,Ticker,Quantity,Price\n2024-01-01,BUY,AAPL,10,150"
+        csv_content = b"Date,Time,Type,Product,Ticker,Quantity,Price per share,Total Amount,Currency,FX Rate\n2024-01-01,10:00:00,BUY,Apple Inc,AAPL,10,150.00,1500.00,USD,1.0"
         file = io.BytesIO(csv_content)
 
         files = [
@@ -77,7 +77,7 @@ class TestImportEndpoints:
 
     def test_upload_single_crypto_file(self):
         """Test uploading a single crypto CSV file"""
-        csv_content = b"Date,Type,Asset,Quantity,Price\n2024-01-01,BUY,BTC,0.5,40000"
+        csv_content = b"Date,Type,In Amount,In Currency,Out Amount,Out Currency,Fee Amount,Fee Currency,Net Value(USD),Label,Description,TxHash\n2024-01-01 10:00:00,Buy,0.5,BTC,20000,USD,10,USD,19990,,,0x123"
         file = io.BytesIO(csv_content)
 
         files = [
@@ -95,10 +95,10 @@ class TestImportEndpoints:
 
     def test_upload_multiple_files(self):
         """Test uploading multiple CSV files of different types"""
-        # Create mock files
-        metals_csv = io.BytesIO(b"Date,Type,Product\n2024-01-01,BUY,Gold")
-        stocks_csv = io.BytesIO(b"Date,Type,Ticker\n2024-01-01,BUY,AAPL")
-        crypto_csv = io.BytesIO(b"Date,Type,Asset\n2024-01-01,BUY,BTC")
+        # Create mock files with proper headers (metals with correct format, others as stubs)
+        metals_csv = io.BytesIO(b"Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance\nExchange,Current,2024-01-01 10:00:00,2024-01-01 10:00:00,Exchanged to XAU,0.5,0.001,XAU,COMPLETED,0.499")
+        stocks_csv = io.BytesIO(b"Date,Time,Type,Product,Ticker,Quantity,Price per share,Total Amount,Currency,FX Rate\n2024-01-01,10:00:00,BUY,Apple Inc,AAPL,10,150.00,1500.00,USD,1.0")
+        crypto_csv = io.BytesIO(b"Date,Type,In Amount,In Currency,Out Amount,Out Currency,Fee Amount,Fee Currency,Net Value(USD),Label,Description,TxHash\n2024-01-01 10:00:00,Buy,0.5,BTC,20000,USD,10,USD,19990,,,0x123")
 
         files = [
             ("files", ("account-statement_2024-01-01_2024-12-31_en_123456.csv", metals_csv, "text/csv")),
@@ -166,7 +166,7 @@ class TestImportEndpoints:
 
     def test_upload_mixed_valid_invalid_files(self):
         """Test uploading a mix of valid and invalid files"""
-        valid_csv = io.BytesIO(b"Date,Type,Product\n2024-01-01,BUY,Gold")
+        valid_csv = io.BytesIO(b"Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance\nExchange,Current,2024-01-01 10:00:00,2024-01-01 10:00:00,Exchanged to XAU,0.5,0.001,XAU,COMPLETED,0.499")
         invalid_csv = io.BytesIO(b"Random content")
 
         files = [
