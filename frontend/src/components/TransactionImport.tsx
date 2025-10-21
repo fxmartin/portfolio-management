@@ -156,11 +156,17 @@ const TransactionImport: React.FC = () => {
     try {
       showInfo('Uploading files...', `Processing ${pendingFiles.length} file(s)`);
 
+      // Debug logging
+      console.log('Starting upload with files:', pendingFiles.map(f => f.file.name));
+
       const response = await axios.post(`${API_URL}/api/import/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
         onUploadProgress: (progressEvent: any) => {
+          // Debug logging
+          console.log('Upload progress:', progressEvent.loaded, '/', progressEvent.total);
+
           const progress = progressEvent.total
             ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
             : 0;
@@ -172,10 +178,12 @@ const TransactionImport: React.FC = () => {
             ...f,
             progress: f.status === 'uploading' ? progress : f.progress
           })));
-        }
+        },
+        timeout: 30000 // Add 30 second timeout
       });
 
       // Process results
+      console.log('Upload response:', response.data);
       const results = response.data.files as UploadResult[];
       let successCount = 0;
       let errorCount = 0;
