@@ -302,7 +302,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
+      - "3003:3003"
     volumes:
       - ./frontend:/app
     environment:

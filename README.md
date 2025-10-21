@@ -9,7 +9,7 @@ A personal portfolio tracker that imports Revolut transactions and displays real
 docker-compose up
 
 # Backend will be available at http://localhost:8000
-# Frontend will be available at http://localhost:3000
+# Frontend will be available at http://localhost:3003
 ```
 
 ## Project Structure

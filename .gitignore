@@ -48,6 +48,9 @@ postgres_data/
 *.csv
 uploads/
 data/
+Revolut_import*/
+Revolut_export*/
+revolut*/
 
 # Redis
 dump.rdb

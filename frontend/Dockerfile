@@ -12,7 +12,7 @@ RUN npm ci
 # Copy application code
 COPY . .
 
-EXPOSE 3000
+EXPOSE 3003
 
 # Run in development mode with hot-reload
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
