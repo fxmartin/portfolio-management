@@ -31,15 +31,15 @@ Stories are organized into 6 major epics, each with its own detailed documentati
 | Epic | Stories | Points | Status | Progress | Details |
 |------|---------|--------|--------|----------|---------|
 | [Epic 1: Transaction Import](./stories/epic-01-transaction-import.md) | 8 | 31 | ✅ Complete | 100% (31/31 pts) | CSV parsing & storage |
-| [Epic 2: Portfolio Calculation](./stories/epic-02-portfolio-calculation.md) | 5 | 26 | 🔴 Not Started | 0% | FIFO, P&L, currency |
+| [Epic 2: Portfolio Calculation](./stories/epic-02-portfolio-calculation.md) | 5 | 26 | ✅ Complete | 100% (26/26 pts) | FIFO, P&L, currency |
 | [Epic 3: Live Market Data](./stories/epic-03-live-market-data.md) | 4 | 16 | ✅ Complete | 100% (16/16 pts) | Yahoo Finance, Redis |
 | [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 4 | 19 | 🔴 Not Started | 0% | Dashboard, charts |
 | [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | 🟡 In Progress | 85% (11/13 pts) | Docker, database |
 | [Epic 6: UI Modernization](./stories/epic-06-ui-modernization.md) | 7 | 18 | ✅ Complete | 100% (18/18 pts) | Sidebar, tabs, theme |
-| **Total** | **31** | **123** | **In Progress** | **~57%** (70/123 pts) | |
+| **Total** | **31** | **123** | **In Progress** | **~78%** (96/123 pts) | |
 
 ### Current Sprint Focus
-**Active Epic**: Portfolio Calculation Engine (Epic 2)
+**Active Epic**: Portfolio Visualization (Epic 4)
 **Completed Epics**:
 - ✅ Epic 1: Transaction Import (8 stories, 31 points) - **100% COMPLETE**
   - F1.1-001 & F1.1-002 - Upload Component ✅
@@ -47,6 +47,12 @@ Stories are organized into 6 major epics, each with its own detailed documentati
   - F1.3-001 - Store Transactions ✅
   - F1.3-002 - Database Reset ✅
   - F1.3-003 - Database Statistics ✅
+- ✅ Epic 2: Portfolio Calculation (5 stories, 26 points) - **100% COMPLETE**
+  - F2.1-001 - FIFO Cost Basis Calculator ✅
+  - F2.2-001 - Position Aggregation ✅
+  - F2.3-001 - Unrealized P&L Calculation ✅
+  - F2.3-002 - Realized P&L Calculation ✅
+  - F2.4-001 - Currency Conversion ✅
 - ✅ Epic 3: Live Market Data (4 stories, 16 points) - **100% COMPLETE**
   - F3.1-001 - Fetch Live Stock Prices ✅
   - F3.1-002 - Fetch Cryptocurrency Prices ✅
@@ -61,8 +67,8 @@ Stories are organized into 6 major epics, each with its own detailed documentati
   - F6.3-001 - Design System ✅
   - F6.3-002 - Modern Styling ✅
 **Next Stories**:
-- F2.1-001 - Implement FIFO Algorithm (8 pts)
-- F2.2-001 - Calculate Current Holdings (5 pts)
+- F4.1-001 - Portfolio Summary View (3 pts)
+- F4.1-002 - Holdings Table (5 pts)
 **Blockers**: None
 
 ## User Personas
@@ -85,7 +91,7 @@ Stories are organized into 6 major epics, each with its own detailed documentati
 - **Goal**: Calculate FIFO cost basis and P&L
 - **Features**: FIFO calculator, position aggregation, P&L calculations, currency conversion
 - **Key Stories**: 5 stories, 26 points
-- **Status**: 🔴 Not Started
+- **Status**: ✅ Complete (100% complete - All calculation features implemented with 93% test coverage)
 
 ### [Epic 3: Live Market Data Integration](./stories/epic-03-live-market-data.md)
 - **Goal**: Real-time prices from Yahoo Finance

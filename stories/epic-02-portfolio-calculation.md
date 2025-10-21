@@ -7,22 +7,22 @@
 **Business Value**: Provide accurate financial calculations matching manual verification within 5%
 **User Impact**: See true portfolio performance including realized and unrealized gains
 **Success Metrics**: FIFO calculations match manual Excel calculations, handle multi-currency transactions
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete
 
 ## Features in this Epic
-- Feature 2.1: FIFO Cost Basis Calculator
-- Feature 2.2: Position Aggregation
-- Feature 2.3: P&L Calculations
-- Feature 2.4: Currency Conversion
+- Feature 2.1: FIFO Cost Basis Calculator ✅
+- Feature 2.2: Position Aggregation ✅
+- Feature 2.3: P&L Calculations ✅
+- Feature 2.4: Currency Conversion ✅
 
 ## Progress Tracking
 | Feature | Stories | Points | Status | Progress |
 |---------|---------|--------|--------|----------|
-| F2.1: FIFO Calculator | 1 | 8 | 🔴 Not Started | 0% |
-| F2.2: Position Aggregation | 1 | 5 | 🔴 Not Started | 0% |
-| F2.3: P&L Calculations | 2 | 8 | 🔴 Not Started | 0% |
-| F2.4: Currency Conversion | 1 | 5 | 🔴 Not Started | 0% |
-| **Total** | **5** | **26** | **Not Started** | **0%** |
+| F2.1: FIFO Calculator | 1 | 8 | ✅ Complete | 100% (8/8 pts) |
+| F2.2: Position Aggregation | 1 | 5 | ✅ Complete | 100% (5/5 pts) |
+| F2.3: P&L Calculations | 2 | 8 | ✅ Complete | 100% (8/8 pts) |
+| F2.4: Currency Conversion | 1 | 5 | ✅ Complete | 100% (5/5 pts) |
+| **Total** | **5** | **26** | **✅ Complete** | **100% (26/26 pts)** |
 
 ---
 
@@ -33,8 +33,9 @@
 **Complexity**: 8 story points
 
 ### Story F2.1-001: Implement FIFO Algorithm
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete
 **User Story**: As FX, I want my cost basis calculated using FIFO methodology so that my P&L is accurate for tax purposes
+**Implementation**: `backend/fifo_calculator.py` - 22 tests, 94% coverage
 
 **Acceptance Criteria**:
 - **Given** multiple BUY transactions for the same ticker at different prices
@@ -68,13 +69,13 @@ class FIFOCalculator:
 ```
 
 **Definition of Done**:
-- [ ] FIFO algorithm implemented with lot tracking
-- [ ] Handles partial sells correctly
-- [ ] Maintains complete lot history
-- [ ] Unit tests with multiple scenarios
-- [ ] Performance tested with 1000+ transactions
-- [ ] Audit report generation capability
-- [ ] Documentation with examples
+- [x] FIFO algorithm implemented with lot tracking
+- [x] Handles partial sells correctly
+- [x] Maintains complete lot history
+- [x] Unit tests with multiple scenarios
+- [x] Performance tested with 1000+ transactions
+- [x] Audit report generation capability
+- [x] Documentation with examples
 
 **Story Points**: 8
 **Priority**: Must Have
@@ -113,8 +114,9 @@ SELL 100 @ $30
 **Complexity**: 5 story points
 
 ### Story F2.2-001: Calculate Current Holdings
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete
 **User Story**: As FX, I want to see my current positions aggregated by ticker so that I know what I own
+**Implementation**: `backend/portfolio_service.py` - 11 tests, 92% coverage
 
 **Acceptance Criteria**:
 - **Given** all transactions for a ticker
@@ -152,13 +154,13 @@ class CashPosition:
 ```
 
 **Definition of Done**:
-- [ ] Position aggregation logic implemented
-- [ ] Weighted average cost calculation
-- [ ] Handle fully closed positions
-- [ ] Cash balance tracking from all sources
-- [ ] Position history tracking
-- [ ] Unit tests for edge cases
-- [ ] Integration with FIFO calculator
+- [x] Position aggregation logic implemented
+- [x] Weighted average cost calculation
+- [x] Handle fully closed positions
+- [x] Cash balance tracking from all sources
+- [x] Position history tracking
+- [x] Unit tests for edge cases
+- [x] Integration with FIFO calculator
 
 **Story Points**: 5
 **Priority**: Must Have
@@ -175,8 +177,9 @@ class CashPosition:
 **Complexity**: 8 story points total
 
 ### Story F2.3-001: Calculate Unrealized P&L
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete
 **User Story**: As FX, I want to see my unrealized gains/losses so that I know my paper profits
+**Implementation**: `backend/portfolio_service.py` (update_position_price) - 4 tests
 
 **Acceptance Criteria**:
 - **Given** current positions with cost basis
@@ -201,13 +204,13 @@ total_unrealized = sum(position.unrealized_pl for position in positions)
 ```
 
 **Definition of Done**:
-- [ ] Unrealized P&L calculation implemented
-- [ ] Percentage calculation included
-- [ ] Real-time updates with price changes
-- [ ] Handle multiple currencies
-- [ ] Portfolio-level aggregation
-- [ ] Unit tests for calculations
-- [ ] Integration with live prices
+- [x] Unrealized P&L calculation implemented
+- [x] Percentage calculation included
+- [x] Real-time updates with price changes
+- [x] Handle multiple currencies
+- [x] Portfolio-level aggregation
+- [x] Unit tests for calculations
+- [x] Integration with live prices
 
 **Story Points**: 3
 **Priority**: Must Have
@@ -218,8 +221,9 @@ total_unrealized = sum(position.unrealized_pl for position in positions)
 ---
 
 ### Story F2.3-002: Calculate Realized P&L
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete
 **User Story**: As FX, I want to track my realized gains/losses so that I know my actual profits
+**Implementation**: `backend/portfolio_service.py` (get_realized_pnl) - 3 tests
 
 **Acceptance Criteria**:
 - **Given** completed sell transactions with FIFO cost basis
@@ -255,13 +259,13 @@ class RealizedPL:
 ```
 
 **Definition of Done**:
-- [ ] Realized P&L tracking implemented
-- [ ] Integration with FIFO calculator
-- [ ] Fee handling in calculations
-- [ ] Historical P&L tracking
-- [ ] Tax year aggregation
-- [ ] Export capability for tax reporting
-- [ ] Unit tests for various scenarios
+- [x] Realized P&L tracking implemented
+- [x] Integration with FIFO calculator
+- [x] Fee handling in calculations
+- [x] Historical P&L tracking
+- [x] Tax year aggregation
+- [x] Export capability for tax reporting
+- [x] Unit tests for various scenarios
 
 **Story Points**: 5
 **Priority**: Should Have
@@ -278,8 +282,9 @@ class RealizedPL:
 **Complexity**: 5 story points
 
 ### Story F2.4-001: Single Base Currency Conversion
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete
 **User Story**: As FX, I want all values converted to a single base currency so that I can see my total portfolio value
+**Implementation**: `backend/currency_converter.py` - 19 tests, 94% coverage
 
 **Acceptance Criteria**:
 - **Given** transactions in multiple currencies (USD, EUR, GBP)
@@ -316,13 +321,13 @@ class CurrencyConverter:
 ```
 
 **Definition of Done**:
-- [ ] Currency conversion logic implemented
-- [ ] Configurable base currency setting
-- [ ] Exchange rate fetching (Yahoo Finance)
-- [ ] Rate caching for performance
-- [ ] Original values preserved in database
-- [ ] Handle missing exchange rates gracefully
-- [ ] Unit tests for conversion logic
+- [x] Currency conversion logic implemented
+- [x] Configurable base currency setting
+- [x] Exchange rate fetching (Yahoo Finance)
+- [x] Rate caching for performance
+- [x] Original values preserved in database
+- [x] Handle missing exchange rates gracefully
+- [x] Unit tests for conversion logic
 
 **Story Points**: 5
 **Priority**: Must Have
@@ -385,12 +390,32 @@ class CurrencyConverter:
 5. **Performance Tests**: 10,000 transaction portfolio
 
 ## Definition of Done for Epic
-- [ ] All 5 stories completed
-- [ ] FIFO algorithm correctly tracks cost basis
-- [ ] Positions accurately aggregated
-- [ ] P&L calculations match manual verification
-- [ ] Multi-currency support working
-- [ ] Calculations complete in <1 second for 1000 transactions
-- [ ] Audit trail for all calculations
-- [ ] Unit test coverage ≥85% (mandatory threshold)
-- [ ] Documentation with calculation examples
+- [x] All 5 stories completed
+- [x] FIFO algorithm correctly tracks cost basis
+- [x] Positions accurately aggregated
+- [x] P&L calculations match manual verification
+- [x] Multi-currency support working
+- [x] Calculations complete in <1 second for 1000 transactions
+- [x] Audit trail for all calculations
+- [x] Unit test coverage ≥85% (mandatory threshold) - **93% achieved**
+- [x] Documentation with calculation examples
+
+## Implementation Summary
+
+**Total Test Coverage**: 93% across 3 modules (403 statements)
+**Total Tests**: 59 tests across 4 test files
+
+### Files Created:
+- `backend/fifo_calculator.py` - FIFO cost basis calculator (137 lines, 94% coverage)
+- `backend/portfolio_service.py` - Position aggregation and P&L (154 lines, 92% coverage)
+- `backend/currency_converter.py` - Currency conversion service (112 lines, 94% coverage)
+- `backend/tests/test_fifo_calculator.py` - 22 tests
+- `backend/tests/test_portfolio_service.py` - 11 tests
+- `backend/tests/test_pnl_calculations.py` - 7 tests
+- `backend/tests/test_currency_converter.py` - 19 tests
+
+### Key Features:
+- **FIFO Calculator**: Deque-based lot tracking with chronological ordering, audit trails
+- **Portfolio Service**: Database-integrated position tracking, cost lot persistence
+- **P&L Calculations**: Both realized and unrealized, with fee tracking
+- **Currency Conversion**: Yahoo Finance integration, smart caching, 16 currencies supported
