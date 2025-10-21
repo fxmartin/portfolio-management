@@ -164,14 +164,16 @@ class PortfolioService:
         for txn in transactions:
             last_transaction_date = txn.transaction_date
 
-            if txn.transaction_type == TransactionType.BUY:
+            # BUY, STAKING, AIRDROP, and MINING all increase position quantity
+            if txn.transaction_type in [TransactionType.BUY, TransactionType.STAKING,
+                                        TransactionType.AIRDROP, TransactionType.MINING]:
                 if first_purchase_date is None:
                     first_purchase_date = txn.transaction_date
 
                 calc.add_purchase(
                     ticker=symbol,
                     quantity=txn.quantity,
-                    price=txn.price_per_unit,
+                    price=txn.price_per_unit,  # For rewards, this is market value at receipt
                     date=txn.transaction_date,
                     transaction_id=txn.id
                 )
@@ -319,11 +321,13 @@ class PortfolioService:
         sales = []
 
         for txn in transactions:
-            if txn.transaction_type == TransactionType.BUY:
+            # BUY, STAKING, AIRDROP, and MINING all increase position quantity
+            if txn.transaction_type in [TransactionType.BUY, TransactionType.STAKING,
+                                        TransactionType.AIRDROP, TransactionType.MINING]:
                 calc.add_purchase(
                     ticker=symbol,
                     quantity=txn.quantity,
-                    price=txn.price_per_unit,
+                    price=txn.price_per_unit,  # For rewards, this is market value at receipt
                     date=txn.transaction_date,
                     transaction_id=txn.id
                 )

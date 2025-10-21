@@ -564,3 +564,141 @@ class TestPortfolioService:
         # Verify empty
         positions = await service.get_all_positions()
         assert len(positions) == 0
+
+    @pytest.mark.asyncio
+    async def test_staking_rewards_included_in_position(self, db_session):
+        """Test that STAKING transactions are included in position calculations"""
+        transactions = [
+            # Initial purchase
+            Transaction(
+                id=1,
+                transaction_date=datetime(2024, 1, 1),
+                asset_type=AssetType.CRYPTO,
+                transaction_type=TransactionType.BUY,
+                symbol="SOL",
+                quantity=Decimal("10.0"),
+                price_per_unit=Decimal("100.00"),
+                total_amount=Decimal("1000.00"),
+                currency="EUR",
+                fee=Decimal("0"),
+                source_type="REVOLUT",
+                source_file="test.csv"
+            ),
+            # Staking reward 1
+            Transaction(
+                id=2,
+                transaction_date=datetime(2024, 2, 1),
+                asset_type=AssetType.CRYPTO,
+                transaction_type=TransactionType.STAKING,
+                symbol="SOL",
+                quantity=Decimal("0.05"),
+                price_per_unit=Decimal("105.00"),
+                total_amount=Decimal("5.25"),
+                currency="EUR",
+                fee=Decimal("0"),
+                source_type="KOINLY",
+                source_file="koinly.csv"
+            ),
+            # Staking reward 2
+            Transaction(
+                id=3,
+                transaction_date=datetime(2024, 3, 1),
+                asset_type=AssetType.CRYPTO,
+                transaction_type=TransactionType.STAKING,
+                symbol="SOL",
+                quantity=Decimal("0.05"),
+                price_per_unit=Decimal("110.00"),
+                total_amount=Decimal("5.50"),
+                currency="EUR",
+                fee=Decimal("0"),
+                source_type="KOINLY",
+                source_file="koinly.csv"
+            ),
+        ]
+
+        for txn in transactions:
+            db_session.add(txn)
+        await db_session.commit()
+
+        service = PortfolioService(db_session)
+        await service.recalculate_all_positions()
+
+        positions = await service.get_all_positions()
+        assert len(positions) == 1
+
+        sol_position = positions[0]
+
+        # Verify total quantity includes purchase + staking rewards
+        assert sol_position.symbol == "SOL"
+        assert sol_position.quantity == Decimal("10.10")  # 10.0 + 0.05 + 0.05
+
+        # Verify cost basis includes staking rewards at market value
+        # Purchase: 10 * 100 = 1000
+        # Reward 1: 0.05 * 105 = 5.25
+        # Reward 2: 0.05 * 110 = 5.50
+        # Total: 1010.75
+        assert sol_position.total_cost_basis == Decimal("1010.75")
+
+        # Verify average cost basis
+        expected_avg = Decimal("1010.75") / Decimal("10.10")
+        assert abs(sol_position.avg_cost_basis - expected_avg) < Decimal("0.01")
+
+    @pytest.mark.asyncio
+    async def test_airdrop_and_mining_included_in_position(self, db_session):
+        """Test that AIRDROP and MINING transactions are included in position calculations"""
+        transactions = [
+            # Airdrop
+            Transaction(
+                id=1,
+                transaction_date=datetime(2024, 1, 1),
+                asset_type=AssetType.CRYPTO,
+                transaction_type=TransactionType.AIRDROP,
+                symbol="UNI",
+                quantity=Decimal("100.0"),
+                price_per_unit=Decimal("5.00"),
+                total_amount=Decimal("500.00"),
+                currency="EUR",
+                fee=Decimal("0"),
+                source_type="KOINLY",
+                source_file="koinly.csv"
+            ),
+            # Mining
+            Transaction(
+                id=2,
+                transaction_date=datetime(2024, 2, 1),
+                asset_type=AssetType.CRYPTO,
+                transaction_type=TransactionType.MINING,
+                symbol="BTC",
+                quantity=Decimal("0.01"),
+                price_per_unit=Decimal("50000.00"),
+                total_amount=Decimal("500.00"),
+                currency="EUR",
+                fee=Decimal("0"),
+                source_type="KOINLY",
+                source_file="koinly.csv"
+            ),
+        ]
+
+        for txn in transactions:
+            db_session.add(txn)
+        await db_session.commit()
+
+        service = PortfolioService(db_session)
+        await service.recalculate_all_positions()
+
+        positions = await service.get_all_positions()
+        assert len(positions) == 2
+
+        # Find positions
+        uni_position = next(p for p in positions if p.symbol == "UNI")
+        btc_position = next(p for p in positions if p.symbol == "BTC")
+
+        # Verify UNI airdrop
+        assert uni_position.quantity == Decimal("100.0")
+        assert uni_position.total_cost_basis == Decimal("500.00")
+        assert uni_position.avg_cost_basis == Decimal("5.00")
+
+        # Verify BTC mining
+        assert btc_position.quantity == Decimal("0.01")
+        assert btc_position.total_cost_basis == Decimal("500.00")
+        assert btc_position.avg_cost_basis == Decimal("50000.00")
