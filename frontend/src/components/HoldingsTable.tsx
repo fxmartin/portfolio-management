@@ -86,21 +86,31 @@ export default function HoldingsTable({
     }
   }, [onRefresh])
 
+  const refreshPrices = useCallback(async () => {
+    try {
+      await axios.post(`${API_URL}/api/portfolio/refresh-prices`)
+      await fetchPositions()
+    } catch (err) {
+      console.error('[HoldingsTable] Failed to refresh prices:', err)
+    }
+  }, [fetchPositions])
+
   useEffect(() => {
+    // Initial load - just fetch data without refreshing prices
     fetchPositions()
 
     if (autoRefresh) {
       console.log(`[HoldingsTable] Setting up auto-refresh with interval: ${refreshInterval}ms`)
       const interval = setInterval(() => {
-        console.log('[HoldingsTable] Auto-refresh triggered')
-        fetchPositions()
+        console.log('[HoldingsTable] Auto-refresh triggered - fetching new prices from Yahoo Finance')
+        refreshPrices()
       }, refreshInterval)
       return () => {
         console.log('[HoldingsTable] Clearing auto-refresh interval')
         clearInterval(interval)
       }
     }
-  }, [autoRefresh, refreshInterval, fetchPositions])
+  }, [autoRefresh, refreshInterval, fetchPositions, refreshPrices])
 
   // Filter and sort positions whenever dependencies change
   useEffect(() => {

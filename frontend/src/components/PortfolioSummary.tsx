@@ -60,7 +60,7 @@ export default function PortfolioSummary({
     }
   }, [onRefresh])
 
-  const refreshPrices = async () => {
+  const refreshPrices = useCallback(async () => {
     try {
       setRefreshing(true)
       await axios.post(`${API_URL}/api/portfolio/refresh-prices`)
@@ -70,23 +70,24 @@ export default function PortfolioSummary({
     } finally {
       setRefreshing(false)
     }
-  }
+  }, [fetchSummary])
 
   useEffect(() => {
+    // Initial load - just fetch data without refreshing prices
     fetchSummary()
 
     if (autoRefresh) {
       console.log(`Setting up auto-refresh with interval: ${refreshInterval}ms`)
       const interval = setInterval(() => {
-        console.log('Auto-refresh triggered')
-        fetchSummary()
+        console.log('Auto-refresh triggered - fetching new prices from Yahoo Finance')
+        refreshPrices()
       }, refreshInterval)
       return () => {
         console.log('Clearing auto-refresh interval')
         clearInterval(interval)
       }
     }
-  }, [autoRefresh, refreshInterval, fetchSummary])
+  }, [autoRefresh, refreshInterval, fetchSummary, refreshPrices])
 
   if (loading) {
     return (
