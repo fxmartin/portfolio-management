@@ -1,80 +1,45 @@
 /* Database Reset Modal Styles */
 
 .database-reset-modal .modal-content {
-  max-width: 600px;
+  max-width: 500px;
   width: 100%;
 }
 
 .reset-warning {
   background-color: #fef2f2;
   border: 2px solid #f87171;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.warning-icon {
-  font-size: 3rem;
-  text-align: center;
-  margin-bottom: 1rem;
+  border-radius: 6px;
+  padding: 0.875rem;
+  margin-bottom: 0.875rem;
 }
 
 .reset-warning h3 {
   color: #991b1b;
-  margin: 0 0 1rem 0;
-  font-size: 1.25rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
-.deletion-list {
-  list-style: none;
-  padding: 0;
+.warning-summary {
+  color: #7f1d1d;
   margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
-.deletion-list li {
-  padding: 0.5rem 0;
-  color: #dc2626;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-}
-
-.deletion-list li::before {
-  content: '';
-  margin-right: 0.5rem;
-}
-
-.reset-consequences {
-  background-color: #fff7ed;
-  border: 1px solid #fed7aa;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.reset-consequences h4 {
-  color: #9a3412;
-  margin: 0 0 0.75rem 0;
-  font-size: 1.1rem;
-}
-
-.reset-consequences ul {
-  margin: 0;
-  padding-left: 1.5rem;
-  color: #7c2d12;
-}
-
-.reset-consequences li {
-  padding: 0.25rem 0;
+.warning-summary strong {
+  color: #991b1b;
+  font-weight: 600;
 }
 
 .confirmation-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.875rem;
 }
 
 .confirmation-prompt {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   font-weight: 500;
+  font-size: 0.875rem;
 }
 
 .confirmation-prompt code {
@@ -89,10 +54,10 @@
 
 .confirmation-input {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.625rem;
   border: 2px solid #e5e7eb;
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-family: 'Courier New', monospace;
   transition: border-color 0.2s;
 }
@@ -120,16 +85,17 @@
 
 .modal-actions {
   display: flex;
-  gap: 1rem;
+  gap: 0.625rem;
   justify-content: flex-end;
-  padding-top: 1rem;
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
   border-top: 1px solid #e5e7eb;
 }
 
 .btn {
-  padding: 0.625rem 1.25rem;
+  padding: 0.5rem 1rem;
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -137,7 +103,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  min-width: 120px;
+  min-width: 110px;
 }
 
 .btn:disabled {

@@ -1,0 +1,42 @@
+/* TabView Component Styles */
+/* Story F6.2-001: Tab-based content system with smooth transitions */
+
+.tab-view {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--color-bg-secondary);
+}
+
+.tab-panel {
+  width: 100%;
+  min-height: 100%;
+  padding: var(--spacing-2xl);
+  animation: fadeIn var(--transition-base);
+  box-sizing: border-box;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .tab-panel {
+    padding: var(--spacing-lg);
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-panel {
+    padding: var(--spacing-md);
+  }
+}

@@ -101,33 +101,18 @@ export const DatabaseResetModal: React.FC<DatabaseResetModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="⚠️ Dangerous Operation - Database Reset"
+      title="⚠️ Database Reset"
       className="database-reset-modal"
       closeOnBackdropClick={!isDeleting}
       closeOnEscape={!isDeleting}
       showCloseButton={!isDeleting}
     >
       <div className="reset-warning">
-        <div className="warning-icon">⚠️</div>
-        <h3>This will permanently delete:</h3>
-        <ul className="deletion-list">
-          <li>✗ All imported transactions (metals, stocks, crypto)</li>
-          <li>✗ All manually entered transactions</li>
-          <li>✗ All position calculations and holdings</li>
-          <li>✗ All price history data</li>
-          <li>✗ All portfolio snapshots and performance data</li>
-          <li>✗ All cost basis and P&L calculations</li>
-        </ul>
-      </div>
-
-      <div className="reset-consequences">
-        <h4>Consequences:</h4>
-        <ul>
-          <li>You will need to re-import all CSV files</li>
-          <li>Historical portfolio performance will be lost</li>
-          <li>Tax lot information will need to be reconstructed</li>
-          <li>This action cannot be undone</li>
-        </ul>
+        <h3>⚠️ This will permanently delete all data</h3>
+        <p className="warning-summary">
+          All transactions, positions, price history, and calculations will be removed.
+          You'll need to re-import CSV files. <strong>This cannot be undone.</strong>
+        </p>
       </div>
 
       <div className="confirmation-section">
