@@ -344,33 +344,31 @@ class YahooFinanceService:
         current_time = now.time()
         return market_open <= current_time <= market_close
 
-    def normalize_crypto_ticker(self, symbol: str) -> str:
+    def normalize_crypto_ticker(self, symbol: str, currency: str = 'USD') -> str:
         """
         Normalize cryptocurrency ticker to Yahoo Finance format
 
         Args:
             symbol: Crypto symbol (e.g. 'BTC', 'ETH', or 'BTC-USD')
+            currency: Target currency (e.g. 'USD', 'EUR', 'GBP')
 
         Returns:
-            Yahoo Finance ticker format (e.g. 'BTC-USD')
+            Yahoo Finance ticker format (e.g. 'BTC-USD' or 'BTC-EUR')
         """
-        # If already in correct format, return as-is
-        if symbol.endswith('-USD'):
+        # If already in correct format with currency suffix, check if it matches
+        if '-' in symbol:
             return symbol
 
-        # Look up in mapping
-        if symbol in CRYPTO_MAPPINGS:
-            return CRYPTO_MAPPINGS[symbol]
+        # Build ticker with specified currency
+        return f"{symbol}-{currency}"
 
-        # Default: append -USD
-        return f"{symbol}-USD"
-
-    async def get_crypto_prices(self, symbols: List[str]) -> Dict[str, PriceData]:
+    async def get_crypto_prices(self, symbols: List[str], currency: str = 'USD') -> Dict[str, PriceData]:
         """
         Fetch prices for cryptocurrencies
 
         Args:
             symbols: List of crypto symbols (e.g. ['BTC', 'ETH'])
+            currency: Target currency for prices (e.g. 'USD', 'EUR', 'GBP')
 
         Returns:
             Dictionary mapping symbol to PriceData
@@ -381,8 +379,8 @@ class YahooFinanceService:
             try:
                 await self.rate_limiter.acquire()
 
-                # Normalize ticker
-                ticker = self.normalize_crypto_ticker(symbol)
+                # Normalize ticker with specified currency
+                ticker = self.normalize_crypto_ticker(symbol, currency)
 
                 # Fetch price data
                 price_data = await self.get_quote(ticker)
@@ -390,7 +388,7 @@ class YahooFinanceService:
                 # Store with original symbol as key
                 result[symbol] = price_data
             except Exception as e:
-                print(f"Failed to fetch crypto {symbol}: {e}")
+                print(f"Failed to fetch crypto {symbol}-{currency}: {e}")
                 continue
 
         return result

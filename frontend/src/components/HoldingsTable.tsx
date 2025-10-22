@@ -53,12 +53,14 @@ interface HoldingsTableProps {
   onRefresh?: () => void
   autoRefresh?: boolean
   refreshInterval?: number
+  externalFilter?: string | null
 }
 
 export default function HoldingsTable({
   onRefresh,
   autoRefresh = true,
   refreshInterval = DEFAULT_REFRESH_INTERVAL,
+  externalFilter = null,
 }: HoldingsTableProps) {
   const [positions, setPositions] = useState<Position[]>([])
   const [filteredPositions, setFilteredPositions] = useState<Position[]>([])
@@ -116,9 +118,10 @@ export default function HoldingsTable({
   useEffect(() => {
     let result = [...positions]
 
-    // Apply asset type filter
-    if (assetTypeFilter !== 'all') {
-      result = result.filter(p => p.asset_type.toLowerCase() === assetTypeFilter.toLowerCase())
+    // Apply external filter if provided (from OpenPositionsCard)
+    const effectiveFilter = externalFilter || assetTypeFilter
+    if (effectiveFilter && effectiveFilter !== 'all') {
+      result = result.filter(p => p.asset_type.toLowerCase() === effectiveFilter.toLowerCase())
     }
 
     // Apply search filter
@@ -154,7 +157,7 @@ export default function HoldingsTable({
     })
 
     setFilteredPositions(result)
-  }, [positions, assetTypeFilter, searchTerm, sortKey, sortDirection])
+  }, [positions, assetTypeFilter, searchTerm, sortKey, sortDirection, externalFilter])
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -206,6 +209,13 @@ export default function HoldingsTable({
       <div className="holdings-header">
         <h2>Holdings</h2>
         <div className="holdings-controls">
+          {/* External filter indicator */}
+          {externalFilter && (
+            <div className="external-filter-badge">
+              Filtered by: {externalFilter.charAt(0).toUpperCase() + externalFilter.slice(1)}
+            </div>
+          )}
+
           {/* Search Input */}
           <input
             type="text"
@@ -217,9 +227,10 @@ export default function HoldingsTable({
 
           {/* Asset Type Filter */}
           <select
-            value={assetTypeFilter}
+            value={externalFilter || assetTypeFilter}
             onChange={(e) => setAssetTypeFilter(e.target.value)}
             className="filter-select"
+            disabled={!!externalFilter}
           >
             <option value="all">All Assets</option>
             <option value="stock">Stocks</option>

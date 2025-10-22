@@ -5,7 +5,7 @@ import { useState } from 'react'
 import Sidebar from './components/Sidebar'
 import TabView from './components/TabView'
 import TransactionImport from './components/TransactionImport'
-import PortfolioSummary from './components/PortfolioSummary'
+import OpenPositionsCard from './components/OpenPositionsCard'
 import HoldingsTable from './components/HoldingsTable'
 import { DatabaseResetModal, useDatabaseReset } from './components/DatabaseResetModal'
 import DatabaseStats from './components/DatabaseStats'
@@ -13,6 +13,7 @@ import './App.css'
 
 function App() {
   const [activeTab, setActiveTab] = useState('portfolio')
+  const [assetTypeFilter, setAssetTypeFilter] = useState<string | null>(null)
   const { isModalOpen, openResetModal, closeResetModal, handleReset } = useDatabaseReset()
 
   const onDatabaseReset = () => {
@@ -37,9 +38,9 @@ function App() {
         <TabView activeTab={activeTab}>
           {/* Portfolio Tab */}
           <div data-tab="portfolio" className="portfolio-tab">
-            <h1>Portfolio Overview</h1>
-            <PortfolioSummary />
-            <HoldingsTable />
+            <h1>Portfolio Dashboard</h1>
+            <OpenPositionsCard onAssetTypeFilter={setAssetTypeFilter} />
+            <HoldingsTable externalFilter={assetTypeFilter} />
           </div>
 
           {/* Upload Tab */}
