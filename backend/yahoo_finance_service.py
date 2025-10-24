@@ -36,6 +36,12 @@ CRYPTO_MAPPINGS = {
     'FTM': 'FTM-USD',
 }
 
+# ETF ticker mappings (European exchanges)
+ETF_MAPPINGS = {
+    'AMEM': 'AMEM.BE',  # Amundi MSCI Emerging Markets - Brussels
+    'MWOQ': 'MWOQ.BE',  # Amundi MSCI World - Brussels
+}
+
 
 @dataclass
 class PriceData:
@@ -143,6 +149,30 @@ class YahooFinanceService:
         self.rate_limiter = RateLimiter(max_calls=100, period=60)
         self.retry_policy = ExponentialBackoff(max_retries=3)
 
+    def _transform_ticker(self, ticker: str) -> str:
+        """
+        Transform ticker symbol to Yahoo Finance format
+
+        Applies crypto and ETF mappings to convert internal symbols
+        to Yahoo Finance-compatible ticker symbols.
+
+        Args:
+            ticker: Internal ticker symbol
+
+        Returns:
+            Yahoo Finance ticker symbol
+        """
+        # Check crypto mappings first
+        if ticker in CRYPTO_MAPPINGS:
+            return CRYPTO_MAPPINGS[ticker]
+
+        # Check ETF mappings
+        if ticker in ETF_MAPPINGS:
+            return ETF_MAPPINGS[ticker]
+
+        # Return as-is for standard stock tickers
+        return ticker
+
     async def get_stock_prices(self, tickers: List[str]) -> Dict[str, PriceData]:
         """
         Fetch prices for multiple tickers
@@ -194,12 +224,16 @@ class YahooFinanceService:
         Returns:
             Dictionary of ticker to PriceData
         """
+        # Transform tickers to Yahoo Finance format
+        ticker_mapping = {ticker: self._transform_ticker(ticker) for ticker in tickers}
+        yf_tickers = list(ticker_mapping.values())
+
         async def fetch():
             # yfinance.download is synchronous, run in executor
             loop = asyncio.get_event_loop()
             data = await loop.run_in_executor(
                 None,
-                lambda: yf.download(tickers, period="1d", interval="1m", progress=False)
+                lambda: yf.download(yf_tickers, period="1d", interval="1m", progress=False)
             )
             return data
 
@@ -211,19 +245,20 @@ class YahooFinanceService:
 
         # Parse batch results
         result = {}
-        for ticker in tickers:
+        for original_ticker, yf_ticker in ticker_mapping.items():
             try:
-                # Get detailed info for each ticker
-                ticker_obj = yf.Ticker(ticker)
+                # Get detailed info for each ticker using transformed symbol
+                ticker_obj = yf.Ticker(yf_ticker)
                 info = ticker_obj.info
 
                 if not info or 'regularMarketPrice' not in info:
                     continue
 
-                price_data = self._parse_ticker_info(ticker, info)
-                result[ticker] = price_data
+                # Use original ticker in response
+                price_data = self._parse_ticker_info(original_ticker, info)
+                result[original_ticker] = price_data
             except Exception as e:
-                print(f"Failed to parse {ticker}: {e}")
+                print(f"Failed to parse {original_ticker}: {e}")
                 continue
 
         return result
@@ -233,7 +268,7 @@ class YahooFinanceService:
         Get detailed quote for a single ticker
 
         Args:
-            ticker: Stock ticker symbol
+            ticker: Stock ticker symbol (will be transformed if needed)
 
         Returns:
             PriceData object
@@ -241,13 +276,16 @@ class YahooFinanceService:
         Raises:
             Exception: If ticker is invalid or API fails
         """
+        # Transform ticker to Yahoo Finance format
+        yf_ticker = self._transform_ticker(ticker)
+
         async def fetch():
             # Run synchronous yfinance call in executor
             loop = asyncio.get_event_loop()
             ticker_obj = await loop.run_in_executor(
                 None,
                 yf.Ticker,
-                ticker
+                yf_ticker
             )
             info = ticker_obj.info
             return info
@@ -257,6 +295,7 @@ class YahooFinanceService:
         if not info or 'regularMarketPrice' not in info:
             raise ValueError(f"Invalid ticker or no data available: {ticker}")
 
+        # Use original ticker in response, not transformed one
         return self._parse_ticker_info(ticker, info)
 
     def _parse_ticker_info(self, ticker: str, info: dict) -> PriceData:

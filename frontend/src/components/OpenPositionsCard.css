@@ -132,27 +132,37 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Compact layout when 1-2 items */
+.breakdown-grid:has(.breakdown-item:only-child),
+.breakdown-grid:has(.breakdown-item:first-child:nth-last-child(2)) {
+  max-width: 450px;
+  grid-template-columns: 1fr;
 }
 
 .breakdown-item {
-  padding: 1rem;
-  background: #ffffff;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  background: rgba(0, 0, 0, 0.02);
+  border: none;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .breakdown-item:hover {
-  border-color: #10b981;
-  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
+  background: rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   transform: translateY(-2px);
 }
 
 .breakdown-item.selected {
-  border-color: #10b981;
-  background: rgba(16, 185, 129, 0.05);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  background: rgba(16, 185, 129, 0.08);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
 
 .breakdown-item:focus {
@@ -160,32 +170,88 @@
   outline-offset: 2px;
 }
 
-.breakdown-header {
-  display: flex;
-  align-items: center;
+/* First line: Label and Value side-by-side */
+.breakdown-item .breakdown-first-line {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 0.5rem;
+  width: 100%;
+}
+
+.breakdown-item .breakdown-header {
+  display: flex !important;
+  align-items: center !important;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  flex-shrink: 0;
 }
 
-.asset-icon {
-  font-size: 1.5rem;
+.breakdown-item .asset-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  opacity: 0.6;
+  filter: grayscale(100%);
+  font-weight: 400;
 }
 
-.asset-label {
+.breakdown-item .asset-label {
   font-size: 0.875rem;
   font-weight: 600;
   color: #374151;
   text-transform: uppercase;
   letter-spacing: 0.025em;
+  white-space: nowrap;
 }
 
-.breakdown-value {
-  font-size: 1.25rem;
+.breakdown-item .breakdown-value {
+  font-size: 1.125rem;
   font-weight: 700;
   color: #111827;
-  margin-bottom: 0.25rem;
+  text-align: right;
+  flex-shrink: 0;
 }
 
+/* Second line: Centered P&L with trend arrow */
+.breakdown-item .breakdown-pnl-line {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  width: 100%;
+}
+
+.pnl-value {
+  /* Color inherited from profit/loss/neutral classes */
+}
+
+.trend-arrow {
+  font-size: 0.75rem;
+  font-weight: normal;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.trend-arrow.trend-up {
+  color: #10b981;
+}
+
+.trend-arrow.trend-down {
+  color: #ef4444;
+}
+
+.trend-arrow.trend-neutral {
+  color: #6b7280;
+}
+
+.pnl-percent {
+  font-weight: 500;
+  /* Color inherited from profit/loss/neutral classes */
+}
+
+/* Legacy class for backward compatibility */
 .breakdown-pnl {
   font-size: 0.875rem;
   font-weight: 600;
@@ -218,20 +284,39 @@
   .breakdown-value {
     font-size: 1.125rem;
   }
+
+  .breakdown-pnl-line {
+    font-size: 0.8125rem;
+  }
+
+  .trend-arrow {
+    font-size: 0.875rem;
+  }
 }
 
 /* P&L Color Classes */
-.metric-value.positive,
-.breakdown-pnl.positive {
+.metric-value.profit,
+.breakdown-pnl.profit,
+.pnl-value.profit,
+.pnl-percent.profit {
   color: #10b981;
 }
 
-.metric-value.negative,
-.breakdown-pnl.negative {
+.metric-value.loss,
+.breakdown-pnl.loss,
+.pnl-value.loss,
+.pnl-percent.loss {
   color: #ef4444;
 }
 
-.metric-card.primary .metric-value.positive,
-.metric-card.primary .metric-value.negative {
+.metric-value.neutral,
+.breakdown-pnl.neutral,
+.pnl-value.neutral,
+.pnl-percent.neutral {
+  color: #6b7280;
+}
+
+.metric-card.primary .metric-value.profit,
+.metric-card.primary .metric-value.loss {
   color: white;
 }

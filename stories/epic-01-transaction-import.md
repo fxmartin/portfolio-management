@@ -251,6 +251,7 @@ TRANSACTION_TYPES = {
 - Includes FX rate handling for multi-currency support
 - 16 comprehensive unit tests with 94% code coverage
 - Integration tests updated and passing
+- **Bug Fix (Issue #11, 2025-10-24)**: Added thousands separator handling - parser now strips commas from large amounts before float conversion to prevent ValueError on transactions like "$5,000"
 
 **Expected Revolut Stocks CSV Format**:
 ```csv

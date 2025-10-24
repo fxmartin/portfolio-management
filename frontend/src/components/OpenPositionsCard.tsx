@@ -28,12 +28,76 @@ interface OpenPositionsData {
     metals: AssetTypeMetrics
   }
   last_updated: string | null
+  total_fees: number
+  fee_transaction_count: number
 }
 
 interface OpenPositionsCardProps {
   onAssetTypeFilter?: (assetType: string | null) => void
   autoRefresh?: boolean
   refreshInterval?: number
+}
+
+type TrendDirection = 'up' | 'down' | 'neutral'
+
+interface PnLSnapshot {
+  timestamp: number
+  stocks: number
+  crypto: number
+  metals: number
+}
+
+// Trend tracking utilities
+const TREND_THRESHOLD = 0.01 // €0.01
+const SNAPSHOT_MAX_AGE = 25 * 60 * 60 * 1000 // 25 hours in milliseconds
+
+const storePnLSnapshot = (breakdown: OpenPositionsData['breakdown']): void => {
+  const snapshot: PnLSnapshot = {
+    timestamp: Date.now(),
+    stocks: breakdown.stocks.pnl,
+    crypto: breakdown.crypto.pnl,
+    metals: breakdown.metals.pnl,
+  }
+  localStorage.setItem('pnl_snapshot', JSON.stringify(snapshot))
+}
+
+const calculateTrend = (currentPnL: number, assetType: 'stocks' | 'crypto' | 'metals'): TrendDirection => {
+  try {
+    const stored = localStorage.getItem('pnl_snapshot')
+    if (!stored) return 'neutral'
+
+    const snapshot: PnLSnapshot = JSON.parse(stored)
+    const timeDiff = Date.now() - snapshot.timestamp
+
+    // Ignore stale snapshots (> 25 hours)
+    if (timeDiff > SNAPSHOT_MAX_AGE) return 'neutral'
+
+    const previousPnL = snapshot[assetType] || 0
+    const diff = currentPnL - previousPnL
+
+    // Apply threshold to avoid noise
+    if (Math.abs(diff) < TREND_THRESHOLD) return 'neutral'
+
+    return diff > 0 ? 'up' : 'down'
+  } catch (error) {
+    console.error('Error calculating trend:', error)
+    return 'neutral'
+  }
+}
+
+const getTrendArrow = (trend: TrendDirection): string => {
+  switch (trend) {
+    case 'up':
+      return '↑'
+    case 'down':
+      return '↓'
+    default:
+      return '→'
+  }
+}
+
+const getTrendClassName = (trend: TrendDirection): string => {
+  return `trend-${trend}`
 }
 
 export default function OpenPositionsCard({
@@ -51,6 +115,12 @@ export default function OpenPositionsCard({
       setError(null)
       const response = await axios.get<OpenPositionsData>(`${API_URL}/api/portfolio/open-positions`)
       setData(response.data)
+
+      // Store P&L snapshot for trend tracking
+      if (response.data.breakdown) {
+        storePnLSnapshot(response.data.breakdown)
+      }
+
       setLoading(false)
     } catch (err) {
       console.error('Failed to fetch open positions overview:', err)
@@ -115,9 +185,16 @@ export default function OpenPositionsCard({
     )
   }
 
-  if (!data) {
+  if (!data || !data.breakdown) {
     return null
   }
+
+  // Helper to determine which asset types have non-zero values
+  const assetTypes = [
+    { key: 'stocks', label: 'Stocks', icon: '📊', filterType: 'stock', data: data.breakdown.stocks },
+    { key: 'crypto', label: 'Crypto', icon: '₿', filterType: 'crypto', data: data.breakdown.crypto },
+    { key: 'metals', label: 'Metals', icon: '🥇', filterType: 'metal', data: data.breakdown.metals },
+  ].filter(asset => asset.data.value > 0) // Only show assets with non-zero values
 
   return (
     <div className="open-positions-card">
@@ -136,7 +213,7 @@ export default function OpenPositionsCard({
       </div>
 
       <div className="main-metrics">
-        <div className="metric-card primary">
+        <div className="metric-card">
           <div className="metric-label">Total Value</div>
           <div className="metric-value">{formatCurrency(data.total_value, BASE_CURRENCY)}</div>
           <div className="metric-subtitle">
@@ -149,6 +226,11 @@ export default function OpenPositionsCard({
           <div className={`metric-value ${getPnLClassName(data.unrealized_pnl)}`}>
             {formatPnLChange(data.unrealized_pnl, data.unrealized_pnl_percent, BASE_CURRENCY)}
           </div>
+          {data.fee_transaction_count > 0 && (
+            <div className="metric-subtitle fee-info">
+              {formatCurrency(data.total_fees, BASE_CURRENCY)} in {data.fee_transaction_count} transactions' fees
+            </div>
+          )}
           <div className="metric-subtitle">From open positions only</div>
         </div>
       </div>
@@ -156,74 +238,41 @@ export default function OpenPositionsCard({
       <div className="breakdown-section">
         <h3>Asset Breakdown</h3>
         <div className="breakdown-grid">
-          <div
-            className={`breakdown-item ${selectedType === 'stock' ? 'selected' : ''}`}
-            onClick={() => handleTypeClick('stock')}
-            role="button"
-            tabIndex={0}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                handleTypeClick('stock')
-              }
-            }}
-          >
-            <div className="breakdown-header">
-              <div className="asset-icon">📊</div>
-              <div className="asset-label">Stocks</div>
+          {assetTypes.map((asset) => (
+            <div
+              key={asset.key}
+              className={`breakdown-item ${selectedType === asset.filterType ? 'selected' : ''}`}
+              onClick={() => handleTypeClick(asset.filterType)}
+              role="button"
+              tabIndex={0}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleTypeClick(asset.filterType)
+                }
+              }}
+            >
+              <div className="breakdown-first-line">
+                <div className="breakdown-header">
+                  <div className="asset-icon">{asset.icon}</div>
+                  <div className="asset-label">{asset.label}</div>
+                </div>
+                <div className="breakdown-value">
+                  {formatCurrency(asset.data.value, BASE_CURRENCY)}
+                </div>
+              </div>
+              <div className="breakdown-pnl-line">
+                <span className={`pnl-value ${getPnLClassName(asset.data.pnl)}`}>
+                  {formatCurrency(asset.data.pnl, BASE_CURRENCY)}
+                </span>
+                <span className={`trend-arrow ${getTrendClassName(calculateTrend(asset.data.pnl, asset.key as 'stocks' | 'crypto' | 'metals'))}`}>
+                  {getTrendArrow(calculateTrend(asset.data.pnl, asset.key as 'stocks' | 'crypto' | 'metals'))}
+                </span>
+                <span className={`pnl-percent ${getPnLClassName(asset.data.pnl)}`}>
+                  {asset.data.pnl >= 0 ? '+' : ''}{asset.data.pnl_percent.toFixed(2)}%
+                </span>
+              </div>
             </div>
-            <div className="breakdown-value">
-              {formatCurrency(data.breakdown.stocks.value, BASE_CURRENCY)}
-            </div>
-            <div className={`breakdown-pnl ${getPnLClassName(data.breakdown.stocks.pnl)}`}>
-              {formatPnLChange(data.breakdown.stocks.pnl, data.breakdown.stocks.pnl_percent, BASE_CURRENCY)}
-            </div>
-          </div>
-
-          <div
-            className={`breakdown-item ${selectedType === 'crypto' ? 'selected' : ''}`}
-            onClick={() => handleTypeClick('crypto')}
-            role="button"
-            tabIndex={0}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                handleTypeClick('crypto')
-              }
-            }}
-          >
-            <div className="breakdown-header">
-              <div className="asset-icon">₿</div>
-              <div className="asset-label">Crypto</div>
-            </div>
-            <div className="breakdown-value">
-              {formatCurrency(data.breakdown.crypto.value, BASE_CURRENCY)}
-            </div>
-            <div className={`breakdown-pnl ${getPnLClassName(data.breakdown.crypto.pnl)}`}>
-              {formatPnLChange(data.breakdown.crypto.pnl, data.breakdown.crypto.pnl_percent, BASE_CURRENCY)}
-            </div>
-          </div>
-
-          <div
-            className={`breakdown-item ${selectedType === 'metal' ? 'selected' : ''}`}
-            onClick={() => handleTypeClick('metal')}
-            role="button"
-            tabIndex={0}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                handleTypeClick('metal')
-              }
-            }}
-          >
-            <div className="breakdown-header">
-              <div className="asset-icon">🥇</div>
-              <div className="asset-label">Metals</div>
-            </div>
-            <div className="breakdown-value">
-              {formatCurrency(data.breakdown.metals.value, BASE_CURRENCY)}
-            </div>
-            <div className={`breakdown-pnl ${getPnLClassName(data.breakdown.metals.pnl)}`}>
-              {formatPnLChange(data.breakdown.metals.pnl, data.breakdown.metals.pnl_percent, BASE_CURRENCY)}
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

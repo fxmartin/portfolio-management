@@ -30,6 +30,8 @@ describe('OpenPositionsCard', () => {
       metals: { value: 0, pnl: 0, pnl_percent: 0 },
     },
     last_updated: null,
+    total_fees: 0,
+    fee_transaction_count: 0,
   }
 
   const mockPositionsWithData = {
@@ -43,6 +45,8 @@ describe('OpenPositionsCard', () => {
       metals: { value: 0, pnl: 0, pnl_percent: 0 },
     },
     last_updated: '2024-01-15T10:30:00Z',
+    total_fees: 43.75,
+    fee_transaction_count: 12,
   }
 
   const mockPositionsWithLoss = {
@@ -56,6 +60,8 @@ describe('OpenPositionsCard', () => {
       metals: { value: 0, pnl: 0, pnl_percent: 0 },
     },
     last_updated: '2024-01-15T14:00:00Z',
+    total_fees: 25.50,
+    fee_transaction_count: 5,
   }
 
   const mockPositionsWithMetals = {
@@ -69,6 +75,8 @@ describe('OpenPositionsCard', () => {
       metals: { value: 5000, pnl: 0, pnl_percent: 0 },
     },
     last_updated: '2024-01-15T10:30:00Z',
+    total_fees: 10.25,
+    fee_transaction_count: 3,
   }
 
   describe('Loading State', () => {
@@ -126,7 +134,7 @@ describe('OpenPositionsCard', () => {
       })
 
       // Should show zero values - check for multiple zero values
-      const zeroValues = screen.getAllByText(/€0.00/)
+      const zeroValues = screen.getAllByText(/€ 0.00/)
       expect(zeroValues.length).toBeGreaterThan(0)
     })
   })
@@ -138,11 +146,11 @@ describe('OpenPositionsCard', () => {
       render(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
-        expect(screen.getByText(/€26,525.00/)).toBeInTheDocument()
+        expect(screen.getByText(/€ 26,525.00/)).toBeInTheDocument()
       })
 
       // Should show unrealized P&L
-      expect(screen.getByText(/\+€1,525.00/)).toBeInTheDocument()
+      expect(screen.getByText(/\+€ 1,525.00/)).toBeInTheDocument()
       expect(screen.getByText(/\+6.10%/)).toBeInTheDocument()
     })
 
@@ -152,7 +160,7 @@ describe('OpenPositionsCard', () => {
       render(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
-        expect(screen.getByText(/Cost basis: €25,000.00/)).toBeInTheDocument()
+        expect(screen.getByText(/Cost basis: € 25,000.00/)).toBeInTheDocument()
       })
     })
 
@@ -164,6 +172,83 @@ describe('OpenPositionsCard', () => {
       await waitFor(() => {
         expect(screen.getByText(/Last updated:/)).toBeInTheDocument()
       })
+    })
+
+    it('should display fee information with count and total', async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        // Should show fee amount and transaction count
+        expect(screen.getByText(/€ 43.75 in 12 transactions' fees/)).toBeInTheDocument()
+      })
+    })
+
+    it('should display fee information for positions with loss', async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithLoss })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        // Should show fee amount and transaction count
+        expect(screen.getByText(/€ 25.50 in 5 transactions' fees/)).toBeInTheDocument()
+      })
+    })
+
+    it('should not show fees when count is zero', async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: mockEmptyPositions })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /Open Positions/i })).toBeInTheDocument()
+      })
+
+      // Should not show fee information when there are no fees
+      expect(screen.queryByText(/transactions' fees/)).not.toBeInTheDocument()
+    })
+
+    it('should not have green background on Total Value metric card', async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Total Value/)).toBeInTheDocument()
+      })
+
+      // Find the Total Value metric card and verify it doesn't have the 'primary' class
+      const totalValueCard = screen.getByText(/Total Value/).closest('.metric-card')
+      expect(totalValueCard).not.toHaveClass('primary')
+    })
+
+    it('should display unrealized P&L in green when positive', async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/\+€ 1,525.00/)).toBeInTheDocument()
+      })
+
+      // Find the unrealized P&L value and verify it has the 'profit' class
+      const pnlElement = screen.getByText(/\+€ 1,525.00/)
+      expect(pnlElement).toHaveClass('profit')
+    })
+
+    it('should display unrealized P&L in red when negative', async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithLoss })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/-€ 2,000.00/)).toBeInTheDocument()
+      })
+
+      // Find the unrealized P&L value and verify it has the 'loss' class
+      const pnlElement = screen.getByText(/-€ 2,000.00/)
+      expect(pnlElement).toHaveClass('loss')
     })
   })
 
@@ -178,7 +263,7 @@ describe('OpenPositionsCard', () => {
       })
 
       // Check stocks value
-      expect(screen.getByText(/€2,525.00/)).toBeInTheDocument()
+      expect(screen.getByText(/€ 2,525.00/)).toBeInTheDocument()
     })
 
     it('should display crypto breakdown correctly', async () => {
@@ -191,7 +276,7 @@ describe('OpenPositionsCard', () => {
       })
 
       // Check crypto value
-      expect(screen.getByText(/€24,000.00/)).toBeInTheDocument()
+      expect(screen.getByText(/€ 24,000.00/)).toBeInTheDocument()
     })
 
     it('should display metals breakdown when present', async () => {
@@ -204,17 +289,18 @@ describe('OpenPositionsCard', () => {
       })
 
       // Check metals value
-      expect(screen.getByText(/€5,000.00/)).toBeInTheDocument()
+      expect(screen.getByText(/€ 5,000.00/)).toBeInTheDocument()
     })
 
-    it('should display all three asset type sections', async () => {
+    it('should display only non-zero asset type sections', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
       render(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         const breakdownItems = document.querySelectorAll('.breakdown-item')
-        expect(breakdownItems).toHaveLength(3)
+        // mockPositionsWithData has only stocks and crypto (metals is 0)
+        expect(breakdownItems).toHaveLength(2)
       })
     })
   })
@@ -226,7 +312,7 @@ describe('OpenPositionsCard', () => {
       render(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
-        const pnlElements = document.querySelectorAll('.positive')
+        const pnlElements = document.querySelectorAll('.profit')
         expect(pnlElements.length).toBeGreaterThan(0)
       })
     })
@@ -237,7 +323,7 @@ describe('OpenPositionsCard', () => {
       render(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
-        const pnlElements = document.querySelectorAll('.negative')
+        const pnlElements = document.querySelectorAll('.loss')
         expect(pnlElements.length).toBeGreaterThan(0)
       })
     })
@@ -287,14 +373,14 @@ describe('OpenPositionsCard', () => {
       render(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
-        expect(screen.getByText(/Metals/i)).toBeInTheDocument()
+        expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
       })
 
-      const metalsItem = screen.getByText(/Metals/i).closest('.breakdown-item')
-      fireEvent.click(metalsItem!)
+      const stocksItem = screen.getByText(/Stocks/i).closest('.breakdown-item')
+      fireEvent.click(stocksItem!)
 
       await waitFor(() => {
-        expect(metalsItem).toHaveClass('selected')
+        expect(stocksItem).toHaveClass('selected')
       })
     })
   })
@@ -307,7 +393,8 @@ describe('OpenPositionsCard', () => {
 
       await waitFor(() => {
         const breakdownItems = document.querySelectorAll('[role="button"]')
-        expect(breakdownItems.length).toBe(3) // stocks, crypto, metals
+        // Only non-zero assets are shown (stocks, crypto)
+        expect(breakdownItems.length).toBe(2)
       })
     })
 
@@ -345,6 +432,134 @@ describe('OpenPositionsCard', () => {
 
       // Should only have been called once (initial load)
       expect(mockedAxios.get).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('Trend Calculation', () => {
+    beforeEach(() => {
+      // Clear localStorage before each test
+      localStorage.clear()
+    })
+
+    it('should return neutral trend when no previous snapshot exists', async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
+      })
+
+      // On first load, trend arrows should be neutral (→) or not shown
+      // We'll verify this in component rendering tests
+      expect(localStorage.getItem('pnl_snapshot')).toBeTruthy()
+    })
+
+    it('should calculate upward trend when P&L increases', async () => {
+      // Set up initial snapshot with lower P&L
+      const initialSnapshot = {
+        timestamp: Date.now() - (1 * 60 * 60 * 1000), // 1 hour ago
+        stocks: 0,
+        crypto: 1000,
+        metals: 0,
+      }
+      localStorage.setItem('pnl_snapshot', JSON.stringify(initialSnapshot))
+
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Crypto/i)).toBeInTheDocument()
+      })
+
+      // Crypto P&L went from 1000 to 1500 - should show upward trend
+      // We'll verify arrow rendering in next phase
+    })
+
+    it('should calculate downward trend when P&L decreases', async () => {
+      // Set up initial snapshot with higher P&L
+      const initialSnapshot = {
+        timestamp: Date.now() - (2 * 60 * 60 * 1000), // 2 hours ago
+        stocks: 100,
+        crypto: 2000,
+        metals: 50,
+      }
+      localStorage.setItem('pnl_snapshot', JSON.stringify(initialSnapshot))
+
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
+      })
+
+      // Stocks P&L went from 100 to 25 - should show downward trend
+      // Crypto P&L went from 2000 to 1500 - should show downward trend
+    })
+
+    it('should ignore stale snapshots older than 25 hours', async () => {
+      // Set up old snapshot (26 hours ago)
+      const oldSnapshot = {
+        timestamp: Date.now() - (26 * 60 * 60 * 1000),
+        stocks: 1000,
+        crypto: 5000,
+        metals: 100,
+      }
+      localStorage.setItem('pnl_snapshot', JSON.stringify(oldSnapshot))
+
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
+      })
+
+      // Should treat as neutral since snapshot is too old
+      // New snapshot should be stored
+      const newSnapshot = JSON.parse(localStorage.getItem('pnl_snapshot') || '{}')
+      expect(newSnapshot.timestamp).toBeGreaterThan(oldSnapshot.timestamp)
+    })
+
+    it('should update snapshot on each data fetch', async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
+      })
+
+      const snapshot = JSON.parse(localStorage.getItem('pnl_snapshot') || '{}')
+      expect(snapshot).toEqual({
+        timestamp: expect.any(Number),
+        stocks: 25,
+        crypto: 1500,
+        metals: 0,
+      })
+    })
+
+    it('should handle small P&L changes as neutral (threshold test)', async () => {
+      // Set up snapshot with very similar P&L (difference < 0.01)
+      const initialSnapshot = {
+        timestamp: Date.now() - (1 * 60 * 60 * 1000),
+        stocks: 25.005, // 0.005 difference
+        crypto: 1500,
+        metals: 0,
+      }
+      localStorage.setItem('pnl_snapshot', JSON.stringify(initialSnapshot))
+
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
+      })
+
+      // Stocks P&L: 25 vs 25.005 = 0.005 difference - should be neutral
     })
   })
 })

@@ -299,9 +299,9 @@ class StocksParser(CSVParser):
         # Parse numeric values
         quantity = float(row['Quantity']) if row.get('Quantity') else None
 
-        # Clean price and total amount (remove currency symbols)
-        price_str = row.get('Price per share', '').replace('€', '').replace('$', '').replace('£', '').strip()
-        total_str = row.get('Total Amount', '').replace('€', '').replace('$', '').replace('£', '').strip()
+        # Clean price and total amount (remove currency symbols and thousands separators)
+        price_str = row.get('Price per share', '').replace('€', '').replace('$', '').replace('£', '').replace(',', '').strip()
+        total_str = row.get('Total Amount', '').replace('€', '').replace('$', '').replace('£', '').replace(',', '').strip()
 
         price_per_unit = float(price_str) if price_str else 0.0
         total_amount = float(total_str) if total_str else 0.0
@@ -400,6 +400,19 @@ class CryptoParser(CSVParser):
         # Detect which format we have
         is_new_format = "Date (UTC)" in reader.fieldnames
         is_old_format = "Date" in reader.fieldnames and "In Amount" in reader.fieldnames
+
+        # If neither format matches, check if it looks like crypto CSV and give helpful error
+        if not is_new_format and not is_old_format:
+            # Check if it has Date and Type (looks like attempt at crypto CSV)
+            if "Date" in reader.fieldnames and "Type" in reader.fieldnames:
+                raise ValueError("Invalid CSV format: missing required headers for Koinly format")
+
+        # Validate required headers for old format
+        if is_old_format:
+            required_headers = {"Date", "Type", "In Amount", "In Currency"}
+            missing_headers = required_headers - set(reader.fieldnames)
+            if missing_headers:
+                raise ValueError(f"Invalid CSV format: missing required headers: {missing_headers}")
 
         transactions = []
 
@@ -581,11 +594,299 @@ class CryptoParser(CSVParser):
 
         return transactions
 
-    def _parse_old_format_row(self, row: Dict) -> Dict:
-        """Parse a row from the old/simplified Koinly format"""
-        # For backward compatibility with test format
-        # Return None for now as we focus on real Koinly format
-        return None
+    def _parse_old_format_row(self, row: Dict) -> List[Dict]:
+        """Parse a row from the old/simplified Koinly format (test format)"""
+        transactions = []
+
+        # Parse date
+        date_str = row.get("Date", "").strip()
+        if not date_str:
+            return []
+
+        # Try multiple date formats
+        try:
+            # Try standard format first
+            transaction_date = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            try:
+                # Try ISO 8601 format with timezone
+                if 'T' in date_str:
+                    # Remove 'Z' timezone marker if present
+                    date_str = date_str.replace('Z', '')
+                    # Try with or without microseconds
+                    if '.' in date_str:
+                        transaction_date = datetime.strptime(date_str.split('.')[0], "%Y-%m-%dT%H:%M:%S")
+                    else:
+                        transaction_date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S")
+                else:
+                    return []
+            except ValueError:
+                return []
+
+        # Get transaction type
+        tx_type = row.get("Type", "").strip().lower()
+
+        # Get amounts
+        in_amount = row.get("In Amount", "").strip()
+        in_currency = row.get("In Currency", "").strip()
+        out_amount = row.get("Out Amount", "").strip()
+        out_currency = row.get("Out Currency", "").strip()
+        fee_amount = row.get("Fee Amount", "").strip()
+        fee_currency = row.get("Fee Currency", "").strip()
+
+        # Get net value - try both formats
+        net_value = row.get("Net Value(USD)", "").strip() or row.get("Net Value", "").strip()
+
+        # Other fields
+        label = row.get("Label", "").strip()
+        description = row.get("Description", "").strip()
+        tx_hash = row.get("TxHash", "").strip()
+        cost_basis = row.get("Cost Basis", "").strip()
+
+        # Map transaction types
+        if tx_type == "buy":
+            # Buying crypto with fiat
+            if in_amount and in_currency:
+                tx = {
+                    "transaction_type": TransactionType.BUY,
+                    "asset_type": AssetType.CRYPTO,
+                    "symbol": in_currency,
+                    "quantity": float(in_amount),
+                    "price_per_unit": float(out_amount) / float(in_amount) if in_amount and out_amount else 0.0,
+                    "total_amount": float(out_amount) if out_amount else 0.0,
+                    "currency": out_currency if out_currency else "USD",
+                    "fee": float(fee_amount) if fee_amount else 0.0,
+                    "fee_currency": fee_currency if fee_currency else "USD",
+                    "transaction_date": transaction_date,
+                    "net_value_usd": float(net_value) if net_value else 0.0,
+                    "label": label,
+                    "description": description,
+                    "tx_hash": tx_hash,
+                    "source_type": "KOINLY",
+                    "raw_data": dict(row)
+                }
+                transactions.append(tx)
+
+        elif tx_type == "sell":
+            # Selling crypto for fiat
+            if out_amount and out_currency:
+                tx = {
+                    "transaction_type": TransactionType.SELL,
+                    "asset_type": AssetType.CRYPTO,
+                    "symbol": out_currency,
+                    "quantity": float(out_amount),
+                    "price_per_unit": float(in_amount) / float(out_amount) if in_amount and out_amount else 0.0,
+                    "total_amount": float(in_amount) if in_amount else 0.0,
+                    "currency": in_currency if in_currency else "USD",
+                    "fee": float(fee_amount) if fee_amount else 0.0,
+                    "fee_currency": fee_currency if fee_currency else "USD",
+                    "transaction_date": transaction_date,
+                    "net_value_usd": float(net_value) if net_value else 0.0,
+                    "label": label,
+                    "description": description,
+                    "tx_hash": tx_hash,
+                    "source_type": "KOINLY",
+                    "raw_data": dict(row)
+                }
+                # Add cost_basis if available
+                if cost_basis:
+                    tx["cost_basis"] = float(cost_basis)
+                transactions.append(tx)
+
+        elif tx_type == "staking":
+            # Staking reward
+            if in_amount and in_currency:
+                tx = {
+                    "transaction_type": TransactionType.STAKING,
+                    "asset_type": AssetType.CRYPTO,
+                    "symbol": in_currency,
+                    "quantity": float(in_amount),
+                    "price_per_unit": float(net_value) / float(in_amount) if in_amount and net_value else 0.0,
+                    "total_amount": float(net_value) if net_value else 0.0,
+                    "currency": "USD",
+                    "fee": 0.0,
+                    "transaction_date": transaction_date,
+                    "net_value_usd": float(net_value) if net_value else 0.0,
+                    "label": label,
+                    "description": description,
+                    "tx_hash": tx_hash,
+                    "source_type": "KOINLY",
+                    "raw_data": dict(row)
+                }
+                transactions.append(tx)
+
+        elif tx_type == "airdrop":
+            # Airdrop
+            if in_amount and in_currency:
+                tx = {
+                    "transaction_type": TransactionType.AIRDROP,
+                    "asset_type": AssetType.CRYPTO,
+                    "symbol": in_currency,
+                    "quantity": float(in_amount),
+                    "price_per_unit": float(net_value) / float(in_amount) if in_amount and net_value else 0.0,
+                    "total_amount": float(net_value) if net_value else 0.0,
+                    "currency": "USD",
+                    "fee": 0.0,
+                    "transaction_date": transaction_date,
+                    "net_value_usd": float(net_value) if net_value else 0.0,
+                    "label": label,
+                    "description": description,
+                    "tx_hash": tx_hash,
+                    "source_type": "KOINLY",
+                    "raw_data": dict(row)
+                }
+                transactions.append(tx)
+
+        elif tx_type == "mining":
+            # Mining reward
+            if in_amount and in_currency:
+                tx = {
+                    "transaction_type": TransactionType.MINING,
+                    "asset_type": AssetType.CRYPTO,
+                    "symbol": in_currency,
+                    "quantity": float(in_amount),
+                    "price_per_unit": float(net_value) / float(in_amount) if in_amount and net_value else 0.0,
+                    "total_amount": float(net_value) if net_value else 0.0,
+                    "currency": "USD",
+                    "fee": 0.0,
+                    "transaction_date": transaction_date,
+                    "net_value_usd": float(net_value) if net_value else 0.0,
+                    "label": label,
+                    "description": description,
+                    "tx_hash": tx_hash,
+                    "source_type": "KOINLY",
+                    "raw_data": dict(row)
+                }
+                transactions.append(tx)
+
+        elif tx_type == "exchange" or tx_type == "swap":
+            # Crypto-to-crypto exchange
+            # Create SELL transaction for out currency
+            if out_amount and out_currency:
+                sell_tx = {
+                    "transaction_type": TransactionType.SELL,
+                    "asset_type": AssetType.CRYPTO,
+                    "symbol": out_currency,
+                    "quantity": float(out_amount),
+                    "price_per_unit": 0.0,  # Not clear in this format
+                    "total_amount": 0.0,
+                    "currency": "USD",
+                    "fee": float(fee_amount) / 2 if fee_amount else 0.0,
+                    "transaction_date": transaction_date,
+                    "net_value_usd": float(net_value) if net_value else 0.0,
+                    "tx_hash": tx_hash,
+                    "source_type": "KOINLY",
+                    "raw_data": dict(row)
+                }
+                transactions.append(sell_tx)
+
+            # Create BUY transaction for in currency
+            if in_amount and in_currency:
+                buy_tx = {
+                    "transaction_type": TransactionType.BUY,
+                    "asset_type": AssetType.CRYPTO,
+                    "symbol": in_currency,
+                    "quantity": float(in_amount),
+                    "price_per_unit": 0.0,  # Not clear in this format
+                    "total_amount": 0.0,
+                    "currency": "USD",
+                    "fee": float(fee_amount) / 2 if fee_amount else 0.0,
+                    "transaction_date": transaction_date,
+                    "net_value_usd": float(net_value) if net_value else 0.0,
+                    "tx_hash": tx_hash,
+                    "source_type": "KOINLY",
+                    "raw_data": dict(row)
+                }
+                transactions.append(buy_tx)
+
+        elif tx_type == "deposit":
+            # Deposit transaction
+            if in_amount and in_currency:
+                # Skip fiat-only deposits
+                if self._is_fiat(in_currency):
+                    return []
+
+                tx = {
+                    "transaction_type": TransactionType.DEPOSIT,
+                    "asset_type": AssetType.CRYPTO,
+                    "symbol": in_currency,
+                    "quantity": float(in_amount),
+                    "price_per_unit": float(net_value) / float(in_amount) if in_amount and net_value else 0.0,
+                    "total_amount": float(net_value) if net_value else 0.0,
+                    "currency": "USD",
+                    "fee": float(fee_amount) if fee_amount else 0.0,
+                    "transaction_date": transaction_date,
+                    "net_value_usd": float(net_value) if net_value else 0.0,
+                    "description": description,
+                    "tx_hash": tx_hash,
+                    "source_type": "KOINLY",
+                    "raw_data": dict(row)
+                }
+                transactions.append(tx)
+
+        elif tx_type == "withdrawal":
+            # Withdrawal transaction
+            if out_amount and out_currency:
+                tx = {
+                    "transaction_type": TransactionType.WITHDRAWAL,
+                    "asset_type": AssetType.CRYPTO,
+                    "symbol": out_currency,
+                    "quantity": float(out_amount),
+                    "price_per_unit": 0.0,
+                    "total_amount": 0.0,
+                    "currency": "USD",
+                    "fee": float(fee_amount) if fee_amount else 0.0,
+                    "transaction_date": transaction_date,
+                    "net_value_usd": float(net_value) if net_value else 0.0,
+                    "description": description,
+                    "tx_hash": tx_hash,
+                    "source_type": "KOINLY",
+                    "raw_data": dict(row)
+                }
+                transactions.append(tx)
+
+        elif tx_type == "transfer":
+            # Transfer transactions (keep old logic)
+            if in_amount and in_currency:
+                # Transfer in
+                tx = {
+                    "transaction_type": TransactionType.DEPOSIT,
+                    "asset_type": AssetType.CRYPTO,
+                    "symbol": in_currency,
+                    "quantity": float(in_amount),
+                    "price_per_unit": float(net_value) / float(in_amount) if in_amount and net_value else 0.0,
+                    "total_amount": float(net_value) if net_value else 0.0,
+                    "currency": "USD",
+                    "fee": float(fee_amount) if fee_amount else 0.0,
+                    "transaction_date": transaction_date,
+                    "net_value_usd": float(net_value) if net_value else 0.0,
+                    "description": description,
+                    "tx_hash": tx_hash,
+                    "source_type": "KOINLY",
+                    "raw_data": dict(row)
+                }
+                transactions.append(tx)
+            elif out_amount and out_currency:
+                # Transfer out
+                tx = {
+                    "transaction_type": TransactionType.WITHDRAWAL,
+                    "asset_type": AssetType.CRYPTO,
+                    "symbol": out_currency,
+                    "quantity": float(out_amount),
+                    "price_per_unit": 0.0,
+                    "total_amount": 0.0,
+                    "currency": "USD",
+                    "fee": float(fee_amount) if fee_amount else 0.0,
+                    "transaction_date": transaction_date,
+                    "net_value_usd": float(net_value) if net_value else 0.0,
+                    "description": description,
+                    "tx_hash": tx_hash,
+                    "source_type": "KOINLY",
+                    "raw_data": dict(row)
+                }
+                transactions.append(tx)
+
+        return transactions
 
     def _clean_currency(self, currency: str) -> str:
         """Clean currency code by removing metadata"""
