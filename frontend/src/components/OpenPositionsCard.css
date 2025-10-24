@@ -128,12 +128,19 @@
   margin: 0 0 1rem 0;
 }
 
+/* Container for asset cards and pie chart */
+.breakdown-container {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  align-items: start;
+}
+
 .breakdown-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
-  max-width: 900px;
-  margin: 0 auto;
+  max-width: 600px;
 }
 
 /* Compact layout when 1-2 items */
@@ -141,6 +148,11 @@
 .breakdown-grid:has(.breakdown-item:first-child:nth-last-child(2)) {
   max-width: 450px;
   grid-template-columns: 1fr;
+}
+
+.breakdown-chart {
+  min-width: 300px;
+  max-width: 350px;
 }
 
 .breakdown-item {
@@ -273,8 +285,19 @@
     gap: 1rem;
   }
 
+  .breakdown-container {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
   .breakdown-grid {
     grid-template-columns: 1fr;
+  }
+
+  .breakdown-chart {
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
   }
 
   .metric-value {

@@ -1,0 +1,46 @@
+/* ABOUTME: Styles for the Asset Allocation Chart component */
+
+.asset-allocation-chart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 250px;
+  padding: 1rem;
+}
+
+/* Custom tooltip styling */
+.chart-tooltip {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.75rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.chart-tooltip .tooltip-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.chart-tooltip .tooltip-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #374151;
+  margin: 0 0 0.25rem 0;
+}
+
+.chart-tooltip .tooltip-percentage {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .asset-allocation-chart {
+    padding: 0.5rem;
+    min-height: 200px;
+  }
+}

@@ -165,6 +165,19 @@ User → React (3003) → FastAPI (8000) → PostgreSQL (5432)
 - Compact Layout: 450px max-width for 1-2 assets, centered alignment
 - Files Modified: `frontend/src/components/OpenPositionsCard.tsx`, `OpenPositionsCard.css`
 
+**Issue #12: Asset Allocation Pie Chart**
+- Feature: Interactive pie chart showing portfolio allocation by asset type
+- Implementation: Recharts library with ResponsiveContainer for responsiveness
+- Layout: CSS Grid side-by-side on desktop (cards left, chart right), stacked on mobile
+- Visualization: Color-coded segments (Stocks: blue, Crypto: amber, Metals: purple)
+- Interactivity: Hover tooltips showing asset value and percentage
+- Smart Filtering: Only displays non-zero asset types in chart
+- Component: New `AssetAllocationChart` component with 11 passing tests
+- Integration: Embedded in `OpenPositionsCard` breakdown section
+- Files Created: `frontend/src/components/AssetAllocationChart.tsx/css/test.tsx`
+- Files Modified: `OpenPositionsCard.tsx/css`, `src/test/setup.ts` (ResizeObserver mock)
+- GitHub Issue: Closed #12
+
 ### Test Suite Improvements (Oct 24, 2025)
 
 **Crypto Parser Tests Fixed (19/19 passing)**

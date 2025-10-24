@@ -10,3 +10,10 @@ vi.mock('import.meta', () => ({
     VITE_API_URL: 'http://localhost:8000'
   }
 }))
+
+// Mock ResizeObserver for Recharts
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}))

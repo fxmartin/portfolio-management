@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { formatCurrency, formatPnLChange, formatDateTime, getPnLClassName } from '../utils/formatters'
 import { API_CONFIG, PORTFOLIO_CONFIG, REFRESH_INTERVALS, formatRefreshInterval } from '../config/app.config'
+import AssetAllocationChart from './AssetAllocationChart'
 import './OpenPositionsCard.css'
 
 const API_URL = API_CONFIG.BASE_URL
@@ -237,42 +238,51 @@ export default function OpenPositionsCard({
 
       <div className="breakdown-section">
         <h3>Asset Breakdown</h3>
-        <div className="breakdown-grid">
-          {assetTypes.map((asset) => (
-            <div
-              key={asset.key}
-              className={`breakdown-item ${selectedType === asset.filterType ? 'selected' : ''}`}
-              onClick={() => handleTypeClick(asset.filterType)}
-              role="button"
-              tabIndex={0}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  handleTypeClick(asset.filterType)
-                }
-              }}
-            >
-              <div className="breakdown-first-line">
-                <div className="breakdown-header">
-                  <div className="asset-icon">{asset.icon}</div>
-                  <div className="asset-label">{asset.label}</div>
+        <div className="breakdown-container">
+          <div className="breakdown-grid">
+            {assetTypes.map((asset) => (
+              <div
+                key={asset.key}
+                className={`breakdown-item ${selectedType === asset.filterType ? 'selected' : ''}`}
+                onClick={() => handleTypeClick(asset.filterType)}
+                role="button"
+                tabIndex={0}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleTypeClick(asset.filterType)
+                  }
+                }}
+              >
+                <div className="breakdown-first-line">
+                  <div className="breakdown-header">
+                    <div className="asset-icon">{asset.icon}</div>
+                    <div className="asset-label">{asset.label}</div>
+                  </div>
+                  <div className="breakdown-value">
+                    {formatCurrency(asset.data.value, BASE_CURRENCY)}
+                  </div>
                 </div>
-                <div className="breakdown-value">
-                  {formatCurrency(asset.data.value, BASE_CURRENCY)}
+                <div className="breakdown-pnl-line">
+                  <span className={`pnl-value ${getPnLClassName(asset.data.pnl)}`}>
+                    {formatCurrency(asset.data.pnl, BASE_CURRENCY)}
+                  </span>
+                  <span className={`trend-arrow ${getTrendClassName(calculateTrend(asset.data.pnl, asset.key as 'stocks' | 'crypto' | 'metals'))}`}>
+                    {getTrendArrow(calculateTrend(asset.data.pnl, asset.key as 'stocks' | 'crypto' | 'metals'))}
+                  </span>
+                  <span className={`pnl-percent ${getPnLClassName(asset.data.pnl)}`}>
+                    {asset.data.pnl >= 0 ? '+' : ''}{asset.data.pnl_percent.toFixed(2)}%
+                  </span>
                 </div>
               </div>
-              <div className="breakdown-pnl-line">
-                <span className={`pnl-value ${getPnLClassName(asset.data.pnl)}`}>
-                  {formatCurrency(asset.data.pnl, BASE_CURRENCY)}
-                </span>
-                <span className={`trend-arrow ${getTrendClassName(calculateTrend(asset.data.pnl, asset.key as 'stocks' | 'crypto' | 'metals'))}`}>
-                  {getTrendArrow(calculateTrend(asset.data.pnl, asset.key as 'stocks' | 'crypto' | 'metals'))}
-                </span>
-                <span className={`pnl-percent ${getPnLClassName(asset.data.pnl)}`}>
-                  {asset.data.pnl >= 0 ? '+' : ''}{asset.data.pnl_percent.toFixed(2)}%
-                </span>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          <div className="breakdown-chart">
+            <AssetAllocationChart
+              breakdown={data.breakdown}
+              totalValue={data.total_value}
+              currency={BASE_CURRENCY}
+            />
+          </div>
         </div>
       </div>
     </div>
