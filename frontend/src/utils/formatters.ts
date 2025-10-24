@@ -14,13 +14,21 @@ export function formatCurrency(
   decimals: number = 2
 ): string {
   if (value === null || value === undefined || isNaN(value)) {
-    return getCurrencySymbol(currency) + '0.' + '0'.repeat(decimals)
+    const symbol = getCurrencySymbol(currency)
+    const zeroFormatted = (0).toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })
+    return `${symbol} ${zeroFormatted}`
   }
 
-  const formatted = Math.abs(value).toFixed(decimals)
+  const formatted = Math.abs(value).toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })
   const symbol = getCurrencySymbol(currency)
 
-  return value < 0 ? `-${symbol}${formatted}` : `${symbol}${formatted}`
+  return value < 0 ? `-${symbol} ${formatted}` : `${symbol} ${formatted}`
 }
 
 /**

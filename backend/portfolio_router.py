@@ -133,6 +133,19 @@ async def get_positions(
         result = []
         for position in positions:
             if position.quantity > 0:
+                # Calculate fee information for this position
+                fee_stmt = select(
+                    func.sum(Transaction.fee),
+                    func.count(Transaction.id)
+                ).where(
+                    and_(
+                        Transaction.symbol == position.symbol,
+                        Transaction.fee > 0
+                    )
+                )
+                fee_result = await session.execute(fee_stmt)
+                total_fees, fee_count = fee_result.one()
+
                 result.append({
                     "symbol": position.symbol,
                     "asset_type": position.asset_type.value,
@@ -147,6 +160,8 @@ async def get_positions(
                     "first_purchase_date": position.first_purchase_date.isoformat() if position.first_purchase_date else None,
                     "last_transaction_date": position.last_transaction_date.isoformat() if position.last_transaction_date else None,
                     "last_price_update": position.last_price_update.isoformat() if position.last_price_update else None,
+                    "total_fees": float(total_fees or 0),
+                    "fee_transaction_count": int(fee_count or 0),
                 })
 
         return result
@@ -308,7 +323,9 @@ async def get_open_positions_overview(
                     "crypto": {"value": 0, "pnl": 0, "pnl_percent": 0},
                     "metals": {"value": 0, "pnl": 0, "pnl_percent": 0},
                 },
-                "last_updated": None
+                "last_updated": None,
+                "total_fees": 0,
+                "fee_transaction_count": 0,
             }
 
         # Calculate totals
@@ -341,13 +358,18 @@ async def get_open_positions_overview(
                 if last_updated is None or position.last_price_update > last_updated:
                     last_updated = position.last_price_update
 
+        # Calculate fee information for open positions
+        fee_info = await _calculate_fee_information(session, open_positions)
+
         return {
             "total_value": float(total_value),
             "total_cost_basis": float(total_cost_basis),
             "unrealized_pnl": float(unrealized_pnl),
             "unrealized_pnl_percent": float(unrealized_pnl_percent),
             "breakdown": breakdown,
-            "last_updated": last_updated.isoformat() if last_updated else None
+            "last_updated": last_updated.isoformat() if last_updated else None,
+            "total_fees": fee_info["total_fees"],
+            "fee_transaction_count": fee_info["fee_transaction_count"],
         }
 
     except Exception as e:
@@ -428,3 +450,45 @@ async def _get_cash_balances(session: AsyncSession) -> Dict[str, Decimal]:
             balances[currency] -= amount
 
     return balances
+
+
+async def _calculate_fee_information(session: AsyncSession, open_positions: List) -> Dict:
+    """
+    Calculate total fees and transaction count for open positions.
+
+    Args:
+        session: Database session
+        open_positions: List of Position objects with quantity > 0
+
+    Returns:
+        Dictionary with total_fees and fee_transaction_count
+    """
+    if not open_positions:
+        return {
+            "total_fees": 0,
+            "fee_transaction_count": 0
+        }
+
+    # Get all symbols from open positions
+    symbols = [p.symbol for p in open_positions]
+
+    # Query all transactions for these symbols
+    stmt = select(Transaction).where(
+        Transaction.symbol.in_(symbols)
+    )
+    result = await session.execute(stmt)
+    transactions = list(result.scalars().all())
+
+    # Aggregate fees
+    total_fees = Decimal("0")
+    fee_transaction_count = 0
+
+    for txn in transactions:
+        if txn.fee and txn.fee > 0:
+            total_fees += txn.fee
+            fee_transaction_count += 1
+
+    return {
+        "total_fees": float(total_fees),
+        "fee_transaction_count": fee_transaction_count
+    }

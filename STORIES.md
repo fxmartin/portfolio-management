@@ -40,6 +40,43 @@ Stories are organized into 6 major epics, each with its own detailed documentati
 
 ## Recent Updates (Oct 24, 2025)
 
+### Asset Breakdown Layout with Trend Indicators (GitHub Issue #9)
+- **Redesigned Asset Breakdown with Two-Line Layout and 24h Trend Arrows**
+  - Feature: Two-line layout with label + value on first line, P&L centered on second line
+  - Feature: 24-hour trend arrows (↑/↓/→) showing P&L movement since last update
+  - Implementation: LocalStorage-based P&L snapshot tracking with 25-hour expiration
+  - Trend Logic: Compares current P&L with previous snapshot (threshold: €0.01)
+  - UI Improvements: Eliminated visual overlap, improved spacing and readability
+  - CSS Fix: Added `display: flex; flex-direction: column` to `.breakdown-item` for proper vertical stacking
+  - Test Coverage: 6 new trend calculation tests (31/31 tests passing - 100%)
+  - Files Changed: `OpenPositionsCard.tsx`, `OpenPositionsCard.css`, `OpenPositionsCard.test.tsx`
+  - Status: ✅ Complete - Closed
+  - GitHub Issue: #9
+  - Related: Future enhancements tracked in #10
+
+### Holdings Table Fees Column Enhancement (GitHub Issue #8)
+- **Added Transaction Fees Column to Holdings Table**
+  - Feature: Sortable "Fees" column showing per-position transaction fees
+  - Feature: Tooltip displays transaction count (e.g., "2 transactions with fees")
+  - Implementation: Backend fee aggregation in `/api/portfolio/positions` endpoint
+  - Verified: P&L calculations already correctly account for fees (purchase fees in cost basis, portfolio-level net P&L)
+  - Test Coverage: 10 new tests (3 backend, 7 frontend) - all passing (39/39 tests)
+  - Files Changed: `portfolio_router.py`, `HoldingsTable.tsx`, test files
+  - Status: ✅ Complete - Closed
+  - GitHub Issue: #8
+
+### OpenPositionsCard UI Enhancements (GitHub Issue #5)
+- **Enhanced OpenPositionsCard with Fee Display and Visual Improvements**
+  - Feature: Added transaction fee display showing total fees and count
+  - Feature: Removed green background from Total Value card for cleaner design
+  - Feature: Dynamic P&L coloring (green for profit, red for loss)
+  - Implementation: Backend fee aggregation in `/api/portfolio/open-positions` endpoint
+  - Implementation: Frontend conditional rendering and CSS class fixes
+  - Test Coverage: 25/25 frontend tests passing, 23/23 backend portfolio tests passing
+  - Files Changed: `portfolio_router.py`, `OpenPositionsCard.tsx`, `OpenPositionsCard.css`, test files
+  - Status: ✅ Complete - Closed
+  - GitHub Issue: #5
+
 ### Critical Bug Fixes - Cost Basis Accuracy
 - **Fixed Missing Staking Rewards in Position Calculations** (GitHub Issue #3)
   - Issue: SOL position missing 0.01410800 SOL (5 recent staking transactions)

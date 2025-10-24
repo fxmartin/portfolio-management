@@ -134,7 +134,9 @@ const PortfolioSummaryCard: React.FC = () => {
 **Acceptance Criteria**:
 - **Given** I have open positions in my portfolio
 - **When** viewing the holdings table
-- **Then** I see columns: Ticker, Name, Quantity, Avg Cost, Current Price, Value, P&L, P&L%
+- **Then** I see columns: Ticker, Name, Quantity, Avg Cost, Current Price, Value, Fees, P&L, P&L%
+- **And** the Fees column shows total transaction fees for each position
+- **And** hovering over fees shows the count of transactions with fees
 - **And** profits are shown in green, losses in red
 - **And** I can sort by any column (ascending/descending)
 - **And** I can filter by asset type (stock/crypto)
@@ -159,6 +161,8 @@ interface Position {
   avgCost: number;
   currentPrice: number;
   marketValue: number;
+  totalFees: number;
+  feeTransactionCount: number;
   unrealizedPnL: number;
   unrealizedPnLPercent: number;
   dayChange: number;
@@ -177,6 +181,7 @@ const HoldingsTable: React.FC = () => {
     { key: 'avgCost', label: 'Avg Cost', sortable: true, align: 'right', format: 'currency' },
     { key: 'currentPrice', label: 'Price', sortable: true, align: 'right', format: 'currency' },
     { key: 'marketValue', label: 'Value', sortable: true, align: 'right', format: 'currency' },
+    { key: 'totalFees', label: 'Fees', sortable: true, align: 'right', format: 'currency' },
     { key: 'unrealizedPnL', label: 'P&L', sortable: true, align: 'right', format: 'pnl' },
     { key: 'unrealizedPnLPercent', label: 'P&L %', sortable: true, align: 'right', format: 'percent' }
   ];
@@ -198,13 +203,13 @@ const HoldingsTable: React.FC = () => {
 
 **Table UI Example**:
 ```
-┌────────┬──────────┬──────────┬─────────┬──────────┬────────────┬──────────┐
-│ Ticker │ Quantity │ Avg Cost │ Price   │ Value    │ P&L        │ P&L %    │
-├────────┼──────────┼──────────┼─────────┼──────────┼────────────┼──────────┤
-│ AAPL   │ 100      │ $145.50  │ $150.25 │ $15,025  │ +$475.00   │ +3.26%   │
-│ TSLA   │ 50       │ $250.00  │ $245.60 │ $12,280  │ -$220.00   │ -1.76%   │
-│ BTC    │ 0.5      │ $45,000  │ $50,000 │ $25,000  │ +$2,500.00 │ +11.11%  │
-└────────┴──────────┴──────────┴─────────┴──────────┴────────────┴──────────┘
+┌────────┬──────────┬──────────┬─────────┬──────────┬────────┬────────────┬──────────┐
+│ Ticker │ Quantity │ Avg Cost │ Price   │ Value    │ Fees   │ P&L        │ P&L %    │
+├────────┼──────────┼──────────┼─────────┼──────────┼────────┼────────────┼──────────┤
+│ AAPL   │ 100      │ $145.50  │ $150.25 │ $15,025  │ $2.50  │ +$475.00   │ +3.26%   │
+│ TSLA   │ 50       │ $250.00  │ $245.60 │ $12,280  │ $0.00  │ -$220.00   │ -1.76%   │
+│ BTC    │ 0.5      │ $45,000  │ $50,000 │ $25,000  │ $25.50 │ +$2,500.00 │ +11.11%  │
+└────────┴──────────┴──────────┴─────────┴──────────┴────────┴────────────┴──────────┘
 ```
 
 **Definition of Done**:
@@ -217,7 +222,7 @@ const HoldingsTable: React.FC = () => {
 - [ ] Pagination or virtual scrolling for performance (not needed - <20 positions)
 - [ ] Export to CSV functionality (not implemented - future enhancement)
 - [x] Responsive table design
-- [x] Unit tests for sorting/filtering logic (23 tests passing)
+- [x] Unit tests for sorting/filtering logic (30 tests passing)
 - [x] Accessibility compliant
 
 **Story Points**: 5
@@ -225,6 +230,34 @@ const HoldingsTable: React.FC = () => {
 **Dependencies**: F4.1-001 (Summary View)
 **Risk Level**: Low
 **Assigned To**: Unassigned
+
+**Recent Enhancements** (Oct 24, 2025):
+- **GitHub Issue #8**: Added Transaction Fees Column to Holdings Table
+  - **Feature**: Sortable "Fees" column showing per-position transaction fees
+  - **Feature**: Tooltip displays transaction count with proper pluralization (e.g., "2 transactions with fees", "1 transaction with fees")
+  - **Position**: Column positioned between "Value" and "P&L" for logical flow
+  - **Verification**: Confirmed P&L calculations already correctly account for fees
+    - Purchase fees included in cost basis through `FIFOCalculator.add_purchase()`
+    - Unrealized P&L inherently factors in fees via `avg_cost_basis`
+    - Portfolio-level P&L properly subtracts fees: `net_total_pnl = total_pnl - total_fees`
+  - **Backend Changes**:
+    - Enhanced `/api/portfolio/positions` endpoint with per-position fee aggregation
+    - Added SQL query to sum fees and count transactions with fees > 0
+    - Returns `total_fees` and `fee_transaction_count` in position response
+  - **Frontend Changes**:
+    - Updated `Position` interface with `total_fees` and `fee_transaction_count` fields
+    - Added "Fees" column header with sort capability
+    - Added fee cell with hover tooltip showing transaction count
+    - Updated `SortKey` type to include `total_fees`
+  - **Test Coverage**:
+    - Backend: 3 new comprehensive tests (9/9 position tests passing, 26/26 total portfolio router tests)
+    - Frontend: 7 new tests for display, tooltip, and sorting (30/30 tests passing)
+    - All 10 new tests (3 backend + 7 frontend) passing at 100%
+  - **Files Modified**:
+    - `backend/portfolio_router.py` - Fee aggregation logic
+    - `backend/tests/test_portfolio_router.py` - Position fee tests
+    - `frontend/src/components/HoldingsTable.tsx` - Fees column implementation
+    - `frontend/src/components/HoldingsTable.test.tsx` - Fee display and sorting tests
 
 ---
 
@@ -414,6 +447,41 @@ async def get_open_positions_overview() -> OpenPositionsOverview:
 **Dependencies**: F4.1-002 (Holdings Table)
 **Risk Level**: Low
 **Assigned To**: Unassigned
+
+**Recent Enhancements** (Oct 24, 2025):
+
+- **GitHub Issue #9**: Redesigned Asset Breakdown Layout with Trend Indicators
+  - **Two-Line Layout**: Label + value on first line (side by side), P&L centered on second line
+  - **Trend Arrows**: Added ↑/↓/→ indicators showing 24-hour P&L movement
+    - ↑ Green: P&L increased (difference > €0.01)
+    - ↓ Red: P&L decreased (difference > €0.01)
+    - → Gray: No significant change or insufficient data
+  - **Trend Tracking**: LocalStorage-based P&L snapshot with 25-hour expiration
+  - **UI Improvements**: Eliminated visual overlap, better space utilization, improved readability
+  - **Implementation Details**:
+    - Added trend tracking utilities: `storePnLSnapshot()`, `calculateTrend()`, `getTrendArrow()`, `getTrendClassName()`
+    - Updated component structure with `.breakdown-first-line` and `.breakdown-pnl-line` classes
+    - Critical CSS fix: Added `display: flex; flex-direction: column` to `.breakdown-item` for vertical stacking
+    - Enhanced responsive design for mobile devices
+  - **Test Coverage**:
+    - 6 new comprehensive trend calculation tests (31/31 tests passing - 100%)
+    - Tests cover: neutral on first load, upward/downward detection, stale snapshot handling, threshold behavior
+  - **Future Enhancements**: Tracked in GitHub Issue #10 (database snapshots, configurable periods, tooltips, animations, sparklines)
+
+- **GitHub Issue #5**: Enhanced OpenPositionsCard with three improvements
+  - **Fee Display**: Shows total transaction fees and count below unrealized P&L (e.g., "€43.75 in 12 transactions' fees")
+  - **Total Value Styling**: Removed green gradient background from Total Value card for cleaner, consistent design
+  - **Dynamic P&L Coloring**: Unrealized P&L now displays in green (profit) or red (loss) based on value
+  - **Backend Changes**:
+    - Added `_calculate_fee_information()` to aggregate fees from all open position transactions
+    - Enhanced `/api/portfolio/open-positions` endpoint to return `total_fees` and `fee_transaction_count`
+  - **Frontend Changes**:
+    - Updated OpenPositionsCard component to display fee information conditionally
+    - Removed `.primary` class from Total Value card
+    - Fixed CSS to use correct class names (`.profit`, `.loss`, `.neutral`) instead of (`.positive`, `.negative`)
+  - **Test Coverage**:
+    - Backend: 1 new test for fee aggregation (23/23 tests passing)
+    - Frontend: 5 new tests for UI improvements (25/25 tests passing)
 
 ---
 

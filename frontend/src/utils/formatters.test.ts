@@ -15,41 +15,41 @@ import {
 
 describe('formatCurrency', () => {
   it('should format positive USD amounts correctly', () => {
-    expect(formatCurrency(1234.56)).toBe('$1234.56')
-    expect(formatCurrency(0)).toBe('$0.00')
-    expect(formatCurrency(1000000)).toBe('$1000000.00')
+    expect(formatCurrency(1234.56)).toBe('$ 1,234.56')
+    expect(formatCurrency(0)).toBe('$ 0.00')
+    expect(formatCurrency(1000000)).toBe('$ 1,000,000.00')
   })
 
   it('should format negative amounts with minus sign', () => {
-    expect(formatCurrency(-1234.56)).toBe('-$1234.56')
-    expect(formatCurrency(-0.01)).toBe('-$0.01')
+    expect(formatCurrency(-1234.56)).toBe('-$ 1,234.56')
+    expect(formatCurrency(-0.01)).toBe('-$ 0.01')
   })
 
   it('should handle different currencies', () => {
-    expect(formatCurrency(100, 'EUR')).toBe('€100.00')
-    expect(formatCurrency(100, 'GBP')).toBe('£100.00')
-    expect(formatCurrency(100, 'JPY')).toBe('¥100.00')
+    expect(formatCurrency(100, 'EUR')).toBe('€ 100.00')
+    expect(formatCurrency(100, 'GBP')).toBe('£ 100.00')
+    expect(formatCurrency(100, 'JPY')).toBe('¥ 100.00')
   })
 
   it('should handle custom decimal places', () => {
-    expect(formatCurrency(1234.5678, 'USD', 4)).toBe('$1234.5678')
-    expect(formatCurrency(1234.5678, 'USD', 0)).toBe('$1235')
-    expect(formatCurrency(10, 'USD', 3)).toBe('$10.000')
+    expect(formatCurrency(1234.5678, 'USD', 4)).toBe('$ 1,234.5678')
+    expect(formatCurrency(1234.5678, 'USD', 0)).toBe('$ 1,235')
+    expect(formatCurrency(10, 'USD', 3)).toBe('$ 10.000')
   })
 
   it('should handle null and undefined values', () => {
-    expect(formatCurrency(null)).toBe('$0.00')
-    expect(formatCurrency(undefined)).toBe('$0.00')
-    expect(formatCurrency(NaN)).toBe('$0.00')
+    expect(formatCurrency(null)).toBe('$ 0.00')
+    expect(formatCurrency(undefined)).toBe('$ 0.00')
+    expect(formatCurrency(NaN)).toBe('$ 0.00')
   })
 
   it('should handle very large numbers', () => {
-    expect(formatCurrency(1234567890.12)).toBe('$1234567890.12')
+    expect(formatCurrency(1234567890.12)).toBe('$ 1,234,567,890.12')
   })
 
   it('should handle very small numbers', () => {
-    expect(formatCurrency(0.01)).toBe('$0.01')
-    expect(formatCurrency(0.001)).toBe('$0.00')
+    expect(formatCurrency(0.01)).toBe('$ 0.01')
+    expect(formatCurrency(0.001)).toBe('$ 0.00')
   })
 })
 
@@ -136,36 +136,36 @@ describe('formatNumber', () => {
 describe('formatPnLChange', () => {
   it('should format positive P&L change correctly', () => {
     const result = formatPnLChange(123.45, 5.25)
-    expect(result).toContain('+$123.45')
+    expect(result).toContain('+$ 123.45')
     expect(result).toContain('(+5.25%)')
   })
 
   it('should format negative P&L change correctly', () => {
     const result = formatPnLChange(-123.45, -5.25)
-    expect(result).toContain('-$123.45')
+    expect(result).toContain('-$ 123.45')
     expect(result).toContain('(-5.25%)')
   })
 
   it('should handle zero change', () => {
     const result = formatPnLChange(0, 0)
-    expect(result).toContain('$0.00')
+    expect(result).toContain('$ 0.00')
     expect(result).toContain('(0.00%)')
   })
 
   it('should handle different currencies', () => {
     const result = formatPnLChange(100, 5, 'EUR')
-    expect(result).toContain('€100.00')
+    expect(result).toContain('€ 100.00')
   })
 
   it('should handle null amount', () => {
     const result = formatPnLChange(null, 5)
-    expect(result).toContain('$0.00')
+    expect(result).toContain('$ 0.00')
     expect(result).toContain('(0.00%)')
   })
 
   it('should handle null percent', () => {
     const result = formatPnLChange(100, null)
-    expect(result).toContain('+$100.00')
+    expect(result).toContain('+$ 100.00')
     expect(result).toContain('(0.00%)')
   })
 })

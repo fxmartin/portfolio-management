@@ -27,6 +27,8 @@ describe('HoldingsTable', () => {
       first_purchase_date: '2024-01-01T00:00:00Z',
       last_transaction_date: '2024-01-15T00:00:00Z',
       last_price_update: '2024-01-20T10:30:00Z',
+      total_fees: 25.50,
+      fee_transaction_count: 2,
     },
     {
       symbol: 'ETH',
@@ -42,6 +44,8 @@ describe('HoldingsTable', () => {
       first_purchase_date: '2024-01-05T00:00:00Z',
       last_transaction_date: '2024-01-15T00:00:00Z',
       last_price_update: '2024-01-20T10:30:00Z',
+      total_fees: 15.75,
+      fee_transaction_count: 1,
     },
     {
       symbol: 'SOL',
@@ -57,6 +61,8 @@ describe('HoldingsTable', () => {
       first_purchase_date: '2024-01-10T00:00:00Z',
       last_transaction_date: '2024-01-15T00:00:00Z',
       last_price_update: '2024-01-20T10:30:00Z',
+      total_fees: 0,
+      fee_transaction_count: 0,
     },
   ]
 
@@ -176,8 +182,8 @@ describe('HoldingsTable', () => {
       render(<HoldingsTable />)
 
       await waitFor(() => {
-        expect(screen.getByText('€25000.00')).toBeInTheDocument() // BTC value
-        expect(screen.getByText('€5500.00')).toBeInTheDocument() // ETH value
+        expect(screen.getByText('€ 25,000.00')).toBeInTheDocument() // BTC value
+        expect(screen.getByText('€ 5,500.00')).toBeInTheDocument() // ETH value
       })
     })
 
@@ -187,7 +193,7 @@ describe('HoldingsTable', () => {
       await waitFor(() => {
         const btcRow = screen.getByText('BTC').closest('tr')
         expect(btcRow).toBeInTheDocument()
-        const profitCells = within(btcRow!).getAllByText('€2500.00')
+        const profitCells = within(btcRow!).getAllByText('€ 2,500.00')
         expect(profitCells[0]).toHaveClass('profit')
       })
     })
@@ -199,7 +205,7 @@ describe('HoldingsTable', () => {
         const solRow = screen.getByText('SOL').closest('tr')
         expect(solRow).toBeInTheDocument()
         // Check that the P&L cell has the loss class
-        const cells = within(solRow!).getAllByText(/€81\.80/)
+        const cells = within(solRow!).getAllByText(/€ 81\.80/)
         expect(cells[0]).toHaveClass('loss')
       })
     })
@@ -292,6 +298,8 @@ describe('HoldingsTable', () => {
           first_purchase_date: '2024-01-01T00:00:00Z',
           last_transaction_date: '2024-01-15T00:00:00Z',
           last_price_update: '2024-01-20T10:30:00Z',
+          total_fees: 2.50,
+          fee_transaction_count: 1,
         },
       ]
       mockedAxios.get.mockResolvedValue({ data: mixedPositions })
@@ -455,6 +463,8 @@ describe('HoldingsTable', () => {
             first_purchase_date: '2024-01-01T00:00:00Z',
             last_transaction_date: '2024-01-15T00:00:00Z',
             last_price_update: '2024-01-20T10:30:00Z',
+            total_fees: 2.50,
+            fee_transaction_count: 1,
           },
         ],
       })
@@ -477,6 +487,126 @@ describe('HoldingsTable', () => {
         expect(screen.getByText('ETH')).toBeInTheDocument()
         expect(screen.queryByText('BTC')).not.toBeInTheDocument()
         expect(screen.queryByText('AAPL')).not.toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Fees Column', () => {
+    beforeEach(() => {
+      mockedAxios.get.mockResolvedValue({ data: mockPositions })
+    })
+
+    it('should display Fees column header', async () => {
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/^Fees/i)).toBeInTheDocument()
+      })
+    })
+
+    it('should display fee values for each position', async () => {
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+      })
+
+      // BTC has €25.50 in fees
+      expect(screen.getByText('€ 25.50')).toBeInTheDocument()
+
+      // ETH has €15.75 in fees
+      expect(screen.getByText('€ 15.75')).toBeInTheDocument()
+
+      // SOL has €0.00 in fees
+      expect(screen.getByText('€ 0.00')).toBeInTheDocument()
+    })
+
+    it('should show tooltip with transaction count on fee cells', async () => {
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+      })
+
+      const btcRow = screen.getByText('BTC').closest('tr')
+      const feeCell = within(btcRow!).getByText('€ 25.50')
+
+      expect(feeCell).toHaveAttribute('title', '2 transactions with fees')
+    })
+
+    it('should show singular transaction in tooltip when count is 1', async () => {
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('ETH')).toBeInTheDocument()
+      })
+
+      const ethRow = screen.getByText('ETH').closest('tr')
+      const feeCell = within(ethRow!).getByText('€ 15.75')
+
+      expect(feeCell).toHaveAttribute('title', '1 transaction with fees')
+    })
+
+    it('should show plural transactions in tooltip when count is 0', async () => {
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('SOL')).toBeInTheDocument()
+      })
+
+      const solRow = screen.getByText('SOL').closest('tr')
+      const feeCell = within(solRow!).getByText('€ 0.00')
+
+      expect(feeCell).toHaveAttribute('title', '0 transactions with fees')
+    })
+
+    it('should sort by fees when Fees column header is clicked', async () => {
+      const user = userEvent.setup()
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+      })
+
+      const feesHeader = screen.getByText(/^Fees/i)
+      await user.click(feesHeader)
+
+      await waitFor(() => {
+        const rows = screen.getAllByRole('row')
+        // Should be sorted by fees descending: BTC (25.50), ETH (15.75), SOL (0)
+        expect(within(rows[1]).getByText('BTC')).toBeInTheDocument()
+        expect(within(rows[2]).getByText('ETH')).toBeInTheDocument()
+        expect(within(rows[3]).getByText('SOL')).toBeInTheDocument()
+      })
+    })
+
+    it('should toggle sort direction when Fees header is clicked twice', async () => {
+      const user = userEvent.setup()
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+      })
+
+      const feesHeader = screen.getByText(/^Fees/i)
+
+      // First click - descending
+      await user.click(feesHeader)
+
+      await waitFor(() => {
+        const rows = screen.getAllByRole('row')
+        expect(within(rows[1]).getByText('BTC')).toBeInTheDocument()
+      })
+
+      // Second click - ascending
+      await user.click(feesHeader)
+
+      await waitFor(() => {
+        const rows = screen.getAllByRole('row')
+        // Should be sorted by fees ascending: SOL (0), ETH (15.75), BTC (25.50)
+        expect(within(rows[1]).getByText('SOL')).toBeInTheDocument()
+        expect(within(rows[2]).getByText('ETH')).toBeInTheDocument()
+        expect(within(rows[3]).getByText('BTC')).toBeInTheDocument()
       })
     })
   })

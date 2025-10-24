@@ -25,6 +25,8 @@ export interface Position {
   first_purchase_date: string | null
   last_transaction_date: string | null
   last_price_update: string | null
+  total_fees: number
+  fee_transaction_count: number
 }
 
 // Asset name mapping for display
@@ -46,7 +48,7 @@ const ASSET_NAMES: Record<string, string> = {
   'ALGO': 'Algorand',
 }
 
-type SortKey = 'symbol' | 'quantity' | 'avg_cost_basis' | 'current_price' | 'current_value' | 'unrealized_pnl' | 'unrealized_pnl_percent'
+type SortKey = 'symbol' | 'quantity' | 'avg_cost_basis' | 'current_price' | 'current_value' | 'total_fees' | 'unrealized_pnl' | 'unrealized_pnl_percent'
 type SortDirection = 'asc' | 'desc'
 
 interface HoldingsTableProps {
@@ -264,6 +266,9 @@ export default function HoldingsTable({
                 <th onClick={() => handleSort('current_value')} className="sortable align-right">
                   Value {getSortIcon('current_value')}
                 </th>
+                <th onClick={() => handleSort('total_fees')} className="sortable align-right">
+                  Fees {getSortIcon('total_fees')}
+                </th>
                 <th onClick={() => handleSort('unrealized_pnl')} className="sortable align-right">
                   P&L {getSortIcon('unrealized_pnl')}
                 </th>
@@ -290,6 +295,9 @@ export default function HoldingsTable({
                   </td>
                   <td className="align-right">
                     {formatCurrency(position.current_value, BASE_CURRENCY)}
+                  </td>
+                  <td className="align-right" title={`${position.fee_transaction_count} transaction${position.fee_transaction_count === 1 ? '' : 's'} with fees`}>
+                    {formatCurrency(position.total_fees, BASE_CURRENCY)}
                   </td>
                   <td className={`align-right ${getPnLClassName(position.unrealized_pnl)}`}>
                     {formatCurrency(position.unrealized_pnl, BASE_CURRENCY)}
