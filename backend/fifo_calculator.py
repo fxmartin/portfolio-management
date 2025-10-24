@@ -106,7 +106,8 @@ class FIFOCalculator:
         quantity: Decimal,
         price: Decimal,
         date: datetime,
-        transaction_id: int
+        transaction_id: int,
+        fee: Decimal = Decimal("0")
     ) -> None:
         """
         Add a purchase lot to the FIFO queue.
@@ -114,16 +115,22 @@ class FIFOCalculator:
         Args:
             ticker: Asset symbol (e.g., AAPL, BTC, XAU)
             quantity: Number of units purchased
-            price: Price per unit
+            price: Price per unit (before fees)
             date: Purchase date
             transaction_id: Database transaction ID for audit trail
+            fee: Transaction fee to be included in cost basis
         """
         if ticker not in self._lots:
             self._lots[ticker] = deque()
 
+        # Include fee in cost basis by calculating adjusted price per unit
+        fee = Decimal(str(fee))
+        total_cost = (Decimal(str(price)) * Decimal(str(quantity))) + fee
+        adjusted_price = total_cost / Decimal(str(quantity)) if quantity > 0 else Decimal(str(price))
+
         lot = Lot(
             quantity=Decimal(str(quantity)),
-            price=Decimal(str(price)),
+            price=adjusted_price,  # Price now includes fee allocation
             date=date,
             transaction_id=transaction_id
         )

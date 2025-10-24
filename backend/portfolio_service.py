@@ -175,7 +175,8 @@ class PortfolioService:
                     quantity=txn.quantity,
                     price=txn.price_per_unit,  # For rewards, this is market value at receipt
                     date=txn.transaction_date,
-                    transaction_id=txn.id
+                    transaction_id=txn.id,
+                    fee=txn.fee or Decimal("0")  # Include fees in cost basis
                 )
 
             elif txn.transaction_type == TransactionType.SELL:
@@ -329,7 +330,8 @@ class PortfolioService:
                     quantity=txn.quantity,
                     price=txn.price_per_unit,  # For rewards, this is market value at receipt
                     date=txn.transaction_date,
-                    transaction_id=txn.id
+                    transaction_id=txn.id,
+                    fee=txn.fee or Decimal("0")  # Include fees in cost basis
                 )
             elif txn.transaction_type == TransactionType.SELL:
                 try:

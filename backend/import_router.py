@@ -10,10 +10,12 @@ try:
     from .csv_parser import CSVDetector, FileType, get_parser
     from .database import get_async_db
     from .transaction_service import TransactionService, DuplicateHandler
+    from .portfolio_service import PortfolioService
 except ImportError:
     from csv_parser import CSVDetector, FileType, get_parser
     from database import get_async_db
     from transaction_service import TransactionService, DuplicateHandler
+    from portfolio_service import PortfolioService
 
 router = APIRouter(prefix="/api/import", tags=["import"])
 
@@ -165,6 +167,17 @@ async def upload_csv_files(
     total_skipped = sum(r.get("skipped_count", 0) for r in results)
     total_failed = sum(r.get("failed_count", 0) for r in results)
 
+    # Recalculate positions if any transactions were saved
+    positions_recalculated = 0
+    if total_saved > 0:
+        try:
+            portfolio_service = PortfolioService(db)
+            positions = await portfolio_service.recalculate_all_positions()
+            positions_recalculated = len(positions)
+        except Exception as e:
+            print(f"Warning: Failed to recalculate positions after import: {e}")
+            # Don't fail the import if position calculation fails
+
     return {
         "summary": {
             "total_files": total_files,
@@ -175,7 +188,8 @@ async def upload_csv_files(
             "total_saved": total_saved,
             "total_skipped": total_skipped,
             "total_failed": total_failed,
-            "duplicate_strategy": duplicate_strategy
+            "duplicate_strategy": duplicate_strategy,
+            "positions_recalculated": positions_recalculated
         },
         "files": results
     }

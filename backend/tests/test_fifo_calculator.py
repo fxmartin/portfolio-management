@@ -389,3 +389,128 @@ class TestFIFOCalculator:
         calc = FIFOCalculator()
         lots_json = calc.export_lots_to_json("NONEXISTENT")
         assert lots_json == []
+
+    def test_add_purchase_with_fee(self):
+        """Test that purchase fees are included in cost basis"""
+        calc = FIFOCalculator()
+
+        # Buy 100 @ $10 with $5 fee
+        # Cost basis should be (100 * 10 + 5) / 100 = $10.05 per share
+        calc.add_purchase(
+            ticker="AAPL",
+            quantity=Decimal("100"),
+            price=Decimal("10.00"),
+            date=datetime(2024, 1, 1),
+            transaction_id=1,
+            fee=Decimal("5.00")
+        )
+
+        lots = calc.get_lots("AAPL")
+        assert len(lots) == 1
+        assert lots[0].quantity == Decimal("100")
+        assert lots[0].price == Decimal("10.05")  # Price includes fee
+        assert lots[0].total_cost == Decimal("1005.00")  # 100 * 10.05
+
+    def test_add_purchase_without_fee(self):
+        """Test that purchases without fees work correctly"""
+        calc = FIFOCalculator()
+
+        # Buy 100 @ $10 with no fee
+        calc.add_purchase(
+            ticker="AAPL",
+            quantity=Decimal("100"),
+            price=Decimal("10.00"),
+            date=datetime(2024, 1, 1),
+            transaction_id=1
+        )
+
+        lots = calc.get_lots("AAPL")
+        assert len(lots) == 1
+        assert lots[0].quantity == Decimal("100")
+        assert lots[0].price == Decimal("10.00")  # Price unchanged without fee
+
+    def test_fifo_with_fees_affects_pnl(self):
+        """Test that fees in cost basis correctly affect P&L calculations"""
+        calc = FIFOCalculator()
+
+        # Buy 100 @ $10 with $10 fee -> effective price $10.10
+        calc.add_purchase(
+            ticker="AAPL",
+            quantity=Decimal("100"),
+            price=Decimal("10.00"),
+            date=datetime(2024, 1, 1),
+            transaction_id=1,
+            fee=Decimal("10.00")
+        )
+
+        # Sell 100 @ $15 (no fee for now, to isolate buy fee impact)
+        result = calc.process_sale(
+            ticker="AAPL",
+            quantity=Decimal("100"),
+            sale_price=Decimal("15.00"),
+            date=datetime(2024, 2, 1),
+            transaction_id=2
+        )
+
+        # P&L = (15.00 - 10.10) * 100 = 490.00
+        # Without fee it would be (15.00 - 10.00) * 100 = 500.00
+        assert result.realized_pnl == Decimal("490.00")
+
+    def test_multiple_purchases_with_different_fees(self):
+        """Test FIFO with multiple purchases having different fees"""
+        calc = FIFOCalculator()
+
+        # Buy 100 @ $10 with $5 fee -> $10.05/share
+        calc.add_purchase("AAPL", Decimal("100"), Decimal("10.00"),
+                         datetime(2024, 1, 1), 1, Decimal("5.00"))
+
+        # Buy 100 @ $12 with $10 fee -> $12.10/share
+        calc.add_purchase("AAPL", Decimal("100"), Decimal("12.00"),
+                         datetime(2024, 2, 1), 2, Decimal("10.00"))
+
+        # Buy 100 @ $14 with no fee -> $14.00/share
+        calc.add_purchase("AAPL", Decimal("100"), Decimal("14.00"),
+                         datetime(2024, 3, 1), 3)
+
+        # Sell 150 @ $20
+        result = calc.process_sale("AAPL", Decimal("150"), Decimal("20.00"),
+                                   datetime(2024, 4, 1), 4)
+
+        # Should sell: 100 @ $10.05 + 50 @ $12.10
+        # P&L = (20-10.05)*100 + (20-12.10)*50 = 995 + 395 = 1390
+        assert result.realized_pnl == Decimal("1390.00")
+
+        # Check remaining lot
+        remaining = calc.get_lots("AAPL")
+        assert len(remaining) == 2
+        assert remaining[0].quantity == Decimal("50")
+        assert remaining[0].price == Decimal("12.10")  # Partial lot with fee
+        assert remaining[1].quantity == Decimal("100")
+        assert remaining[1].price == Decimal("14.00")  # No fee lot
+
+    def test_small_crypto_purchase_with_fee(self):
+        """Test realistic crypto scenario: small amount with relatively high fee"""
+        calc = FIFOCalculator()
+
+        # Buy 0.10605900 SOL @ €186.68794727 with €0.09997150 fee
+        # Total cost = 0.10605900 * 186.68794727 + 0.09997150 = 19.79993700 + 0.09997150 = 19.89990850
+        # Cost per unit = 19.89990850 / 0.10605900 = €187.63074471
+        calc.add_purchase(
+            ticker="SOL",
+            quantity=Decimal("0.10605900"),
+            price=Decimal("186.68794727"),
+            date=datetime(2024, 12, 30, 11, 24, 55),
+            transaction_id=64,
+            fee=Decimal("0.09997150")
+        )
+
+        lots = calc.get_lots("SOL")
+        assert len(lots) == 1
+
+        # Verify the adjusted price includes the fee
+        expected_cost = Decimal("19.79993700") + Decimal("0.09997150")  # 19.89990850
+        expected_price = expected_cost / Decimal("0.10605900")
+
+        # Allow small rounding difference
+        assert abs(lots[0].price - expected_price) < Decimal("0.00000001")
+        assert abs(lots[0].total_cost - expected_cost) < Decimal("0.00000001")
