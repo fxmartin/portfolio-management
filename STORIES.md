@@ -38,9 +38,34 @@ Stories are organized into 6 major epics, each with its own detailed documentati
 | [Epic 6: UI Modernization](./stories/epic-06-ui-modernization.md) | 7 | 18 | ✅ Complete | 100% (18/18 pts) | Sidebar, tabs, theme |
 | **Total** | **31** | **123** | **In Progress** | **~84%** (104/123 pts) | |
 
-## Recent Updates (Oct 21, 2025)
+## Recent Updates (Oct 24, 2025)
 
-### Critical Bug Fixes & Enhancements
+### Critical Bug Fixes - Cost Basis Accuracy
+- **Fixed Missing Staking Rewards in Position Calculations** (GitHub Issue #3)
+  - Issue: SOL position missing 0.01410800 SOL (5 recent staking transactions)
+  - Root Cause: Position calculation stopped processing before all transactions
+  - Fix: Added auto-recalculation after CSV imports
+  - Impact: SOL position corrected to 16.36990300 (matches Koinly exactly)
+  - Test Coverage: All 27 FIFO calculator tests passing
+  - Commit: `57ea793`
+
+- **Transaction Fees Now Included in Cost Basis** (GitHub Issue #4)
+  - Issue: Fees excluded from cost basis, causing understated costs and overstated gains
+  - Root Cause: FIFOCalculator.add_purchase() didn't accept fee parameter
+  - Fix: Fees now included in cost basis calculation: adjusted_price = (price × quantity + fee) / quantity
+  - Impact: Cost basis increased by €9.23 for SOL (now €2,850.33 vs €2,841.10)
+  - Accuracy: Matches Koinly within 0.23% (€2,850.33 vs €2,857.00)
+  - Test Coverage: Added 5 new fee handling tests, all passing
+  - Commit: `57ea793`
+
+- **Auto-Recalculate Positions After Import**
+  - Feature: Import endpoint now automatically recalculates all positions
+  - Benefit: No manual intervention needed, ensures data consistency
+  - Implementation: `import_router.py` calls `PortfolioService.recalculate_all_positions()`
+  - Commit: `57ea793`
+
+### Previous Updates (Oct 21, 2025)
+
 - **Fixed Currency-Specific Prices**: Crypto prices now fetch in correct currency (EUR vs USD)
   - Issue: LINK showed $18.84 USD instead of €16.19 EUR
   - Fix: Updated Yahoo Finance service to group crypto by currency and fetch currency-specific pairs

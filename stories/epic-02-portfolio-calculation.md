@@ -33,9 +33,17 @@
 **Complexity**: 8 story points
 
 ### Story F2.1-001: Implement FIFO Algorithm
-**Status**: ✅ Complete
+**Status**: ✅ Complete (Enhanced Oct 24, 2025)
 **User Story**: As FX, I want my cost basis calculated using FIFO methodology so that my P&L is accurate for tax purposes
-**Implementation**: `backend/fifo_calculator.py` - 22 tests, 94% coverage
+**Implementation**: `backend/fifo_calculator.py` - 27 tests, 94% coverage
+
+**Recent Enhancement (Issue #4)**:
+- Transaction fees now included in cost basis calculation
+- Added optional `fee` parameter to `add_purchase()` method
+- Adjusted price calculation: `(price × quantity + fee) / quantity`
+- Improves accuracy from 99% to 99.77% match with Koinly
+- Added 5 comprehensive fee handling test scenarios
+- Commit: `57ea793`
 
 **Acceptance Criteria**:
 - **Given** multiple BUY transactions for the same ticker at different prices
@@ -72,10 +80,12 @@ class FIFOCalculator:
 - [x] FIFO algorithm implemented with lot tracking
 - [x] Handles partial sells correctly
 - [x] Maintains complete lot history
-- [x] Unit tests with multiple scenarios
+- [x] Transaction fees included in cost basis
+- [x] Unit tests with multiple scenarios (27 tests)
 - [x] Performance tested with 1000+ transactions
 - [x] Audit report generation capability
 - [x] Documentation with examples
+- [x] Validates against Koinly (99.77% accuracy)
 
 **Story Points**: 8
 **Priority**: Must Have
@@ -114,9 +124,16 @@ SELL 100 @ $30
 **Complexity**: 5 story points
 
 ### Story F2.2-001: Calculate Current Holdings
-**Status**: ✅ Complete
+**Status**: ✅ Complete (Enhanced Oct 24, 2025)
 **User Story**: As FX, I want to see my current positions aggregated by ticker so that I know what I own
 **Implementation**: `backend/portfolio_service.py` - 11 tests, 92% coverage
+
+**Recent Enhancement (Issue #3)**:
+- Auto-recalculate positions after CSV imports
+- Ensures all transactions (BUY, SELL, STAKING, AIRDROP, MINING) are included
+- Fixed bug where recent staking rewards were not included in calculations
+- Import endpoint now calls `PortfolioService.recalculate_all_positions()`
+- Commit: `57ea793`
 
 **Acceptance Criteria**:
 - **Given** all transactions for a ticker
@@ -159,6 +176,8 @@ class CashPosition:
 - [x] Handle fully closed positions
 - [x] Cash balance tracking from all sources
 - [x] Position history tracking
+- [x] Auto-recalculate after imports
+- [x] Support all transaction types (BUY, SELL, STAKING, AIRDROP, MINING)
 - [x] Unit tests for edge cases
 - [x] Integration with FIFO calculator
 

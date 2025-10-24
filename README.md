@@ -25,10 +25,32 @@ portfolio-management/
 
 ## Features
 
-- **CSV Import**: Parse Revolut transaction exports
-- **Live Prices**: Real-time market data via Yahoo Finance
-- **Portfolio Tracking**: FIFO cost basis, P&L calculations
-- **Dashboard**: Visualize holdings and performance
+- **CSV Import**: Parse Revolut transaction exports (metals, stocks, crypto)
+- **Live Prices**: Real-time market data via Yahoo Finance with auto-refresh
+- **Portfolio Tracking**: FIFO cost basis with fee-inclusive calculations, accurate P&L
+- **Dashboard**: Visualize holdings and performance with real-time updates
+- **Multi-Asset Support**: Handles stocks, crypto, metals, staking rewards, airdrops, mining
+
+## Recent Improvements (Oct 24, 2025)
+
+### Critical Bug Fixes
+- **Issue #3**: Fixed missing staking rewards in position calculations
+  - Impact: All STAKING, AIRDROP, and MINING transactions now properly included
+  - Result: SOL position corrected from 16.35579500 to 16.36990300 (0.01410800 SOL recovered)
+
+- **Issue #4**: Transaction fees now included in cost basis
+  - Impact: Accurate tax reporting and P&L calculations
+  - Method: Fees added to purchase cost basis (proper accounting methodology)
+  - Result: Cost basis calculations now match Koinly within 0.23%
+
+- **Auto-Recalculate**: Positions automatically recalculate after CSV imports
+  - No manual intervention needed after uploading transactions
+  - Ensures data consistency across all operations
+
+### Test Coverage
+- 27/27 FIFO calculator tests passing
+- 5 new fee handling test scenarios
+- Maintains 85%+ code coverage threshold
 
 ## Tech Stack
 
