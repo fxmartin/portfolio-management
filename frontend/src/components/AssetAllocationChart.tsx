@@ -1,7 +1,7 @@
 // ABOUTME: Pie chart component showing portfolio asset allocation by type
 // ABOUTME: Displays percentage breakdown with interactive tooltips
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import './AssetAllocationChart.css'
 
 interface AssetTypeMetrics {
@@ -29,11 +29,11 @@ interface ChartDataItem {
   color: string
 }
 
-// Color scheme matching design specifications
+// Greyscale color scheme
 const COLORS = {
-  stocks: '#3b82f6', // blue
-  crypto: '#f59e0b', // amber
-  metals: '#8b5cf6', // purple
+  stocks: '#4b5563', // dark grey
+  crypto: '#6b7280', // medium grey
+  metals: '#9ca3af', // light grey
 }
 
 const ASSET_LABELS = {
@@ -85,14 +85,34 @@ export default function AssetAllocationChart({
     return null
   }
 
-  // Custom label showing percentage
+  // Custom label showing asset name and percentage inside the pie
   const renderCustomLabel = (entry: any) => {
-    return `${entry.percentage.toFixed(1)}%`
+    const { cx, cy, midAngle, innerRadius, outerRadius, name, percentage } = entry
+    const RADIAN = Math.PI / 180
+    // Position label in the middle of the slice
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+    const x = cx + radius * Math.cos(-midAngle * RADIAN)
+    const y = cy + radius * Math.sin(-midAngle * RADIAN)
+
+    return (
+      <text
+        x={x}
+        y={y}
+        fill="white"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize="13"
+        fontWeight="600"
+      >
+        <tspan x={x} dy="-0.5em">{name}</tspan>
+        <tspan x={x} dy="1.2em">{percentage.toFixed(1)}%</tspan>
+      </text>
+    )
   }
 
   return (
     <div className="asset-allocation-chart">
-      <ResponsiveContainer width="100%" height={250}>
+      <ResponsiveContainer width="100%" height="100%" minHeight={200}>
         <PieChart>
           <Pie
             data={chartData}
@@ -100,7 +120,7 @@ export default function AssetAllocationChart({
             cy="50%"
             labelLine={false}
             label={renderCustomLabel}
-            outerRadius={80}
+            outerRadius="70%"
             fill="#8884d8"
             dataKey="value"
           >
@@ -109,15 +129,6 @@ export default function AssetAllocationChart({
             ))}
           </Pie>
           <Tooltip content={<CustomTooltip />} />
-          <Legend
-            verticalAlign="bottom"
-            height={36}
-            formatter={(value, entry: any) => (
-              <span style={{ color: '#374151', fontSize: '0.875rem' }}>
-                {value}
-              </span>
-            )}
-          />
         </PieChart>
       </ResponsiveContainer>
     </div>

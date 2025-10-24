@@ -1080,3 +1080,94 @@ class TestOpenPositionsOverview:
 
         # Count of transactions with fees > 0 = 3
         assert data["fee_transaction_count"] == 3
+
+
+class TestAssetNames:
+    """Tests for asset_name field functionality"""
+
+    @pytest.mark.asyncio
+    async def test_positions_endpoint_returns_asset_name_field(
+        self, test_client, db_session, sample_transactions
+    ):
+        """Test that /api/portfolio/positions returns asset_name field"""
+        response = await test_client.get("/api/portfolio/positions")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify asset_name field is present in all positions
+        for position in data:
+            assert "asset_name" in position
+            assert "symbol" in position
+
+    @pytest.mark.asyncio
+    async def test_asset_name_is_nullable(
+        self, test_client, db_session
+    ):
+        """Test that asset_name can be null for positions without names"""
+        # Create a position without asset name
+        transaction = Transaction(
+            transaction_date=datetime(2024, 1, 1),
+            asset_type=AssetType.STOCK,
+            transaction_type=TransactionType.BUY,
+            symbol="TEST",
+            quantity=Decimal("10"),
+            price_per_unit=Decimal("100.00"),
+            total_amount=Decimal("1000.00"),
+            currency="USD",
+            source_type="REVOLUT",
+        )
+        db_session.add(transaction)
+        await db_session.commit()
+
+        # Recalculate positions
+        portfolio_service = PortfolioService(db_session)
+        await portfolio_service.recalculate_all_positions()
+
+        response = await test_client.get("/api/portfolio/positions")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        test_position = next(p for p in data if p["symbol"] == "TEST")
+        # Asset name should be null since we haven't fetched prices
+        assert test_position["asset_name"] is None
+
+    @pytest.mark.asyncio
+    async def test_update_position_price_stores_asset_name(
+        self, test_client, db_session
+    ):
+        """Test that update_position_price stores asset_name when provided"""
+        # Create a position
+        transaction = Transaction(
+            transaction_date=datetime(2024, 1, 1),
+            asset_type=AssetType.STOCK,
+            transaction_type=TransactionType.BUY,
+            symbol="MSTR",
+            quantity=Decimal("10"),
+            price_per_unit=Decimal("500.00"),
+            total_amount=Decimal("5000.00"),
+            currency="USD",
+            source_type="REVOLUT",
+        )
+        db_session.add(transaction)
+        await db_session.commit()
+
+        # Recalculate positions
+        portfolio_service = PortfolioService(db_session)
+        await portfolio_service.recalculate_all_positions()
+
+        # Update price with asset name
+        await portfolio_service.update_position_price(
+            "MSTR",
+            Decimal("550.00"),
+            asset_name="MicroStrategy Incorporated"
+        )
+
+        # Verify asset_name was stored
+        response = await test_client.get("/api/portfolio/positions")
+        assert response.status_code == 200
+        data = response.json()
+
+        mstr_position = next(p for p in data if p["symbol"] == "MSTR")
+        assert mstr_position["asset_name"] == "MicroStrategy Incorporated"

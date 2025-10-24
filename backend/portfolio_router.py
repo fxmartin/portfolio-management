@@ -148,6 +148,7 @@ async def get_positions(
 
                 result.append({
                     "symbol": position.symbol,
+                    "asset_name": position.asset_name,
                     "asset_type": position.asset_type.value,
                     "quantity": float(position.quantity),
                     "avg_cost_basis": float(position.avg_cost_basis) if position.avg_cost_basis else 0,
@@ -209,7 +210,8 @@ async def refresh_all_prices(
                 for symbol, price_data in stock_prices.items():
                     try:
                         current_price = price_data.current_price
-                        await portfolio_service.update_position_price(symbol, current_price)
+                        asset_name = price_data.asset_name
+                        await portfolio_service.update_position_price(symbol, current_price, asset_name)
                         updated_count += 1
                     except Exception as e:
                         print(f"Failed to update price for {symbol}: {e}")
@@ -233,7 +235,8 @@ async def refresh_all_prices(
                     for symbol, price_data in crypto_prices.items():
                         try:
                             current_price = price_data.current_price
-                            await portfolio_service.update_position_price(symbol, current_price)
+                            asset_name = price_data.asset_name
+                            await portfolio_service.update_position_price(symbol, current_price, asset_name)
                             updated_count += 1
                         except Exception as e:
                             print(f"Failed to update price for {symbol}: {e}")

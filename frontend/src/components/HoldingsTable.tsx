@@ -13,6 +13,7 @@ const DEFAULT_REFRESH_INTERVAL = REFRESH_INTERVALS.HOLDINGS_TABLE
 
 export interface Position {
   symbol: string
+  asset_name: string | null
   asset_type: string
   quantity: number
   avg_cost_basis: number
@@ -29,8 +30,9 @@ export interface Position {
   fee_transaction_count: number
 }
 
-// Asset name mapping for display
+// Asset name mapping for display (fallback if API doesn't provide name)
 const ASSET_NAMES: Record<string, string> = {
+  // Cryptocurrencies
   'BTC': 'Bitcoin',
   'ETH': 'Ethereum',
   'SOL': 'Solana',
@@ -46,6 +48,22 @@ const ASSET_NAMES: Record<string, string> = {
   'AVAX': 'Avalanche',
   'ATOM': 'Cosmos',
   'ALGO': 'Algorand',
+  // Stocks
+  'MSTR': 'MicroStrategy Incorporated',
+  'AAPL': 'Apple Inc.',
+  'MSFT': 'Microsoft Corporation',
+  'GOOGL': 'Alphabet Inc.',
+  'AMZN': 'Amazon.com Inc.',
+  'TSLA': 'Tesla, Inc.',
+  'NVDA': 'NVIDIA Corporation',
+  'META': 'Meta Platforms, Inc.',
+  // ETFs
+  'AMEM': 'Amundi MSCI Emerging Markets',
+  'MWOQ': 'Amundi MSCI World',
+  'SPY': 'SPDR S&P 500 ETF Trust',
+  'QQQ': 'Invesco QQQ Trust',
+  'VTI': 'Vanguard Total Stock Market ETF',
+  'VOO': 'Vanguard S&P 500 ETF',
 }
 
 type SortKey = 'symbol' | 'quantity' | 'avg_cost_basis' | 'current_price' | 'current_value' | 'total_fees' | 'unrealized_pnl' | 'unrealized_pnl_percent'
@@ -130,7 +148,8 @@ export default function HoldingsTable({
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
       result = result.filter(p => {
-        const name = ASSET_NAMES[p.symbol] || ''
+        // Use asset_name from API, fallback to ASSET_NAMES mapping
+        const name = p.asset_name || ASSET_NAMES[p.symbol] || ''
         return (
           p.symbol.toLowerCase().includes(term) ||
           name.toLowerCase().includes(term)
@@ -282,10 +301,10 @@ export default function HoldingsTable({
                 <tr key={position.symbol}>
                   <td className="symbol-cell">
                     <div className="symbol-name">{position.symbol}</div>
-                    <div className="asset-name">{ASSET_NAMES[position.symbol] || ''}</div>
+                    <div className="asset-name">{position.asset_name || ASSET_NAMES[position.symbol] || ''}</div>
                   </td>
                   <td className="align-right">
-                    {position.quantity.toFixed(position.asset_type === 'CRYPTO' ? 8 : 2)} {position.symbol}
+                    {position.quantity.toFixed(position.asset_type === 'CRYPTO' ? 8 : 2)}
                   </td>
                   <td className="align-right">
                     {formatCurrency(position.avg_cost_basis, position.currency)}

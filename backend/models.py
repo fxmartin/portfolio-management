@@ -76,6 +76,7 @@ class Position(Base):
 
     id = Column(Integer, primary_key=True)
     symbol = Column(String(20), nullable=False, unique=True, index=True)
+    asset_name = Column(String(255))  # Full name (e.g., "MicroStrategy", "Bitcoin")
     asset_type = Column(Enum(AssetType), nullable=False)
     quantity = Column(Numeric(18, 8), nullable=False)
     avg_cost_basis = Column(Numeric(18, 8))

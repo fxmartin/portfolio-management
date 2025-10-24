@@ -15,6 +15,7 @@ describe('HoldingsTable', () => {
   const mockPositions: Position[] = [
     {
       symbol: 'BTC',
+      asset_name: 'Bitcoin',
       asset_type: 'CRYPTO',
       quantity: 0.5,
       avg_cost_basis: 45000,
@@ -32,6 +33,7 @@ describe('HoldingsTable', () => {
     },
     {
       symbol: 'ETH',
+      asset_name: 'Ethereum',
       asset_type: 'CRYPTO',
       quantity: 2.5,
       avg_cost_basis: 2000,
@@ -49,6 +51,7 @@ describe('HoldingsTable', () => {
     },
     {
       symbol: 'SOL',
+      asset_name: 'Solana',
       asset_type: 'CRYPTO',
       quantity: 16.36,
       avg_cost_basis: 100,
@@ -649,6 +652,146 @@ describe('HoldingsTable', () => {
       })
 
       expect(onRefresh).toHaveBeenCalled()
+    })
+  })
+
+  describe('Asset Names', () => {
+    beforeEach(() => {
+      mockedAxios.get.mockResolvedValue({ data: mockPositions })
+    })
+
+    it('should display asset names from API for crypto assets', async () => {
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Bitcoin')).toBeInTheDocument()
+        expect(screen.getByText('Ethereum')).toBeInTheDocument()
+        expect(screen.getByText('Solana')).toBeInTheDocument()
+      })
+    })
+
+    it('should display stock asset names from API', async () => {
+      const stockPositions: Position[] = [
+        {
+          symbol: 'MSTR',
+          asset_name: 'MicroStrategy Incorporated',
+          asset_type: 'STOCK',
+          quantity: 10,
+          avg_cost_basis: 500,
+          total_cost_basis: 5000,
+          current_price: 550,
+          current_value: 5500,
+          unrealized_pnl: 500,
+          unrealized_pnl_percent: 10.0,
+          currency: 'USD',
+          first_purchase_date: '2024-01-01T00:00:00Z',
+          last_transaction_date: '2024-01-15T00:00:00Z',
+          last_price_update: '2024-01-20T10:30:00Z',
+          total_fees: 5.00,
+          fee_transaction_count: 1,
+        },
+      ]
+
+      mockedAxios.get.mockResolvedValue({ data: stockPositions })
+
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('MSTR')).toBeInTheDocument()
+        expect(screen.getByText('MicroStrategy Incorporated')).toBeInTheDocument()
+      })
+    })
+
+    it('should fallback to ASSET_NAMES mapping when API returns null', async () => {
+      const positionWithNullName: Position[] = [
+        {
+          symbol: 'AAPL',
+          asset_name: null,
+          asset_type: 'STOCK',
+          quantity: 5,
+          avg_cost_basis: 150,
+          total_cost_basis: 750,
+          current_price: 155,
+          current_value: 775,
+          unrealized_pnl: 25,
+          unrealized_pnl_percent: 3.33,
+          currency: 'USD',
+          first_purchase_date: '2024-01-01T00:00:00Z',
+          last_transaction_date: '2024-01-15T00:00:00Z',
+          last_price_update: '2024-01-20T10:30:00Z',
+          total_fees: 2.00,
+          fee_transaction_count: 1,
+        },
+      ]
+
+      mockedAxios.get.mockResolvedValue({ data: positionWithNullName })
+
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('AAPL')).toBeInTheDocument()
+        // Should display "Apple Inc." from ASSET_NAMES mapping
+        expect(screen.getByText('Apple Inc.')).toBeInTheDocument()
+      })
+    })
+
+    it('should search by asset name from API', async () => {
+      const user = userEvent.setup()
+
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+      })
+
+      const searchInput = screen.getByPlaceholderText(/search by symbol or name/i)
+      await user.type(searchInput, 'Bitcoin')
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+        expect(screen.queryByText('ETH')).not.toBeInTheDocument()
+        expect(screen.queryByText('SOL')).not.toBeInTheDocument()
+      })
+    })
+
+    it('should search by asset name from fallback mapping', async () => {
+      const user = userEvent.setup()
+      const positionWithNullName: Position[] = [
+        {
+          symbol: 'TSLA',
+          asset_name: null,
+          asset_type: 'STOCK',
+          quantity: 5,
+          avg_cost_basis: 200,
+          total_cost_basis: 1000,
+          current_price: 210,
+          current_value: 1050,
+          unrealized_pnl: 50,
+          unrealized_pnl_percent: 5.0,
+          currency: 'USD',
+          first_purchase_date: '2024-01-01T00:00:00Z',
+          last_transaction_date: '2024-01-15T00:00:00Z',
+          last_price_update: '2024-01-20T10:30:00Z',
+          total_fees: 3.00,
+          fee_transaction_count: 1,
+        },
+      ]
+
+      mockedAxios.get.mockResolvedValue({ data: positionWithNullName })
+
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('TSLA')).toBeInTheDocument()
+      })
+
+      const searchInput = screen.getByPlaceholderText(/search by symbol or name/i)
+      // Search for "Tesla" which is in the ASSET_NAMES mapping
+      await user.type(searchInput, 'Tesla')
+
+      await waitFor(() => {
+        expect(screen.getByText('TSLA')).toBeInTheDocument()
+      })
     })
   })
 })

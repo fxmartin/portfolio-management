@@ -56,6 +56,7 @@ class PriceData:
     ask: Optional[Decimal]
     last_updated: datetime
     market_state: str  # 'open', 'closed', 'pre', 'post'
+    asset_name: Optional[str] = None  # Full name (e.g., "MicroStrategy", "Bitcoin")
 
 
 class RateLimiter:
@@ -326,6 +327,9 @@ class YahooFinanceService:
         market_state_raw = info.get('marketState', 'CLOSED')
         market_state = self._normalize_market_state(market_state_raw)
 
+        # Extract asset name - try shortName first, fallback to longName
+        asset_name = info.get('shortName') or info.get('longName')
+
         return PriceData(
             ticker=ticker,
             current_price=current_price,
@@ -336,7 +340,8 @@ class YahooFinanceService:
             bid=bid,
             ask=ask,
             last_updated=datetime.now(),
-            market_state=market_state
+            market_state=market_state,
+            asset_name=asset_name
         )
 
     def _normalize_market_state(self, state: str) -> str:

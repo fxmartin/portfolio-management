@@ -181,7 +181,8 @@ describe('OpenPositionsCard', () => {
 
       await waitFor(() => {
         // Should show fee amount and transaction count
-        expect(screen.getByText(/€ 43.75 in 12 transactions' fees/)).toBeInTheDocument()
+        expect(screen.getByText(/Current Holdings Fees/)).toBeInTheDocument()
+        expect(screen.getByText(/€ 43.75 \(12 trades\)/)).toBeInTheDocument()
       })
     })
 
@@ -192,11 +193,12 @@ describe('OpenPositionsCard', () => {
 
       await waitFor(() => {
         // Should show fee amount and transaction count
-        expect(screen.getByText(/€ 25.50 in 5 transactions' fees/)).toBeInTheDocument()
+        expect(screen.getByText(/Current Holdings Fees/)).toBeInTheDocument()
+        expect(screen.getByText(/€ 25.50 \(5 trades\)/)).toBeInTheDocument()
       })
     })
 
-    it('should not show fees when count is zero', async () => {
+    it('should show zero fees when count is zero', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockEmptyPositions })
 
       render(<OpenPositionsCard autoRefresh={false} />)
@@ -205,8 +207,9 @@ describe('OpenPositionsCard', () => {
         expect(screen.getByRole('heading', { name: /Open Positions/i })).toBeInTheDocument()
       })
 
-      // Should not show fee information when there are no fees
-      expect(screen.queryByText(/transactions' fees/)).not.toBeInTheDocument()
+      // Should show fee information even when zero
+      expect(screen.getByText(/Current Holdings Fees/)).toBeInTheDocument()
+      expect(screen.getByText(/€ 0.00 \(0 trades\)/)).toBeInTheDocument()
     })
 
     it('should not have green background on Total Value metric card', async () => {

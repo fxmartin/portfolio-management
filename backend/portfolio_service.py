@@ -257,13 +257,14 @@ class PortfolioService:
         await self.session.commit()
         return count
 
-    async def update_position_price(self, symbol: str, current_price: Decimal) -> Position:
+    async def update_position_price(self, symbol: str, current_price: Decimal, asset_name: str = None) -> Position:
         """
         Update position with current market price and calculate unrealized P&L.
 
         Args:
             symbol: Asset symbol
             current_price: Current market price
+            asset_name: Optional full asset name (e.g., "MicroStrategy", "Bitcoin")
 
         Returns:
             Updated Position object
@@ -275,6 +276,10 @@ class PortfolioService:
         # Update current price
         position.current_price = current_price
         position.last_price_update = datetime.now()
+
+        # Update asset name if provided
+        if asset_name:
+            position.asset_name = asset_name
 
         # Calculate current value
         position.current_value = position.quantity * current_price

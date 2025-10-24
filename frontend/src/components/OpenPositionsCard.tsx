@@ -227,12 +227,9 @@ export default function OpenPositionsCard({
           <div className={`metric-value ${getPnLClassName(data.unrealized_pnl)}`}>
             {formatPnLChange(data.unrealized_pnl, data.unrealized_pnl_percent, BASE_CURRENCY)}
           </div>
-          {data.fee_transaction_count > 0 && (
-            <div className="metric-subtitle fee-info">
-              {formatCurrency(data.total_fees, BASE_CURRENCY)} in {data.fee_transaction_count} transactions' fees
-            </div>
-          )}
-          <div className="metric-subtitle">From open positions only</div>
+          <div className="metric-subtitle">
+            Current Holdings Fees {formatCurrency(data.total_fees, BASE_CURRENCY)} ({data.fee_transaction_count} trade{data.fee_transaction_count === 1 ? '' : 's'})
+          </div>
         </div>
       </div>
 
