@@ -257,14 +257,19 @@ class PortfolioService:
         await self.session.commit()
         return count
 
-    async def update_position_price(self, symbol: str, current_price: Decimal, asset_name: str = None) -> Position:
+    async def update_position_price(self, symbol: str, current_price: Decimal, asset_name: str = None, price_currency: str = 'USD', usd_eur_rate: Decimal = None) -> Position:
         """
         Update position with current market price and calculate unrealized P&L.
 
+        Prices are kept in their original currency (USD/EUR).
+        Values and P&L are converted to EUR for portfolio-level calculations.
+
         Args:
             symbol: Asset symbol
-            current_price: Current market price
+            current_price: Current market price (in original currency)
             asset_name: Optional full asset name (e.g., "MicroStrategy", "Bitcoin")
+            price_currency: Currency of the price (USD or EUR)
+            usd_eur_rate: USD to EUR exchange rate (if needed for conversion)
 
         Returns:
             Updated Position object
@@ -273,7 +278,7 @@ class PortfolioService:
         if not position:
             raise ValueError(f"Position not found for symbol: {symbol}")
 
-        # Update current price
+        # Update current price (keep in original currency for display)
         position.current_price = current_price
         position.last_price_update = datetime.now()
 
@@ -281,16 +286,30 @@ class PortfolioService:
         if asset_name:
             position.asset_name = asset_name
 
-        # Calculate current value
-        position.current_value = position.quantity * current_price
+        # Calculate current value in EUR
+        # If position is in USD, convert to EUR; if already EUR, use as-is
+        if position.currency == 'USD' and usd_eur_rate:
+            # Convert: (quantity * price_usd) / exchange_rate = value_eur
+            # usd_eur_rate from EURUSD=X means "1 EUR = X USD", so divide to get EUR
+            position.current_value = (position.quantity * current_price) / usd_eur_rate
+        else:
+            # Already in EUR or no conversion needed
+            position.current_value = position.quantity * current_price
 
-        # Calculate unrealized P&L
-        if position.quantity > 0 and position.avg_cost_basis:
-            position.unrealized_pnl = (current_price - position.avg_cost_basis) * position.quantity
+        # Calculate unrealized P&L in EUR
+        if position.quantity > 0 and position.total_cost_basis:
+            # Convert total cost basis to EUR if needed
+            if position.currency == 'USD' and usd_eur_rate:
+                total_cost_basis_eur = position.total_cost_basis / usd_eur_rate
+            else:
+                total_cost_basis_eur = position.total_cost_basis
 
-            # Calculate percentage
-            if position.avg_cost_basis > 0:
-                pnl_pct = ((current_price / position.avg_cost_basis) - Decimal("1")) * Decimal("100")
+            # P&L = current_value_eur - total_cost_basis_eur
+            position.unrealized_pnl = position.current_value - total_cost_basis_eur
+
+            # Calculate percentage based on cost basis
+            if total_cost_basis_eur > 0:
+                pnl_pct = (position.unrealized_pnl / total_cost_basis_eur) * Decimal("100")
                 position.unrealized_pnl_percent = pnl_pct.quantize(Decimal("0.01"))
         else:
             position.unrealized_pnl = Decimal("0")

@@ -24,6 +24,16 @@ except ImportError:
     )
 
 
+@pytest.fixture
+def mock_exchange_rate():
+    """Mock USD to EUR exchange rate for tests"""
+    async def mock_rate():
+        return Decimal("1.0")  # Use 1:1 for tests to keep assertions simple
+
+    with patch.object(YahooFinanceService, 'get_usd_to_eur_rate', new=mock_rate):
+        yield
+
+
 class TestPriceData:
     """Test PriceData model"""
 
@@ -160,7 +170,7 @@ class TestYahooFinanceService:
         assert hasattr(service, 'retry_policy')
 
     @pytest.mark.asyncio
-    async def test_get_stock_prices_single_ticker(self, service):
+    async def test_get_stock_prices_single_ticker(self, service, mock_exchange_rate):
         """Test fetching price for single ticker"""
         with patch('yfinance.Ticker') as mock_ticker:
             # Mock yfinance response
@@ -227,7 +237,7 @@ class TestYahooFinanceService:
                 assert "TSLA" in result
 
     @pytest.mark.asyncio
-    async def test_get_quote_detailed(self, service):
+    async def test_get_quote_detailed(self, service, mock_exchange_rate):
         """Test getting detailed quote"""
         with patch('yfinance.Ticker') as mock_ticker:
             mock_info = {
@@ -386,7 +396,7 @@ class TestYahooFinanceService:
             'marketState': 'REGULAR'
         }
 
-        result = service._parse_ticker_info("AAPL", info)
+        result = await service._parse_ticker_info("AAPL", info)
 
         assert result.day_change_percent == Decimal(0)
 

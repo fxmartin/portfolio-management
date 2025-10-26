@@ -202,6 +202,9 @@ async def refresh_all_prices(
         updated_count = 0
         failed_symbols = []
 
+        # Get USD to EUR exchange rate for currency conversion
+        usd_eur_rate = await yahoo_service.get_usd_to_eur_rate()
+
         # Fetch prices for stocks/metals
         if stock_symbols or metal_symbols:
             all_stock_symbols = stock_symbols + metal_symbols
@@ -211,7 +214,14 @@ async def refresh_all_prices(
                     try:
                         current_price = price_data.current_price
                         asset_name = price_data.asset_name
-                        await portfolio_service.update_position_price(symbol, current_price, asset_name)
+                        price_currency = price_data.price_currency
+                        await portfolio_service.update_position_price(
+                            symbol,
+                            current_price,
+                            asset_name,
+                            price_currency,
+                            usd_eur_rate
+                        )
                         updated_count += 1
                     except Exception as e:
                         print(f"Failed to update price for {symbol}: {e}")
@@ -236,7 +246,14 @@ async def refresh_all_prices(
                         try:
                             current_price = price_data.current_price
                             asset_name = price_data.asset_name
-                            await portfolio_service.update_position_price(symbol, current_price, asset_name)
+                            price_currency = price_data.price_currency
+                            await portfolio_service.update_position_price(
+                                symbol,
+                                current_price,
+                                asset_name,
+                                price_currency,
+                                usd_eur_rate
+                            )
                             updated_count += 1
                         except Exception as e:
                             print(f"Failed to update price for {symbol}: {e}")
@@ -331,18 +348,33 @@ async def get_open_positions_overview(
                 "fee_transaction_count": 0,
             }
 
-        # Calculate totals
+        # Calculate totals (all values already in EUR from update_position_price)
         total_value = Decimal("0")
-        total_cost_basis = Decimal("0")
+        unrealized_pnl = Decimal("0")
+
+        # Check if positions have been priced (have unrealized_pnl calculated)
+        all_positions_priced = all(p.unrealized_pnl is not None for p in open_positions)
 
         for position in open_positions:
             if position.current_value:
                 total_value += position.current_value
-            if position.total_cost_basis:
-                total_cost_basis += position.total_cost_basis
+            if position.unrealized_pnl is not None:
+                unrealized_pnl += position.unrealized_pnl
 
-        # Calculate unrealized P&L
-        unrealized_pnl = total_value - total_cost_basis
+        # Calculate cost basis and P&L
+        # If positions are priced, derive cost basis from value and P&L (avoids USD/EUR mixing)
+        # If not priced, sum up cost basis directly and calculate P&L
+        if all_positions_priced and (total_value > 0 or unrealized_pnl != 0):
+            total_cost_basis = total_value - unrealized_pnl
+        else:
+            # Fallback: sum cost basis directly when positions aren't priced
+            # TODO: This doesn't handle USD cost basis correctly - need exchange rate
+            total_cost_basis = sum(
+                p.total_cost_basis for p in open_positions if p.total_cost_basis
+            )
+            # Recalculate P&L from value and cost basis
+            unrealized_pnl = total_value - total_cost_basis
+
         unrealized_pnl_percent = Decimal("0")
         if total_cost_basis > 0:
             unrealized_pnl_percent = (unrealized_pnl / total_cost_basis) * Decimal("100")
@@ -386,6 +418,8 @@ def _calculate_type_metrics(positions: List) -> Dict:
     """
     Calculate aggregated metrics for a list of positions of the same asset type.
 
+    Uses pre-calculated unrealized_pnl from each position to avoid USD/EUR mixing issues.
+
     Args:
         positions: List of Position objects of the same type
 
@@ -400,15 +434,30 @@ def _calculate_type_metrics(positions: List) -> Dict:
         }
 
     total_value = Decimal("0")
-    total_cost_basis = Decimal("0")
+    pnl = Decimal("0")
+
+    # Check if positions have been priced
+    all_positions_priced = all(p.unrealized_pnl is not None for p in positions)
 
     for position in positions:
         if position.current_value:
             total_value += position.current_value
-        if position.total_cost_basis:
-            total_cost_basis += position.total_cost_basis
+        if position.unrealized_pnl is not None:
+            pnl += position.unrealized_pnl
 
-    pnl = total_value - total_cost_basis
+    # Calculate cost basis and P&L
+    # If priced, derive cost basis from value and P&L (EUR-safe)
+    # If not priced, sum cost basis directly and calculate P&L
+    if all_positions_priced and (total_value > 0 or pnl != 0):
+        total_cost_basis = total_value - pnl
+    else:
+        # Fallback: sum cost basis directly when positions aren't priced
+        total_cost_basis = sum(
+            p.total_cost_basis for p in positions if p.total_cost_basis
+        )
+        # Recalculate P&L from value and cost basis
+        pnl = total_value - total_cost_basis
+
     pnl_percent = Decimal("0")
     if total_cost_basis > 0:
         pnl_percent = (pnl / total_cost_basis) * Decimal("100")

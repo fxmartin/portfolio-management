@@ -57,6 +57,7 @@ class PriceData:
     last_updated: datetime
     market_state: str  # 'open', 'closed', 'pre', 'post'
     asset_name: Optional[str] = None  # Full name (e.g., "MicroStrategy", "Bitcoin")
+    price_currency: str = 'USD'  # Currency of the price (USD for US stocks, EUR for European stocks)
 
 
 class RateLimiter:
@@ -149,6 +150,9 @@ class YahooFinanceService:
         """Initialize Yahoo Finance service"""
         self.rate_limiter = RateLimiter(max_calls=100, period=60)
         self.retry_policy = ExponentialBackoff(max_retries=3)
+        self._usd_eur_rate: Optional[Decimal] = None
+        self._exchange_rate_updated: Optional[datetime] = None
+        self._exchange_rate_ttl: int = 3600  # 1 hour in seconds
 
     def _transform_ticker(self, ticker: str) -> str:
         """
@@ -173,6 +177,87 @@ class YahooFinanceService:
 
         # Return as-is for standard stock tickers
         return ticker
+
+    async def get_usd_to_eur_rate(self) -> Decimal:
+        """
+        Fetch USD to EUR exchange rate from Yahoo Finance
+
+        Uses cached rate if available and not expired.
+
+        Returns:
+            Exchange rate (USD to EUR)
+        """
+        # Check cache
+        if self._usd_eur_rate is not None and self._exchange_rate_updated is not None:
+            age = (datetime.now() - self._exchange_rate_updated).total_seconds()
+            if age < self._exchange_rate_ttl:
+                return self._usd_eur_rate
+
+        # Fetch new rate
+        try:
+            await self.rate_limiter.acquire()
+
+            async def fetch():
+                # EUR/USD pair (EURUSD=X gives EUR per USD, we need to invert for USD to EUR)
+                ticker_obj = yf.Ticker("EURUSD=X")
+                info = ticker_obj.info
+
+                if 'regularMarketPrice' in info and info['regularMarketPrice']:
+                    rate = Decimal(str(info['regularMarketPrice']))
+                    self._usd_eur_rate = rate
+                    self._exchange_rate_updated = datetime.now()
+                    print(f"[Exchange Rate] Updated USD->EUR: {rate}")
+                    return rate
+                else:
+                    # Fallback: try using history
+                    hist = ticker_obj.history(period='1d')
+                    if not hist.empty:
+                        rate = Decimal(str(hist['Close'].iloc[-1]))
+                        self._usd_eur_rate = rate
+                        self._exchange_rate_updated = datetime.now()
+                        print(f"[Exchange Rate] Updated USD->EUR from history: {rate}")
+                        return rate
+                    else:
+                        # Last resort fallback
+                        fallback_rate = Decimal("0.92")  # Approximate USD to EUR
+                        print(f"[Exchange Rate] Using fallback rate: {fallback_rate}")
+                        return fallback_rate
+
+            return await self.retry_policy.execute(fetch)
+
+        except Exception as e:
+            print(f"Failed to fetch exchange rate: {e}")
+            # Return fallback if we have no cached rate
+            if self._usd_eur_rate:
+                return self._usd_eur_rate
+            return Decimal("0.92")  # Approximate fallback
+
+    def _needs_currency_conversion(self, ticker: str) -> bool:
+        """
+        Determine if a ticker needs USD to EUR conversion
+
+        US stocks and crypto (priced in USD) need conversion.
+        European ETFs and stocks are already in EUR.
+
+        Args:
+            ticker: Ticker symbol
+
+        Returns:
+            True if conversion needed
+        """
+        # Crypto is always in USD (BTC-USD, ETH-USD, etc.)
+        if ticker in CRYPTO_MAPPINGS:
+            return True
+
+        # ETFs with .BE, .PA, .DE, etc. are in EUR
+        if ticker in ETF_MAPPINGS:
+            yf_ticker = ETF_MAPPINGS[ticker]
+            if any(yf_ticker.endswith(suffix) for suffix in ['.BE', '.PA', '.DE', '.MI', '.AS']):
+                return False
+
+        # US stocks (no suffix or .US) are in USD
+        # Assume stocks without European exchange suffixes are USD
+        return True
 
     async def get_stock_prices(self, tickers: List[str]) -> Dict[str, PriceData]:
         """
@@ -256,7 +341,7 @@ class YahooFinanceService:
                     continue
 
                 # Use original ticker in response
-                price_data = self._parse_ticker_info(original_ticker, info)
+                price_data = await self._parse_ticker_info(original_ticker, info)
                 result[original_ticker] = price_data
             except Exception as e:
                 print(f"Failed to parse {original_ticker}: {e}")
@@ -297,23 +382,26 @@ class YahooFinanceService:
             raise ValueError(f"Invalid ticker or no data available: {ticker}")
 
         # Use original ticker in response, not transformed one
-        return self._parse_ticker_info(ticker, info)
+        return await self._parse_ticker_info(ticker, info)
 
-    def _parse_ticker_info(self, ticker: str, info: dict) -> PriceData:
+    async def _parse_ticker_info(self, ticker: str, info: dict) -> PriceData:
         """
-        Parse ticker info into PriceData
+        Parse ticker info into PriceData (keeps prices in original currency)
 
         Args:
             ticker: Ticker symbol
             info: Info dictionary from yfinance
 
         Returns:
-            PriceData object
+            PriceData object with prices in original currency (USD or EUR)
         """
         current_price = Decimal(str(info.get('regularMarketPrice', 0)))
         previous_close = Decimal(str(info.get('previousClose', 0)))
         day_change = current_price - previous_close
         day_change_percent = (day_change / previous_close * 100) if previous_close > 0 else Decimal(0)
+
+        # Determine price currency (USD for US stocks/crypto, EUR for European stocks)
+        price_currency = 'EUR' if not self._needs_currency_conversion(ticker) else 'USD'
 
         # Bid/Ask may not be available when market is closed
         bid = None
@@ -341,7 +429,8 @@ class YahooFinanceService:
             ask=ask,
             last_updated=datetime.now(),
             market_state=market_state,
-            asset_name=asset_name
+            asset_name=asset_name,
+            price_currency=price_currency
         )
 
     def _normalize_market_state(self, state: str) -> str:
