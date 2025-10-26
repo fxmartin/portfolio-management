@@ -8,7 +8,7 @@ This document provides a high-level overview of all user stories for the Portfol
 
 **Development Metrics**:
 - **Active Development Time**: ~14-19 hours (Oct 21-26, 2025)
-- **Project Completion**: 84% (104/123 story points)
+- **Project Completion**: 64% (104/162 story points across 7 epics)
 - **Activity**: 27 commits, 13 GitHub issues (10 closed), 4 active development days
 - *Estimate updated via: `python3 scripts/estimate_hours.py`*
 
@@ -22,7 +22,7 @@ This document provides a high-level overview of all user stories for the Portfol
 
 ## Story Organization
 
-Stories are organized into 6 major epics, each with its own detailed documentation:
+Stories are organized into 7 major epics, each with its own detailed documentation:
 
 1. **[Epic 1: Transaction Import & Management](./stories/epic-01-transaction-import.md)** - CSV upload and parsing
 2. **[Epic 2: Portfolio Calculation Engine](./stories/epic-02-portfolio-calculation.md)** - FIFO calculations and P&L
@@ -30,6 +30,7 @@ Stories are organized into 6 major epics, each with its own detailed documentati
 4. **[Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md)** - Dashboard and charts
 5. **[Epic 5: Infrastructure & DevOps](./stories/epic-05-infrastructure.md)** - Docker and development setup
 6. **[Epic 6: UI Modernization & Navigation](./stories/epic-06-ui-modernization.md)** - Modern sidebar and theme
+7. **[Epic 7: Manual Transaction Management](./stories/epic-07-manual-transaction-management.md)** - Create, edit, delete transactions
 
 ## Overall Progress Tracking
 
@@ -42,7 +43,8 @@ Stories are organized into 6 major epics, each with its own detailed documentati
 | [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 4 | 19 | 🟡 In Progress | 42% (8/19 pts) | Dashboard, auto-refresh |
 | [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | 🟡 In Progress | 85% (11/13 pts) | Docker, database |
 | [Epic 6: UI Modernization](./stories/epic-06-ui-modernization.md) | 7 | 18 | ✅ Complete | 100% (18/18 pts) | Sidebar, tabs, theme |
-| **Total** | **31** | **123** | **In Progress** | **~84%** (104/123 pts) | |
+| [Epic 7: Manual Transactions](./stories/epic-07-manual-transaction-management.md) | 6 | 39 | 🔴 Not Started | 0% (0/39 pts) | Create, edit, delete |
+| **Total** | **37** | **162** | **In Progress** | **~64%** (104/162 pts) | |
 
 ## Recent Updates (Oct 24, 2025)
 
@@ -210,6 +212,12 @@ Stories are organized into 6 major epics, each with its own detailed documentati
 - **Features**: Icon-only sidebar, tab-based content, clean light theme
 - **Key Stories**: 7 stories, 18 points
 - **Status**: ✅ Complete (100% complete - Modern UI with sidebar navigation, tab system, and design system)
+
+### [Epic 7: Manual Transaction Management](./stories/epic-07-manual-transaction-management.md)
+- **Goal**: Enable manual transaction creation, editing, and deletion
+- **Features**: Transaction input form, bulk import, edit with audit trail, safe deletion, validation engine
+- **Key Stories**: 6 stories, 39 points
+- **Status**: 🔴 Not Started (0% complete - Future enhancement for data corrections and manual entries)
 
 ## MVP Implementation Plan
 
