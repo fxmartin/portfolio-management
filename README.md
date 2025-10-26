@@ -31,9 +31,17 @@ portfolio-management/
 - **Dashboard**: Visualize holdings and performance with real-time updates
 - **Multi-Asset Support**: Handles stocks, crypto, metals, staking rewards, airdrops, mining
 
-## Recent Improvements (Oct 24, 2025)
+## Recent Improvements
 
-### Critical Bug Fixes
+### Critical Bug Fixes (Oct 26, 2025)
+- **Issue #13**: Fixed USD to EUR currency conversion bugs
+  - Problem 1: Position values multiplying by exchange rate instead of dividing (35% error)
+  - Problem 2: Cost basis aggregation mixing USD and EUR without conversion
+  - Impact: USD positions (MSTR) showing incorrect values and P&L calculations
+  - Result: 99.92% portfolio accuracy vs Revolut, all currency calculations now EUR-safe
+  - Enhancement: Added live exchange rate fetching with 1-hour cache
+
+### Earlier Fixes (Oct 24, 2025)
 - **Issue #3**: Fixed missing staking rewards in position calculations
   - Impact: All STAKING, AIRDROP, and MINING transactions now properly included
   - Result: SOL position corrected from 16.35579500 to 16.36990300 (0.01410800 SOL recovered)

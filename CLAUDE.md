@@ -178,6 +178,22 @@ User → React (3003) → FastAPI (8000) → PostgreSQL (5432)
 - Files Modified: `OpenPositionsCard.tsx/css`, `src/test/setup.ts` (ResizeObserver mock)
 - GitHub Issue: Closed #12
 
+**Issue #13: USD to EUR Currency Conversion Bugs (Oct 26, 2025)**
+- **Problem 1**: Position values incorrectly multiplying by exchange rate instead of dividing
+  - Impact: MSTR showing €6,616 instead of €4,890 (35% error)
+  - Symptom: USD positions overvalued in EUR by ~2x
+- **Problem 2**: Cost basis aggregation mixing USD and EUR without conversion
+  - Impact: Stock P&L showing -€1,665 (-11.36%) instead of -€620 (-4.55%)
+  - Symptom: Portfolio-level P&L calculations incorrect for multi-currency positions
+- **Root Cause**: EURUSD=X rate means "1 EUR = X USD", required division not multiplication
+- **Fix 1**: Changed `portfolio_service.py:293` from multiply to divide for USD→EUR conversion
+- **Fix 2**: Updated `portfolio_router.py` to use pre-calculated `unrealized_pnl` instead of raw `total_cost_basis`
+- **Enhancement**: Added `get_usd_to_eur_rate()` to YahooFinanceService with 1-hour cache
+- **Result**: 99.92% portfolio accuracy vs Revolut, all currency calculations now EUR-safe
+- **Test Coverage**: 9/9 open-positions tests passing, 13/13 portfolio service tests passing
+- **Files Modified**: `portfolio_service.py`, `portfolio_router.py`, `yahoo_finance_service.py`, `tests/test_yahoo_finance_service.py`
+- Commit: `acb0b78`
+
 ### Test Suite Improvements (Oct 24, 2025)
 
 **Crypto Parser Tests Fixed (19/19 passing)**
@@ -303,12 +319,23 @@ Health checks ensure services start in correct order. Backend waits for PostgreS
 - `POST /api/database/reset` - Reset database (requires confirmation)
 - `GET /api/database/stats` - Get transaction and position statistics
 
-## Cost Basis Accuracy
+## Portfolio Accuracy
 
+### Cost Basis Validation
 The FIFO calculator has been validated against Koinly:
 - **Accuracy**: 99.77% match with Koinly cost basis calculations
 - **Fee Handling**: Transaction fees properly included in cost basis
 - **Transaction Types**: Supports BUY, SELL, STAKING, AIRDROP, MINING
 - **Validation Data**: SOL position €2,850.33 (app) vs €2,857.00 (Koinly) = €6.67 difference (0.23%)
 
-This level of accuracy ensures reliable tax reporting and P&L calculations.
+### Multi-Currency Support
+Portfolio calculations handle USD and EUR positions correctly:
+- **Overall Accuracy**: 99.92% match with Revolut for stock positions
+- **Currency Conversion**: USD→EUR using live EURUSD=X rates (1-hour cache)
+- **Position Values**: All values normalized to EUR for portfolio-level calculations
+- **Validation Data**:
+  - MSTR: €4,890.44 (app) vs €4,896.49 (Revolut) = €6.05 difference (0.12%)
+  - AMEM: €6,612.62 (app) vs €6,608.43 (Revolut) = €4.19 difference (0.06%)
+  - MWOQ: €1,491.43 (app) vs €1,499.36 (Revolut) = €7.93 difference (0.53%)
+
+This level of accuracy ensures reliable tax reporting and P&L calculations across all asset types and currencies.
