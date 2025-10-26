@@ -6,6 +6,12 @@ This document provides a high-level overview of all user stories for the Portfol
 
 **Project Goal**: Build a personal portfolio tracker that imports Revolut transactions and displays real-time portfolio performance with live market data.
 
+**Development Metrics**:
+- **Active Development Time**: ~14-19 hours (Oct 21-26, 2025)
+- **Project Completion**: 84% (104/123 story points)
+- **Activity**: 27 commits, 13 GitHub issues (10 closed), 4 active development days
+- *Estimate updated via: `python3 scripts/estimate_hours.py`*
+
 ## Testing Requirements
 
 **⚠️ CRITICAL**: Every story MUST include comprehensive testing to be considered complete:

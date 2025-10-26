@@ -31,6 +31,15 @@ portfolio-management/
 - **Dashboard**: Visualize holdings and performance with real-time updates
 - **Multi-Asset Support**: Handles stocks, crypto, metals, staking rewards, airdrops, mining
 
+## Project Metrics
+
+**Development Time**: ~14-19 hours active development (Oct 21-26, 2025)
+- 27 git commits across 4 active days
+- 13 GitHub issues (10 closed)
+- **Completion**: 84% (104/123 story points)
+
+*Run `python3 scripts/estimate_hours.py` to see updated time estimates*
+
 ## Recent Improvements
 
 ### Critical Bug Fixes (Oct 26, 2025)

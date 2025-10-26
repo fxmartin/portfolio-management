@@ -18,9 +18,12 @@
       "Bash(docker ps:*)",
       "Bash(python3:*)",
       "Bash(docker exec:*)",
-      "Bash(docker-compose restart:*)"
+      "Bash(docker-compose restart:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh pr list:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "outputStyle": "default"
 }
