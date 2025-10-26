@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Portfolio management application for tracking stocks, metals, and cryptocurrency investments. Imports transactions from Revolut (metals & stocks) and Koinly (crypto) CSV exports, calculates FIFO cost basis with fee-inclusive calculations, and displays real-time portfolio performance with live market data.
 
-**Current Status**: ~84% complete (104/123 story points) - All core features implemented. Transaction import, FIFO calculations, live prices, and dashboard visualization complete. Cost basis calculations validated against Koinly at 99.77% accuracy.
+**Current Status**: ~45% complete (104/229 story points across 8 epics) - All core features implemented. Transaction import, FIFO calculations, live prices, and dashboard visualization complete. Cost basis calculations validated against Koinly at 99.77% accuracy. Epic 8 (AI Market Analysis) now planned.
 
 ## Essential Commands
 
@@ -260,7 +260,7 @@ Current test files (all passing):
 ## Development Workflow
 
 ### Working on a New Story
-1. Check STORIES.md for current sprint focus (currently Epic 4: Portfolio Visualization)
+1. Check STORIES.md for current sprint focus (currently Epic 4: Portfolio Visualization, Epic 8: AI Market Analysis planned)
 2. Read detailed requirements in `stories/epic-*.md`
 3. Write tests first (TDD approach)
 4. Implement until tests pass
@@ -279,6 +279,13 @@ Current test files (all passing):
 ### Next Steps
 - Complete Epic 4 remaining stories (F4.2-001, F4.2-002): Portfolio value chart and asset allocation pie chart
 - Complete Epic 5 remaining story (F5.3-001): Hot reload setup
+- **NEW: Epic 8 - AI Market Analysis** (67 points, 14 stories):
+  - Claude API integration for intelligent market analysis
+  - Database-backed prompt management system
+  - Global market analysis and position-specific insights
+  - Two-quarter forecasts with pessimistic/realistic/optimistic scenarios
+  - Forecast accuracy tracking
+  - Analysis dashboard UI with visualization
 
 ## Docker Services Configuration
 
@@ -291,13 +298,46 @@ Health checks ensure services start in correct order. Backend waits for PostgreS
 
 ## Environment Variables
 
-### Frontend
-- `VITE_API_URL`: API endpoint (defaults to http://localhost:8000)
+**SECURITY**: All credentials are stored in `.env` file (never committed to git). See `SECURITY.md` for details.
 
-### Backend
-- `DATABASE_URL`: PostgreSQL connection string (postgresql://trader:profits123@postgres:5432/portfolio)
+### Configuration Files
+- `.env` - Actual credentials (gitignored, contains secrets)
+- `.env.example` - Template with placeholders (safe to commit)
+- `SECURITY.md` - Complete security guide
+
+### Key Variables
+
+**Database** (Required):
+- `POSTGRES_DB`: Database name (default: portfolio)
+- `POSTGRES_USER`: Database user (default: trader)
+- `POSTGRES_PASSWORD`: **SECRET** - Database password
+- `DATABASE_URL`: **SECRET** - Full PostgreSQL connection string
+
+**Redis** (Required):
 - `REDIS_URL`: Redis connection string (redis://redis:6379)
-- `PYTHONUNBUFFERED`: Set to 1 for immediate log output
+
+**Anthropic AI** (Optional - for Epic 8):
+- `ANTHROPIC_API_KEY`: **SECRET** - Claude API key from console.anthropic.com
+- `ANTHROPIC_MODEL`: Model to use (default: claude-sonnet-4-5-20250929)
+- `ANTHROPIC_MAX_TOKENS`: Max response tokens (default: 4096)
+- `ANTHROPIC_TEMPERATURE`: Sampling temperature (default: 0.3)
+
+**Frontend**:
+- `VITE_API_URL`: API endpoint (default: http://localhost:8000)
+- `VITE_BASE_CURRENCY`: Base currency (default: EUR)
+- Refresh intervals for crypto, stocks, portfolio, holdings
+
+### Setup
+```bash
+# First time setup
+cp .env.example .env
+nano .env  # Add your credentials
+
+# Start services (reads .env automatically)
+docker-compose up
+```
+
+**Never commit `.env` to git!** It's in `.gitignore` for your protection.
 
 ## Key API Endpoints
 

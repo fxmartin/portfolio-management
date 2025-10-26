@@ -8,7 +8,7 @@ This document provides a high-level overview of all user stories for the Portfol
 
 **Development Metrics**:
 - **Active Development Time**: ~14-19 hours (Oct 21-26, 2025)
-- **Project Completion**: 64% (104/162 story points across 7 epics)
+- **Project Completion**: 45% (104/229 story points across 8 epics)
 - **Activity**: 27 commits, 13 GitHub issues (10 closed), 4 active development days
 - *Estimate updated via: `python3 scripts/estimate_hours.py`*
 
@@ -22,7 +22,7 @@ This document provides a high-level overview of all user stories for the Portfol
 
 ## Story Organization
 
-Stories are organized into 7 major epics, each with its own detailed documentation:
+Stories are organized into 8 major epics, each with its own detailed documentation:
 
 1. **[Epic 1: Transaction Import & Management](./stories/epic-01-transaction-import.md)** - CSV upload and parsing
 2. **[Epic 2: Portfolio Calculation Engine](./stories/epic-02-portfolio-calculation.md)** - FIFO calculations and P&L
@@ -31,6 +31,7 @@ Stories are organized into 7 major epics, each with its own detailed documentati
 5. **[Epic 5: Infrastructure & DevOps](./stories/epic-05-infrastructure.md)** - Docker and development setup
 6. **[Epic 6: UI Modernization & Navigation](./stories/epic-06-ui-modernization.md)** - Modern sidebar and theme
 7. **[Epic 7: Manual Transaction Management](./stories/epic-07-manual-transaction-management.md)** - Create, edit, delete transactions
+8. **[Epic 8: AI-Powered Market Analysis](./stories/epic-08-ai-market-analysis.md)** - Claude-powered insights and forecasts
 
 ## Overall Progress Tracking
 
@@ -44,7 +45,8 @@ Stories are organized into 7 major epics, each with its own detailed documentati
 | [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | 🟡 In Progress | 85% (11/13 pts) | Docker, database |
 | [Epic 6: UI Modernization](./stories/epic-06-ui-modernization.md) | 7 | 18 | ✅ Complete | 100% (18/18 pts) | Sidebar, tabs, theme |
 | [Epic 7: Manual Transactions](./stories/epic-07-manual-transaction-management.md) | 6 | 39 | 🔴 Not Started | 0% (0/39 pts) | Create, edit, delete |
-| **Total** | **37** | **162** | **In Progress** | **~64%** (104/162 pts) | |
+| [Epic 8: AI Market Analysis](./stories/epic-08-ai-market-analysis.md) | 14 | 67 | 🔴 Not Started | 0% (0/67 pts) | Claude insights & forecasts |
+| **Total** | **51** | **229** | **In Progress** | **~45%** (104/229 pts) | |
 
 ## Recent Updates (Oct 24, 2025)
 
@@ -218,6 +220,12 @@ Stories are organized into 7 major epics, each with its own detailed documentati
 - **Features**: Transaction input form, bulk import, edit with audit trail, safe deletion, validation engine
 - **Key Stories**: 6 stories, 39 points
 - **Status**: 🔴 Not Started (0% complete - Future enhancement for data corrections and manual entries)
+
+### [Epic 8: AI-Powered Market Analysis](./stories/epic-08-ai-market-analysis.md)
+- **Goal**: Integrate Claude AI for intelligent market analysis, forecasts, and actionable insights
+- **Features**: Prompt management system, Claude API integration, global & position-level analysis, two-quarter forecasts with scenarios, forecast accuracy tracking, analysis dashboard UI
+- **Key Stories**: 14 stories, 67 points
+- **Status**: 🔴 Not Started (0% complete - Advanced feature providing AI-powered investment insights)
 
 ## MVP Implementation Plan
 
