@@ -80,11 +80,18 @@ ALPHA_VANTAGE_RATE_LIMIT_PER_DAY=100     # Free tier limit
 - The app intelligently uses Yahoo Finance first (free, no limits) and falls back to Alpha Vantage only when needed
 
 **When it's used**:
-- European ETF historical prices (AMEM.BE, MWOQ.BE) - Yahoo Finance doesn't have good coverage
-- Fallback when Yahoo Finance returns no data
-- Circuit breaker pattern prevents excessive calls
+- Fallback when Yahoo Finance fails or returns no data for US stocks
+- Cryptocurrency price fetching as alternative data source
+- Circuit breaker pattern prevents excessive calls (opens after 5 failures, 5-min timeout)
 
-**Note**: The app works fine without this key - Yahoo Finance handles most symbols. Alpha Vantage is only needed for better European ETF coverage and as a reliability fallback.
+**Monitoring API Usage**:
+- Check usage statistics: `GET /monitoring/market-data`
+- Alerts when approaching limits (80% of daily quota)
+- Provider success rates and circuit breaker status
+
+**Important Note**: Alpha Vantage **does not** have better European ETF coverage than Yahoo Finance. Both struggle with European exchanges (`.BE`, `.PA`, etc.). Your Yahoo Finance + `ETF_MAPPINGS` setup already handles European ETFs correctly.
+
+**Note**: The app works fine without this key - Yahoo Finance handles most symbols. Alpha Vantage provides additional reliability for US stocks and crypto fallback.
 
 ### What's Protected
 
@@ -157,6 +164,19 @@ ANTHROPIC_API_KEY=sk-ant-api03-new-key-here
 
 # Restart backend only
 docker-compose restart backend
+```
+
+3. **Alpha Vantage API Key**:
+```bash
+# Get new key at https://www.alphavantage.co/support/#api-key
+# Update .env
+ALPHA_VANTAGE_API_KEY=new_key_here
+
+# Restart backend
+docker-compose restart backend
+
+# Check monitoring to verify
+curl http://localhost:8000/monitoring/market-data
 ```
 
 ### Development vs Production

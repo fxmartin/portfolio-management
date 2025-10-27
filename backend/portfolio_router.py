@@ -672,16 +672,52 @@ async def get_portfolio_history(
                 "change_percent": 0
             }
 
-        # Fetch historical prices for all open position symbols
-        yahoo_service = YahooFinanceService()
-        symbols_list = list(open_symbols)
+        # Initialize services with intelligent fallback
+        from alpha_vantage_service import AlphaVantageService
+        from market_data_aggregator import MarketDataAggregator
+        import os
 
-        print(f"Fetching historical prices for {len(symbols_list)} symbols from {start_date} to {end_date}")
-        historical_prices = await yahoo_service.get_historical_prices(
-            symbols_list,
-            start_date,
-            end_date
+        yahoo_service = YahooFinanceService()
+
+        # Initialize Alpha Vantage if API key is available
+        alpha_vantage_api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
+        alpha_vantage_service = AlphaVantageService(alpha_vantage_api_key) if alpha_vantage_api_key else None
+
+        # Create aggregator with intelligent fallback
+        aggregator = MarketDataAggregator(
+            yahoo_service=yahoo_service,
+            alpha_vantage_service=alpha_vantage_service,
+            redis_client=None  # TODO: Pass Redis client if available
         )
+
+        symbols_list = list(open_symbols)
+        print(f"Fetching historical prices for {len(symbols_list)} symbols from {start_date} to {end_date}")
+
+        # Fetch historical prices with fallback support
+        historical_prices = {}
+        provider_usage = {}  # Track which provider was used for each symbol
+
+        for symbol in symbols_list:
+            try:
+                # Try to get historical prices using aggregator (Yahoo → Alpha Vantage → Cache)
+                prices, provider = await aggregator.get_historical_prices(symbol, start_date, end_date)
+
+                if prices:
+                    historical_prices[symbol] = prices
+                    provider_usage[symbol] = provider.value if provider else 'none'
+                    print(f"✓ {symbol}: {len(prices)} prices from {provider.value if provider else 'none'}")
+                else:
+                    print(f"✗ {symbol}: No historical prices available")
+                    provider_usage[symbol] = 'failed'
+
+            except Exception as e:
+                print(f"✗ {symbol}: Error fetching historical prices: {e}")
+                provider_usage[symbol] = 'error'
+
+        # Log provider statistics
+        print(f"\n[Portfolio History] Provider usage summary: {provider_usage}")
+        stats = aggregator.get_provider_stats()
+        print(f"[Portfolio History] Provider stats: {stats}")
 
         # Get USD to EUR exchange rate for currency conversion
         # Note: Using current rate as approximation for all historical dates

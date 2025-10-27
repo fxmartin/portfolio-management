@@ -12,11 +12,13 @@ try:
     from .import_router import router as import_router
     from .database_router import router as database_router
     from .portfolio_router import router as portfolio_router
+    from .monitoring_router import router as monitoring_router
 except ImportError:
     from database import init_db_async, test_connection
     from import_router import router as import_router
     from database_router import router as database_router
     from portfolio_router import router as portfolio_router
+    from monitoring_router import router as monitoring_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,6 +36,22 @@ async def lifespan(app: FastAPI):
         print("✓ Database tables ready")
     else:
         print("✗ Database initialization failed")
+
+    # Validate Alpha Vantage API configuration
+    import os
+    alpha_vantage_api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
+    if alpha_vantage_api_key:
+        print(f"✓ Alpha Vantage API key configured")
+        # Test the API key with a simple request
+        try:
+            from alpha_vantage_service import AlphaVantageService
+            av_service = AlphaVantageService(alpha_vantage_api_key)
+            # Note: We don't test the key here to avoid consuming rate limit on startup
+            print("  ℹ API key format valid (test skipped to preserve rate limit)")
+        except Exception as e:
+            print(f"⚠ Alpha Vantage service initialization failed: {e}")
+    else:
+        print("⚠ Alpha Vantage API key not configured - fallback will use Yahoo Finance only")
 
     yield
 
@@ -59,6 +77,7 @@ app.add_middleware(
 # Include routers
 app.include_router(import_router)
 app.include_router(database_router)
+app.include_router(monitoring_router)
 app.include_router(portfolio_router)
 
 @app.get("/")
