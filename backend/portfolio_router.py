@@ -552,8 +552,11 @@ async def get_portfolio_history(
     session: AsyncSession = Depends(get_async_db)
 ) -> Dict:
     """
-    Get historical portfolio values for charting.
-    Only tracks currently open positions from their first purchase date.
+    Get historical portfolio values for charting using real historical prices.
+
+    Shows the performance of CURRENT open position quantities over time.
+    For example, if you currently hold 1074.52 AMEM, 19.68 MSTR, 16.37 SOL, etc.,
+    this endpoint shows how those specific quantities performed historically.
 
     Args:
         period: Time period (1D, 1W, 1M, 3M, 1Y, All)
@@ -561,12 +564,19 @@ async def get_portfolio_history(
 
     Returns:
         Dictionary with:
-        - data: Array of {date, value} points
+        - data: Array of {date, value} points with historical prices
         - period: Selected time period
-        - initial_value: Starting portfolio value
-        - current_value: Current portfolio value
-        - change: Absolute change
+        - initial_value: Portfolio value at start of period
+        - current_value: Portfolio value at end of period
+        - change: Absolute change in value
         - change_percent: Percentage change
+
+    Implementation:
+        - Gets currently open positions (quantity > 0)
+        - Fetches historical prices from Yahoo Finance for date range
+        - Calculates value at each time point: sum(current_quantity * historical_price)
+        - Converts USD prices to EUR using current exchange rate
+        - Starts from earliest open position's first purchase date
     """
     from datetime import timedelta
     import asyncio
@@ -662,13 +672,31 @@ async def get_portfolio_history(
                 "change_percent": 0
             }
 
-        # Build price map (symbol -> current_price) for open positions only
-        price_map = {}
-        for pos in open_positions:
-            if pos.current_price:
-                price_map[pos.symbol] = float(pos.current_price)
+        # Fetch historical prices for all open position symbols
+        yahoo_service = YahooFinanceService()
+        symbols_list = list(open_symbols)
 
-        # Calculate portfolio value at regular intervals
+        print(f"Fetching historical prices for {len(symbols_list)} symbols from {start_date} to {end_date}")
+        historical_prices = await yahoo_service.get_historical_prices(
+            symbols_list,
+            start_date,
+            end_date
+        )
+
+        # Get USD to EUR exchange rate for currency conversion
+        # Note: Using current rate as approximation for all historical dates
+        # TODO: Fetch historical exchange rates for more accurate conversion
+        usd_eur_rate = await yahoo_service.get_usd_to_eur_rate()
+
+        # Build map of current quantities and determine which need currency conversion
+        current_quantities = {}
+        needs_conversion = {}
+        for pos in open_positions:
+            current_quantities[pos.symbol] = pos.quantity
+            # Crypto and US stocks (like MSTR) are in USD, European ETFs are in EUR
+            needs_conversion[pos.symbol] = yahoo_service._needs_currency_conversion(pos.symbol)
+
+        # Calculate portfolio value at regular intervals using historical prices
         data = []
         current_date = start_date
 
@@ -676,35 +704,35 @@ async def get_portfolio_history(
             if current_date > end_date:
                 break
 
-            # Get transactions up to this date
-            txns_up_to_date = [t for t in all_transactions if t.transaction_date <= current_date]
-
-            # Calculate positions at this date using FIFO
-            from fifo_calculator import FIFOCalculator
-            calculator = FIFOCalculator()
-
-            # Track quantities by symbol
-            symbol_quantities = {}
-
-            for txn in txns_up_to_date:
-                if txn.transaction_type in [TransactionType.BUY, TransactionType.STAKING,
-                                            TransactionType.AIRDROP, TransactionType.MINING]:
-                    if txn.symbol not in symbol_quantities:
-                        symbol_quantities[txn.symbol] = Decimal("0")
-                    symbol_quantities[txn.symbol] += txn.quantity or Decimal("0")
-
-                elif txn.transaction_type == TransactionType.SELL:
-                    if txn.symbol in symbol_quantities:
-                        symbol_quantities[txn.symbol] -= txn.quantity or Decimal("0")
-                        if symbol_quantities[txn.symbol] <= 0:
-                            del symbol_quantities[txn.symbol]
-
-            # Calculate total value using current prices
+            # Calculate total value using current quantities and historical prices (in EUR)
             total_value = Decimal("0")
-            for symbol, quantity in symbol_quantities.items():
-                if symbol in price_map and quantity > 0:
-                    price = Decimal(str(price_map[symbol]))
-                    total_value += quantity * price
+
+            for symbol, quantity in current_quantities.items():
+                if symbol in historical_prices and quantity > 0:
+                    symbol_prices = historical_prices[symbol]
+
+                    # Find the price for this date (or closest prior date)
+                    price = None
+                    # Look for exact date match first
+                    date_normalized = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+                    if date_normalized in symbol_prices:
+                        price = symbol_prices[date_normalized]
+                    else:
+                        # Find closest prior date
+                        prior_dates = [d for d in symbol_prices.keys() if d <= current_date]
+                        if prior_dates:
+                            closest_date = max(prior_dates)
+                            price = symbol_prices[closest_date]
+
+                    if price:
+                        # Convert USD prices to EUR if needed
+                        if needs_conversion[symbol]:
+                            price_eur = price / usd_eur_rate
+                        else:
+                            price_eur = price
+
+                        total_value += quantity * price_eur
 
             data.append({
                 "date": current_date.isoformat(),

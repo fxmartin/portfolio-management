@@ -525,3 +525,100 @@ class YahooFinanceService:
                 continue
 
         return result
+
+    async def get_historical_prices(
+        self,
+        symbols: List[str],
+        start_date: datetime,
+        end_date: datetime
+    ) -> Dict[str, Dict[datetime, Decimal]]:
+        """
+        Fetch historical daily closing prices for multiple symbols
+
+        Args:
+            symbols: List of ticker symbols (internal format, will be transformed)
+            start_date: Start date for historical data
+            end_date: End date for historical data
+
+        Returns:
+            Dictionary mapping symbol -> {date -> price}
+            Example: {'BTC': {datetime(2024,1,1): Decimal('42000.50'), ...}, ...}
+
+        Notes:
+            - Uses daily closing prices
+            - Forward-fills missing data (weekends, holidays)
+            - Transforms tickers using _transform_ticker() for crypto/ETF mappings
+            - Returns prices in original ticker currency (USD for crypto, EUR for European ETFs)
+        """
+        import pandas as pd
+
+        result = {}
+
+        try:
+            await self.rate_limiter.acquire()
+
+            async def fetch():
+                # Transform tickers to Yahoo Finance format
+                yahoo_tickers = [self._transform_ticker(symbol) for symbol in symbols]
+
+                # Fetch historical data using yfinance
+                # period is not used when start and end are specified
+                data = yf.download(
+                    yahoo_tickers,
+                    start=start_date.strftime('%Y-%m-%d'),
+                    end=end_date.strftime('%Y-%m-%d'),
+                    progress=False,
+                    auto_adjust=True,  # Adjust for splits/dividends
+                    group_by='ticker'
+                )
+
+                # Parse results for each symbol
+                for original_symbol, yahoo_ticker in zip(symbols, yahoo_tickers):
+                    try:
+                        # Handle single ticker vs multiple tickers data structure
+                        if len(yahoo_tickers) == 1:
+                            # Single ticker: data is a DataFrame with columns [Open, High, Low, Close, Volume]
+                            symbol_data = data
+                        else:
+                            # Multiple tickers: data[ticker] is a DataFrame
+                            symbol_data = data[yahoo_ticker]
+
+                        if symbol_data.empty:
+                            print(f"No historical data available for {original_symbol}")
+                            result[original_symbol] = {}
+                            continue
+
+                        # Extract closing prices
+                        prices = {}
+                        if 'Close' in symbol_data.columns:
+                            close_prices = symbol_data['Close']
+                        else:
+                            # Try lowercase (sometimes yfinance returns different formats)
+                            close_prices = symbol_data['close'] if 'close' in symbol_data.columns else symbol_data
+
+                        # Forward-fill missing data (weekends, holidays)
+                        close_prices = close_prices.ffill()
+
+                        # Convert to dictionary {date -> price}
+                        for date, price in close_prices.items():
+                            if pd.notna(price):  # Skip NaN values
+                                # Convert pandas Timestamp to datetime
+                                date_obj = date.to_pydatetime()
+                                prices[date_obj] = Decimal(str(price))
+
+                        result[original_symbol] = prices
+                        print(f"Fetched {len(prices)} historical prices for {original_symbol}")
+
+                    except Exception as e:
+                        print(f"Error parsing historical data for {original_symbol}: {e}")
+                        result[original_symbol] = {}
+                        continue
+
+                return result
+
+            return await self.retry_policy.execute(fetch)
+
+        except Exception as e:
+            print(f"Failed to fetch historical prices: {e}")
+            # Return empty dicts for all symbols
+            return {symbol: {} for symbol in symbols}
