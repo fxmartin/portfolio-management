@@ -61,6 +61,31 @@ ANTHROPIC_API_KEY=sk-ant-api03-...your-key-here
 
 **Note**: The app works fine without this key - AI features will just be disabled.
 
+#### 4. Alpha Vantage API Key (for Market Data Fallback)
+
+To enable Alpha Vantage as a fallback for market data (especially for European ETFs), you need an Alpha Vantage API key:
+
+1. Sign up at https://www.alphavantage.co/support/#api-key
+2. Get your free API key (5 calls/minute, 100 calls/day)
+3. Add to `.env`:
+```bash
+ALPHA_VANTAGE_API_KEY=YOUR_API_KEY_HERE
+ALPHA_VANTAGE_RATE_LIMIT_PER_MINUTE=5    # Free tier limit
+ALPHA_VANTAGE_RATE_LIMIT_PER_DAY=100     # Free tier limit
+```
+
+**Rate Limits**:
+- **Free Tier**: 5 API calls per minute, 100 per day
+- **Premium Tiers**: Higher limits available at https://www.alphavantage.co/premium/
+- The app intelligently uses Yahoo Finance first (free, no limits) and falls back to Alpha Vantage only when needed
+
+**When it's used**:
+- European ETF historical prices (AMEM.BE, MWOQ.BE) - Yahoo Finance doesn't have good coverage
+- Fallback when Yahoo Finance returns no data
+- Circuit breaker pattern prevents excessive calls
+
+**Note**: The app works fine without this key - Yahoo Finance handles most symbols. Alpha Vantage is only needed for better European ETF coverage and as a reliability fallback.
+
 ### What's Protected
 
 The `.env` file contains:
@@ -71,6 +96,7 @@ The `.env` file contains:
 
 2. **API Keys**
    - `ANTHROPIC_API_KEY` - Claude AI API key (cost: ~$0.06/day)
+   - `ALPHA_VANTAGE_API_KEY` - Market data API key (free tier: 100 calls/day)
 
 3. **Configuration**
    - All other settings are non-sensitive but kept in `.env` for consistency

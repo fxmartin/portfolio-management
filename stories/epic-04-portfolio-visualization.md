@@ -13,6 +13,7 @@
 - Feature 4.1: Portfolio Dashboard
 - Feature 4.2: Performance Charts
 - Feature 4.3: Realized P&L Summary
+- Feature 4.4: Alpha Vantage Integration (Market Data Fallback)
 
 ## Progress Tracking
 | Feature | Stories | Points | Status | Progress |
@@ -20,7 +21,8 @@
 | F4.1: Portfolio Dashboard | 3 | 11 | ✅ Complete | 100% (11/11 pts) |
 | F4.2: Performance Charts | 2 | 11 | 🟡 In Progress | 73% (8/11 pts) |
 | F4.3: Realized P&L Summary | 2 | 13 | 🔴 Not Started | 0% (0/13 pts) |
-| **Total** | **7** | **35** | **In Progress** | **54%** (19/35 pts) |
+| F4.4: Alpha Vantage Integration | 4 | 18 | 🔴 Not Started | 0% (0/18 pts) |
+| **Total** | **11** | **53** | **In Progress** | **36%** (19/53 pts) |
 
 ---
 
@@ -1346,13 +1348,724 @@ interface PortfolioState {
 - **Real-Time Updates**: Prices refresh every 60 seconds from Yahoo Finance
 - **Timestamp Accuracy**: Last updated timestamp reflects actual price fetch time
 
+---
+
+## Feature 4.4: Alpha Vantage Integration (Market Data Fallback)
+**Feature Description**: Integrate Alpha Vantage API as fallback/supplement for Yahoo Finance to provide comprehensive market data coverage
+**User Value**: Reliable market data with fallback when primary source fails, especially for European ETFs
+**Priority**: High
+**Complexity**: 18 story points
+
+### Story F4.4-001: Alpha Vantage Service Implementation
+**Status**: 🔴 Not Started
+**User Story**: As a system, I need an Alpha Vantage API service so that I can fetch live and historical market data as a fallback when Yahoo Finance fails
+
+**Acceptance Criteria**:
+- **Given** Alpha Vantage API credentials are configured
+- **When** the service is initialized
+- **Then** it can fetch live quotes for stocks, ETFs, and crypto
+- **And** it can fetch historical daily prices (Time Series Daily)
+- **And** it can fetch intraday prices for 1D charts (Time Series Intraday)
+- **And** it handles API rate limits (5 calls/minute, 100 calls/day free tier)
+- **And** it caches responses to minimize API calls
+- **And** it provides clear error messages when rate limited
+- **And** it supports both US and European markets
+
+**Technical Requirements**:
+- New service class: `AlphaVantageService`
+- API functions supported:
+  - `TIME_SERIES_DAILY` - Historical daily prices
+  - `TIME_SERIES_INTRADAY` - Intraday prices (1min, 5min, 15min, 30min, 60min)
+  - `GLOBAL_QUOTE` - Real-time quote
+  - `DIGITAL_CURRENCY_DAILY` - Crypto daily prices
+- Rate limiting with token bucket algorithm
+- Redis caching with appropriate TTLs
+- Retry logic with exponential backoff
+- Error handling for API failures
+
+**Service Implementation**:
+```python
+# alpha_vantage_service.py
+from typing import Dict, List, Optional
+from datetime import datetime, timedelta
+from decimal import Decimal
+import aiohttp
+from dataclasses import dataclass
+import asyncio
+
+@dataclass
+class AlphaVantagePriceData:
+    """Price data from Alpha Vantage API"""
+    symbol: str
+    current_price: Decimal
+    previous_close: Decimal
+    change: Decimal
+    change_percent: Decimal
+    volume: int
+    last_updated: datetime
+    asset_name: Optional[str] = None
+    price_currency: str = 'USD'
+
+class AlphaVantageRateLimiter:
+    """Token bucket rate limiter for Alpha Vantage API"""
+
+    def __init__(self, calls_per_minute: int = 5, calls_per_day: int = 100):
+        self.calls_per_minute = calls_per_minute
+        self.calls_per_day = calls_per_day
+        self.minute_tokens = calls_per_minute
+        self.day_tokens = calls_per_day
+        self.last_minute_refill = datetime.now()
+        self.last_day_refill = datetime.now()
+
+    async def acquire(self):
+        """Wait for rate limit token"""
+        now = datetime.now()
+
+        # Refill minute bucket
+        if (now - self.last_minute_refill).seconds >= 60:
+            self.minute_tokens = self.calls_per_minute
+            self.last_minute_refill = now
+
+        # Refill day bucket
+        if (now - self.last_day_refill).days >= 1:
+            self.day_tokens = self.calls_per_day
+            self.last_day_refill = now
+
+        # Check if we have tokens
+        if self.minute_tokens <= 0:
+            wait_seconds = 60 - (now - self.last_minute_refill).seconds
+            print(f"[Alpha Vantage] Rate limit: waiting {wait_seconds}s")
+            await asyncio.sleep(wait_seconds)
+            return await self.acquire()
+
+        if self.day_tokens <= 0:
+            raise Exception("Alpha Vantage daily rate limit exceeded (100 calls/day)")
+
+        # Consume tokens
+        self.minute_tokens -= 1
+        self.day_tokens -= 1
+
+class AlphaVantageService:
+    """Service for fetching market data from Alpha Vantage API"""
+
+    BASE_URL = "https://www.alphavantage.co/query"
+
+    def __init__(self, api_key: str, redis_client=None):
+        self.api_key = api_key
+        self.rate_limiter = AlphaVantageRateLimiter()
+        self.redis_client = redis_client
+        self.cache_ttl = {
+            'quote': 60,  # 1 minute for live quotes
+            'daily': 3600,  # 1 hour for daily historical
+            'intraday': 300,  # 5 minutes for intraday
+        }
+
+    async def get_quote(self, symbol: str) -> AlphaVantagePriceData:
+        """
+        Get real-time quote for a symbol
+
+        Uses GLOBAL_QUOTE function
+        """
+        cache_key = f"av:quote:{symbol}"
+
+        # Check cache
+        if self.redis_client:
+            cached = await self.redis_client.get(cache_key)
+            if cached:
+                return self._deserialize_price_data(cached)
+
+        # Fetch from API
+        await self.rate_limiter.acquire()
+
+        params = {
+            'function': 'GLOBAL_QUOTE',
+            'symbol': symbol,
+            'apikey': self.api_key
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(self.BASE_URL, params=params) as response:
+                data = await response.json()
+
+        # Parse response
+        if 'Global Quote' not in data or not data['Global Quote']:
+            raise Exception(f"No quote data for {symbol}")
+
+        quote = data['Global Quote']
+        price_data = AlphaVantagePriceData(
+            symbol=symbol,
+            current_price=Decimal(quote['05. price']),
+            previous_close=Decimal(quote['08. previous close']),
+            change=Decimal(quote['09. change']),
+            change_percent=Decimal(quote['10. change percent'].rstrip('%')),
+            volume=int(quote['06. volume']),
+            last_updated=datetime.now()
+        )
+
+        # Cache result
+        if self.redis_client:
+            await self.redis_client.setex(
+                cache_key,
+                self.cache_ttl['quote'],
+                self._serialize_price_data(price_data)
+            )
+
+        return price_data
+
+    async def get_historical_daily(
+        self,
+        symbol: str,
+        start_date: datetime,
+        end_date: datetime
+    ) -> Dict[datetime, Decimal]:
+        """
+        Get historical daily closing prices
+
+        Uses TIME_SERIES_DAILY function
+        Returns: {date -> closing_price}
+        """
+        cache_key = f"av:daily:{symbol}:{start_date.date()}:{end_date.date()}"
+
+        # Check cache
+        if self.redis_client:
+            cached = await self.redis_client.get(cache_key)
+            if cached:
+                return self._deserialize_historical_data(cached)
+
+        # Fetch from API
+        await self.rate_limiter.acquire()
+
+        params = {
+            'function': 'TIME_SERIES_DAILY',
+            'symbol': symbol,
+            'outputsize': 'full',  # Get all available data
+            'apikey': self.api_key
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(self.BASE_URL, params=params) as response:
+                data = await response.json()
+
+        # Parse response
+        if 'Time Series (Daily)' not in data:
+            raise Exception(f"No daily data for {symbol}")
+
+        time_series = data['Time Series (Daily)']
+        prices = {}
+
+        for date_str, values in time_series.items():
+            date = datetime.strptime(date_str, '%Y-%m-%d')
+            if start_date <= date <= end_date:
+                prices[date] = Decimal(values['4. close'])
+
+        # Cache result
+        if self.redis_client:
+            await self.redis_client.setex(
+                cache_key,
+                self.cache_ttl['daily'],
+                self._serialize_historical_data(prices)
+            )
+
+        return prices
+
+    async def get_crypto_quote(self, symbol: str, market: str = 'USD') -> AlphaVantagePriceData:
+        """
+        Get real-time quote for cryptocurrency
+
+        Uses CURRENCY_EXCHANGE_RATE function
+        """
+        await self.rate_limiter.acquire()
+
+        params = {
+            'function': 'CURRENCY_EXCHANGE_RATE',
+            'from_currency': symbol,
+            'to_currency': market,
+            'apikey': self.api_key
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(self.BASE_URL, params=params) as response:
+                data = await response.json()
+
+        if 'Realtime Currency Exchange Rate' not in data:
+            raise Exception(f"No crypto data for {symbol}/{market}")
+
+        rate_data = data['Realtime Currency Exchange Rate']
+
+        return AlphaVantagePriceData(
+            symbol=symbol,
+            current_price=Decimal(rate_data['5. Exchange Rate']),
+            previous_close=Decimal('0'),  # Not provided by this endpoint
+            change=Decimal('0'),
+            change_percent=Decimal('0'),
+            volume=0,
+            last_updated=datetime.now(),
+            price_currency=market
+        )
+```
+
+**Definition of Done**:
+- [ ] AlphaVantageService class implemented
+- [ ] Rate limiting with token bucket algorithm
+- [ ] Redis caching for all endpoints
+- [ ] Support for stocks, ETFs, and crypto
+- [ ] Historical daily prices working
+- [ ] Live quotes working
+- [ ] Error handling for rate limits
+- [ ] Unit tests (85% coverage)
+- [ ] Integration tests with mock API
+- [ ] Documentation with usage examples
+
+**Story Points**: 5
+**Priority**: Must Have
+**Dependencies**: Epic 3 (Redis setup)
+**Risk Level**: Medium
+
+---
+
+### Story F4.4-002: Intelligent Fallback Logic
+**Status**: 🔴 Not Started
+**User Story**: As a system, I need intelligent fallback logic so that market data is always available even when one provider fails
+
+**Acceptance Criteria**:
+- **Given** both Yahoo Finance and Alpha Vantage services are available
+- **When** fetching market data
+- **Then** the system tries Yahoo Finance first (free, no rate limits)
+- **And** if Yahoo Finance fails or returns no data, try Alpha Vantage
+- **And** if both fail, return cached data if available
+- **And** if all fail, log error and return None
+- **And** the system tracks which provider succeeded for metrics
+- **And** European ETF tickers automatically try Alpha Vantage first (known Yahoo Finance issue)
+- **And** the fallback is transparent to the caller
+
+**Technical Requirements**:
+- New service: `MarketDataAggregator`
+- Provider priority configuration
+- Automatic retry with different providers
+- Performance metrics tracking
+- Circuit breaker pattern for failed providers
+- Fallback chain: Yahoo → Alpha Vantage → Cache → Error
+
+**Aggregator Implementation**:
+```python
+# market_data_aggregator.py
+from enum import Enum
+from typing import Dict, List, Optional, Tuple
+from datetime import datetime
+from decimal import Decimal
+
+class DataProvider(Enum):
+    YAHOO_FINANCE = "yahoo"
+    ALPHA_VANTAGE = "alphavantage"
+    CACHE = "cache"
+
+class MarketDataAggregator:
+    """
+    Intelligent market data aggregator with fallback logic
+    """
+
+    def __init__(
+        self,
+        yahoo_service: YahooFinanceService,
+        alpha_vantage_service: AlphaVantageService,
+        redis_client=None
+    ):
+        self.yahoo = yahoo_service
+        self.alpha_vantage = alpha_vantage_service
+        self.redis = redis_client
+
+        # Provider metrics
+        self.provider_stats = {
+            DataProvider.YAHOO_FINANCE: {'success': 0, 'failure': 0},
+            DataProvider.ALPHA_VANTAGE: {'success': 0, 'failure': 0},
+            DataProvider.CACHE: {'success': 0, 'failure': 0}
+        }
+
+        # Circuit breaker: Track consecutive failures
+        self.circuit_breaker = {
+            DataProvider.YAHOO_FINANCE: {'failures': 0, 'open_until': None},
+            DataProvider.ALPHA_VANTAGE: {'failures': 0, 'open_until': None}
+        }
+        self.circuit_breaker_threshold = 5  # Open circuit after 5 failures
+        self.circuit_breaker_timeout = 300  # 5 minutes
+
+    def _is_european_etf(self, symbol: str) -> bool:
+        """Check if symbol is European ETF (known Yahoo Finance issue)"""
+        european_etf_suffixes = ['.BE', '.PA', '.DE', '.MI', '.MC']
+        return any(symbol.endswith(suffix) for suffix in european_etf_suffixes)
+
+    def _is_circuit_open(self, provider: DataProvider) -> bool:
+        """Check if circuit breaker is open for provider"""
+        breaker = self.circuit_breaker[provider]
+        if breaker['open_until'] and datetime.now() < breaker['open_until']:
+            return True
+        # Reset if timeout expired
+        if breaker['open_until'] and datetime.now() >= breaker['open_until']:
+            breaker['failures'] = 0
+            breaker['open_until'] = None
+        return False
+
+    def _record_failure(self, provider: DataProvider):
+        """Record provider failure and potentially open circuit"""
+        self.provider_stats[provider]['failure'] += 1
+        breaker = self.circuit_breaker.get(provider)
+        if breaker:
+            breaker['failures'] += 1
+            if breaker['failures'] >= self.circuit_breaker_threshold:
+                breaker['open_until'] = datetime.now() + timedelta(seconds=self.circuit_breaker_timeout)
+                print(f"[Circuit Breaker] {provider.value} circuit opened for {self.circuit_breaker_timeout}s")
+
+    def _record_success(self, provider: DataProvider):
+        """Record provider success and reset circuit"""
+        self.provider_stats[provider]['success'] += 1
+        breaker = self.circuit_breaker.get(provider)
+        if breaker:
+            breaker['failures'] = 0
+            breaker['open_until'] = None
+
+    async def get_quote(self, symbol: str) -> Tuple[Optional[PriceData], DataProvider]:
+        """
+        Get quote with intelligent fallback
+
+        Returns: (price_data, provider_used)
+        """
+        # Determine provider priority
+        if self._is_european_etf(symbol):
+            # European ETFs: Try Alpha Vantage first
+            providers = [DataProvider.ALPHA_VANTAGE, DataProvider.YAHOO_FINANCE]
+        else:
+            # Default: Yahoo first (free, no rate limits)
+            providers = [DataProvider.YAHOO_FINANCE, DataProvider.ALPHA_VANTAGE]
+
+        # Try each provider in order
+        for provider in providers:
+            # Skip if circuit breaker is open
+            if self._is_circuit_open(provider):
+                print(f"[Fallback] Skipping {provider.value} (circuit breaker open)")
+                continue
+
+            try:
+                if provider == DataProvider.YAHOO_FINANCE:
+                    price_data = await self.yahoo.get_quote(symbol)
+                elif provider == DataProvider.ALPHA_VANTAGE:
+                    price_data = await self.alpha_vantage.get_quote(symbol)
+
+                if price_data:
+                    self._record_success(provider)
+                    print(f"[Fallback] {symbol} fetched from {provider.value}")
+                    return price_data, provider
+
+            except Exception as e:
+                self._record_failure(provider)
+                print(f"[Fallback] {provider.value} failed for {symbol}: {e}")
+                continue
+
+        # All providers failed - try cache
+        if self.redis:
+            try:
+                cached = await self.redis.get(f"market:quote:{symbol}")
+                if cached:
+                    self._record_success(DataProvider.CACHE)
+                    print(f"[Fallback] {symbol} loaded from cache")
+                    return self._deserialize_price_data(cached), DataProvider.CACHE
+            except Exception as e:
+                print(f"[Fallback] Cache failed for {symbol}: {e}")
+
+        # Complete failure
+        print(f"[Fallback] All providers failed for {symbol}")
+        return None, None
+
+    async def get_historical_prices(
+        self,
+        symbol: str,
+        start_date: datetime,
+        end_date: datetime
+    ) -> Tuple[Dict[datetime, Decimal], DataProvider]:
+        """
+        Get historical prices with fallback
+        """
+        # Similar fallback logic for historical data
+        providers = [DataProvider.YAHOO_FINANCE, DataProvider.ALPHA_VANTAGE]
+
+        for provider in providers:
+            if self._is_circuit_open(provider):
+                continue
+
+            try:
+                if provider == DataProvider.YAHOO_FINANCE:
+                    prices = await self.yahoo.get_historical_prices([symbol], start_date, end_date)
+                    if symbol in prices and prices[symbol]:
+                        self._record_success(provider)
+                        return prices[symbol], provider
+
+                elif provider == DataProvider.ALPHA_VANTAGE:
+                    prices = await self.alpha_vantage.get_historical_daily(symbol, start_date, end_date)
+                    if prices:
+                        self._record_success(provider)
+                        return prices, provider
+
+            except Exception as e:
+                self._record_failure(provider)
+                print(f"[Fallback] {provider.value} historical failed for {symbol}: {e}")
+                continue
+
+        return {}, None
+
+    def get_provider_stats(self) -> Dict:
+        """Get metrics for monitoring"""
+        return {
+            'stats': self.provider_stats,
+            'circuit_breakers': {
+                provider.value: {
+                    'failures': breaker['failures'],
+                    'open': breaker['open_until'] is not None,
+                    'open_until': breaker['open_until'].isoformat() if breaker['open_until'] else None
+                }
+                for provider, breaker in self.circuit_breaker.items()
+            }
+        }
+```
+
+**Definition of Done**:
+- [ ] MarketDataAggregator implemented
+- [ ] Provider priority logic working
+- [ ] Circuit breaker pattern implemented
+- [ ] European ETF special handling
+- [ ] Metrics tracking for providers
+- [ ] Transparent fallback to caller
+- [ ] Cache fallback working
+- [ ] Unit tests (85% coverage)
+- [ ] Integration tests with multiple providers
+- [ ] Performance monitoring endpoint
+
+**Story Points**: 5
+**Priority**: Must Have
+**Dependencies**: F4.4-001 (Alpha Vantage Service)
+**Risk Level**: Medium
+
+---
+
+### Story F4.4-003: Historical Price Fallback for ETFs
+**Status**: 🔴 Not Started
+**User Story**: As FX, I want my European ETF historical prices to work so that the portfolio performance chart shows accurate data
+
+**Acceptance Criteria**:
+- **Given** I have European ETF positions (AMEM.BE, MWOQ.BE)
+- **When** viewing the portfolio performance chart
+- **Then** historical prices are fetched from Alpha Vantage when Yahoo Finance fails
+- **And** chart displays complete data for all time periods
+- **And** ETF prices are in correct currency (EUR)
+- **And** the fallback is logged for monitoring
+- **And** response time is acceptable (<3 seconds for 1 year of data)
+
+**Technical Requirements**:
+- Update `/api/portfolio/history` endpoint to use MarketDataAggregator
+- Retry logic for failed symbols
+- Mixed provider support (some from Yahoo, some from Alpha Vantage)
+- Currency normalization
+- Performance optimization with parallel fetching
+
+**Integration Points**:
+```python
+# portfolio_router.py - Updated history endpoint
+@router.get("/history")
+async def get_portfolio_history(period: str = "1M") -> Dict:
+    """Updated to use MarketDataAggregator"""
+
+    # Initialize aggregator
+    aggregator = MarketDataAggregator(
+        yahoo_service=YahooFinanceService(),
+        alpha_vantage_service=AlphaVantageService(api_key=settings.ALPHA_VANTAGE_API_KEY),
+        redis_client=redis_client
+    )
+
+    # Get open positions
+    open_symbols = get_open_position_symbols()
+
+    # Fetch historical prices with fallback
+    all_historical_prices = {}
+    provider_usage = {}
+
+    for symbol in open_symbols:
+        prices, provider = await aggregator.get_historical_prices(
+            symbol,
+            start_date,
+            end_date
+        )
+        if prices:
+            all_historical_prices[symbol] = prices
+            provider_usage[symbol] = provider.value if provider else 'failed'
+
+    # Log provider statistics
+    stats = aggregator.get_provider_stats()
+    print(f"[Portfolio History] Provider usage: {provider_usage}")
+    print(f"[Portfolio History] Provider stats: {stats}")
+
+    # Continue with portfolio value calculation...
+```
+
+**Definition of Done**:
+- [ ] Portfolio history endpoint uses MarketDataAggregator
+- [ ] ETF historical prices working (AMEM.BE, MWOQ.BE)
+- [ ] Chart displays complete data
+- [ ] Provider usage logged
+- [ ] Performance acceptable (<3s)
+- [ ] Currency normalization correct
+- [ ] Unit tests for fallback scenarios
+- [ ] Integration test with real ETF data
+- [ ] Monitoring dashboard shows provider stats
+
+**Story Points**: 5
+**Priority**: Must Have
+**Dependencies**: F4.4-002 (Fallback Logic)
+**Risk Level**: Low
+
+---
+
+### Story F4.4-004: Configuration and Monitoring
+**Status**: 🔴 Not Started
+**User Story**: As a developer, I need Alpha Vantage properly configured with monitoring so that I can track API usage and troubleshoot issues
+
+**Acceptance Criteria**:
+- **Given** Alpha Vantage API key is configured
+- **When** the application starts
+- **Then** API key is loaded from environment variables
+- **And** API key is validated on startup
+- **And** configuration is documented in SECURITY.md
+- **And** rate limits are configurable
+- **And** a monitoring endpoint shows API usage statistics
+- **And** logs include provider selection decisions
+- **And** alerts trigger when approaching rate limits
+
+**Technical Requirements**:
+- Environment variable: `ALPHA_VANTAGE_API_KEY`
+- Configuration validation on startup
+- Monitoring endpoint: `/api/monitoring/market-data`
+- Grafana dashboard for metrics (optional)
+- Alert thresholds: 80% of daily limit, circuit breaker opens
+
+**Configuration Setup**:
+```bash
+# .env
+ALPHA_VANTAGE_API_KEY=YOUR_API_KEY_HERE
+ALPHA_VANTAGE_RATE_LIMIT_PER_MINUTE=5
+ALPHA_VANTAGE_RATE_LIMIT_PER_DAY=100
+```
+
+```python
+# settings.py
+class Settings(BaseSettings):
+    # Existing settings...
+
+    # Alpha Vantage Configuration
+    ALPHA_VANTAGE_API_KEY: str
+    ALPHA_VANTAGE_RATE_LIMIT_PER_MINUTE: int = 5
+    ALPHA_VANTAGE_RATE_LIMIT_PER_DAY: int = 100
+
+    class Config:
+        env_file = ".env"
+
+# main.py - Startup validation
+@app.on_event("startup")
+async def validate_configuration():
+    """Validate API keys and services on startup"""
+
+    # Test Alpha Vantage connection
+    if settings.ALPHA_VANTAGE_API_KEY:
+        try:
+            av_service = AlphaVantageService(settings.ALPHA_VANTAGE_API_KEY)
+            # Test with a simple quote
+            await av_service.get_quote("AAPL")
+            print("✓ Alpha Vantage API key validated")
+        except Exception as e:
+            print(f"⚠️ Alpha Vantage validation failed: {e}")
+    else:
+        print("⚠️ Alpha Vantage API key not configured")
+
+# monitoring_router.py
+@router.get("/api/monitoring/market-data")
+async def get_market_data_stats():
+    """Get market data provider statistics"""
+
+    aggregator = get_market_data_aggregator()
+    stats = aggregator.get_provider_stats()
+
+    # Calculate usage percentages
+    av_stats = stats['stats'][DataProvider.ALPHA_VANTAGE]
+    total_av_calls = av_stats['success'] + av_stats['failure']
+
+    return {
+        "providers": stats['stats'],
+        "circuit_breakers": stats['circuit_breakers'],
+        "alpha_vantage": {
+            "calls_today": total_av_calls,
+            "daily_limit": settings.ALPHA_VANTAGE_RATE_LIMIT_PER_DAY,
+            "usage_percent": (total_av_calls / settings.ALPHA_VANTAGE_RATE_LIMIT_PER_DAY) * 100,
+            "rate_limited": total_av_calls >= settings.ALPHA_VANTAGE_RATE_LIMIT_PER_DAY
+        },
+        "yahoo_finance": {
+            "success_rate": (stats['stats'][DataProvider.YAHOO_FINANCE]['success'] /
+                           max(1, stats['stats'][DataProvider.YAHOO_FINANCE]['success'] +
+                                  stats['stats'][DataProvider.YAHOO_FINANCE]['failure'])) * 100
+        }
+    }
+```
+
+**Monitoring Dashboard Data**:
+```json
+{
+  "providers": {
+    "yahoo": {"success": 245, "failure": 12},
+    "alphavantage": {"success": 18, "failure": 2},
+    "cache": {"success": 15, "failure": 0}
+  },
+  "circuit_breakers": {
+    "yahoo": {"failures": 0, "open": false},
+    "alphavantage": {"failures": 1, "open": false}
+  },
+  "alpha_vantage": {
+    "calls_today": 20,
+    "daily_limit": 100,
+    "usage_percent": 20.0,
+    "rate_limited": false
+  },
+  "yahoo_finance": {
+    "success_rate": 95.3
+  }
+}
+```
+
+**Definition of Done**:
+- [ ] Environment variables configured
+- [ ] API key validation on startup
+- [ ] SECURITY.md updated with Alpha Vantage setup
+- [ ] Monitoring endpoint implemented
+- [ ] Rate limit warnings logged
+- [ ] Circuit breaker status visible
+- [ ] Provider statistics tracked
+- [ ] Documentation for troubleshooting
+- [ ] Unit tests for configuration
+- [ ] Integration test for monitoring endpoint
+
+**Story Points**: 3
+**Priority**: Should Have
+**Dependencies**: F4.4-001, F4.4-002
+**Risk Level**: Low
+
+---
+
 ## Definition of Done for Epic
-- [ ] All 5 stories completed (3/5 - Dashboard complete, Charts pending)
+- [ ] All 11 stories completed (3/11 - Dashboard complete, Charts in progress, P&L and Alpha Vantage pending)
 - [x] Portfolio summary with real-time updates (auto-refresh every 60s)
 - [x] Holdings table with sort/filter/search
 - [x] Open positions overview with unrealized P&L
-- [ ] Portfolio value chart with time ranges
+- [x] Portfolio value chart with time ranges and historical prices
 - [ ] Asset allocation pie chart
+- [ ] Realized P&L summary with fee breakdown
+- [ ] Alpha Vantage service implemented
+- [ ] Intelligent fallback logic working
+- [ ] European ETF historical prices fixed
+- [ ] Market data monitoring dashboard
 - [x] Responsive design for all screen sizes
 - [x] Real-time price updates working (60s auto-refresh from Yahoo Finance)
 - [x] Performance meets requirements (dashboard loads <2s)
