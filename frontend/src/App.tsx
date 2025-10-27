@@ -6,7 +6,6 @@ import Sidebar from './components/Sidebar'
 import TabView from './components/TabView'
 import TransactionImport from './components/TransactionImport'
 import OpenPositionsCard from './components/OpenPositionsCard'
-import PortfolioValueChart from './components/PortfolioValueChart'
 import HoldingsTable from './components/HoldingsTable'
 import { DatabaseResetModal, useDatabaseReset } from './components/DatabaseResetModal'
 import DatabaseStats from './components/DatabaseStats'
@@ -41,7 +40,6 @@ function App() {
           <div data-tab="portfolio" className="portfolio-tab">
             <h1>Portfolio Dashboard</h1>
             <OpenPositionsCard onAssetTypeFilter={setAssetTypeFilter} />
-            <PortfolioValueChart currency="EUR" />
             <HoldingsTable externalFilter={assetTypeFilter} />
           </div>
 

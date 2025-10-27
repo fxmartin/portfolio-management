@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { formatCurrency, formatPnLChange, formatDateTime, getPnLClassName } from '../utils/formatters'
 import { API_CONFIG, PORTFOLIO_CONFIG, REFRESH_INTERVALS, formatRefreshInterval } from '../config/app.config'
+import { getMarketStatus, getStatusIndicator, type MarketStatus } from '../utils/marketStatus'
 import AssetAllocationChart from './AssetAllocationChart'
 import './OpenPositionsCard.css'
 
@@ -110,6 +111,15 @@ export default function OpenPositionsCard({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedType, setSelectedType] = useState<string | null>(null)
+  const [marketStatuses, setMarketStatuses] = useState<{
+    stocks: MarketStatus
+    crypto: MarketStatus
+    metals: MarketStatus
+  }>({
+    stocks: getMarketStatus('stocks'),
+    crypto: getMarketStatus('crypto'),
+    metals: getMarketStatus('metals'),
+  })
 
   const fetchData = useCallback(async () => {
     try {
@@ -139,6 +149,14 @@ export default function OpenPositionsCard({
     }
   }, [fetchData])
 
+  const updateMarketStatuses = useCallback(() => {
+    setMarketStatuses({
+      stocks: getMarketStatus('stocks'),
+      crypto: getMarketStatus('crypto'),
+      metals: getMarketStatus('metals'),
+    })
+  }, [])
+
   useEffect(() => {
     // Initial load
     fetchData()
@@ -155,6 +173,15 @@ export default function OpenPositionsCard({
       }
     }
   }, [autoRefresh, refreshInterval, fetchData, refreshPrices])
+
+  // Update market statuses every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      updateMarketStatuses()
+    }, 60000) // 60 seconds
+
+    return () => clearInterval(interval)
+  }, [updateMarketStatuses])
 
   const handleTypeClick = (type: string) => {
     const newSelectedType = selectedType === type ? null : type
@@ -192,9 +219,9 @@ export default function OpenPositionsCard({
 
   // Helper to determine which asset types have non-zero values
   const assetTypes = [
-    { key: 'stocks', label: 'Stocks', icon: '📊', filterType: 'stock', data: data.breakdown.stocks },
-    { key: 'crypto', label: 'Crypto', icon: '₿', filterType: 'crypto', data: data.breakdown.crypto },
-    { key: 'metals', label: 'Metals', icon: '🥇', filterType: 'metal', data: data.breakdown.metals },
+    { key: 'stocks' as const, label: 'Stocks', icon: '📊', filterType: 'stock', data: data.breakdown.stocks },
+    { key: 'crypto' as const, label: 'Crypto', icon: '₿', filterType: 'crypto', data: data.breakdown.crypto },
+    { key: 'metals' as const, label: 'Metals', icon: '🥇', filterType: 'metal', data: data.breakdown.metals },
   ].filter(asset => asset.data.value > 0) // Only show assets with non-zero values
 
   return (
@@ -254,6 +281,10 @@ export default function OpenPositionsCard({
                   <div className="breakdown-header">
                     <div className="asset-icon">{asset.icon}</div>
                     <div className="asset-label">{asset.label}</div>
+                    <span className={`market-status-badge market-status-${marketStatuses[asset.key].session}`}>
+                      <span className="status-indicator">{getStatusIndicator(marketStatuses[asset.key].session)}</span>
+                      <span className="status-text">{marketStatuses[asset.key].statusText}</span>
+                    </span>
                   </div>
                   <div className="breakdown-value">
                     {formatCurrency(asset.data.value, BASE_CURRENCY)}
@@ -263,8 +294,8 @@ export default function OpenPositionsCard({
                   <span className={`pnl-value ${getPnLClassName(asset.data.pnl)}`}>
                     {formatCurrency(asset.data.pnl, BASE_CURRENCY)}
                   </span>
-                  <span className={`trend-arrow ${getTrendClassName(calculateTrend(asset.data.pnl, asset.key as 'stocks' | 'crypto' | 'metals'))}`}>
-                    {getTrendArrow(calculateTrend(asset.data.pnl, asset.key as 'stocks' | 'crypto' | 'metals'))}
+                  <span className={`trend-arrow ${getTrendClassName(calculateTrend(asset.data.pnl, asset.key))}`}>
+                    {getTrendArrow(calculateTrend(asset.data.pnl, asset.key))}
                   </span>
                   <span className={`pnl-percent ${getPnLClassName(asset.data.pnl)}`}>
                     {asset.data.pnl >= 0 ? '+' : ''}{asset.data.pnl_percent.toFixed(2)}%

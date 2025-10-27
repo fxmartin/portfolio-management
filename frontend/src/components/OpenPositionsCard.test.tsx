@@ -565,4 +565,89 @@ describe('OpenPositionsCard', () => {
       // Stocks P&L: 25 vs 25.005 = 0.005 difference - should be neutral
     })
   })
+
+  describe('Market Status Indicators', () => {
+    it('should display market status indicators for each asset type', async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
+      })
+
+      // Check that market status badges are rendered
+      const marketStatusBadges = document.querySelectorAll('.market-status-badge')
+      expect(marketStatusBadges.length).toBeGreaterThan(0)
+    })
+
+    it('should display status indicator emojis', async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
+      })
+
+      // Check that status indicators are present (emojis)
+      const statusIndicators = document.querySelectorAll('.status-indicator')
+      expect(statusIndicators.length).toBeGreaterThan(0)
+    })
+
+    it('should display status text for market hours', async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
+      })
+
+      // Check that status text is present
+      const statusTexts = document.querySelectorAll('.status-text')
+      expect(statusTexts.length).toBeGreaterThan(0)
+
+      // At least one should have content (not empty)
+      const hasContent = Array.from(statusTexts).some(el => el.textContent && el.textContent.trim().length > 0)
+      expect(hasContent).toBe(true)
+    })
+
+    it('should show different market statuses for different asset types', async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithMetals })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
+      })
+
+      // Stocks and metals should have similar status (both follow regular market hours)
+      // Crypto should always show 24/7
+      const cryptoSection = screen.getByText(/Crypto/i).closest('.breakdown-item')
+      expect(cryptoSection).toBeInTheDocument()
+
+      // Check for 24/7 badge
+      const cryptoBadge = cryptoSection?.querySelector('.market-status-badge')
+      expect(cryptoBadge).toBeInTheDocument()
+    })
+
+    it('should display 24/7 status for crypto', async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
+
+      render(<OpenPositionsCard autoRefresh={false} />)
+
+      await waitFor(() => {
+        expect(screen.getByText(/Crypto/i)).toBeInTheDocument()
+      })
+
+      // Find crypto breakdown item and check for 24/7 text
+      const cryptoSection = screen.getByText(/Crypto/i).closest('.breakdown-item')
+      expect(cryptoSection).toBeInTheDocument()
+
+      // The status text should contain "24/7"
+      const statusText = cryptoSection?.querySelector('.status-text')
+      expect(statusText?.textContent).toContain('24/7')
+    })
+  })
 })
