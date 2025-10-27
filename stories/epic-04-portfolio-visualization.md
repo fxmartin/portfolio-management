@@ -21,8 +21,8 @@
 | F4.1: Portfolio Dashboard | 3 | 11 | ✅ Complete | 100% (11/11 pts) |
 | F4.2: Performance Charts | 2 | 11 | 🟡 In Progress | 73% (8/11 pts) |
 | F4.3: Realized P&L Summary | 2 | 13 | 🔴 Not Started | 0% (0/13 pts) |
-| F4.4: Alpha Vantage Integration | 4 | 18 | 🔴 Not Started | 0% (0/18 pts) |
-| **Total** | **11** | **53** | **In Progress** | **36%** (19/53 pts) |
+| F4.4: Alpha Vantage Integration | 4 | 18 | 🟡 In Progress | 56% (10/18 pts) |
+| **Total** | **11** | **53** | **In Progress** | **55%** (29/53 pts) |
 
 ---
 
@@ -1357,7 +1357,7 @@ interface PortfolioState {
 **Complexity**: 18 story points
 
 ### Story F4.4-001: Alpha Vantage Service Implementation
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete (2025-10-27)
 **User Story**: As a system, I need an Alpha Vantage API service so that I can fetch live and historical market data as a fallback when Yahoo Finance fails
 
 **Acceptance Criteria**:
@@ -1605,26 +1605,36 @@ class AlphaVantageService:
 ```
 
 **Definition of Done**:
-- [ ] AlphaVantageService class implemented
-- [ ] Rate limiting with token bucket algorithm
-- [ ] Redis caching for all endpoints
-- [ ] Support for stocks, ETFs, and crypto
-- [ ] Historical daily prices working
-- [ ] Live quotes working
-- [ ] Error handling for rate limits
-- [ ] Unit tests (85% coverage)
-- [ ] Integration tests with mock API
-- [ ] Documentation with usage examples
+- [x] AlphaVantageService class implemented
+- [x] Rate limiting with token bucket algorithm
+- [x] Redis caching for all endpoints
+- [x] Support for stocks, ETFs, and crypto
+- [x] Historical daily prices working
+- [x] Live quotes working
+- [x] Error handling for rate limits
+- [x] Unit tests (97% coverage - exceeds 85% requirement)
+- [x] Integration tests with mock API
+- [x] Documentation with usage examples
 
 **Story Points**: 5
 **Priority**: Must Have
 **Dependencies**: Epic 3 (Redis setup)
 **Risk Level**: Medium
 
+**Implementation Notes** (2025-10-27):
+- Created `backend/alpha_vantage_service.py` (111 statements)
+- Implemented AlphaVantageRateLimiter with token bucket (5 calls/min, 100 calls/day)
+- Supports GLOBAL_QUOTE, TIME_SERIES_DAILY, CURRENCY_EXCHANGE_RATE
+- Redis caching with configurable TTLs (60s quotes, 1h daily, 5m intraday)
+- 21 comprehensive tests (97% coverage)
+- API key configured and tested: Works for US stocks and crypto
+- **Coverage Limitation**: European ETFs not supported by Alpha Vantage (same as Yahoo Finance)
+- Commit: `10f4c43`
+
 ---
 
 ### Story F4.4-002: Intelligent Fallback Logic
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete (2025-10-27)
 **User Story**: As a system, I need intelligent fallback logic so that market data is always available even when one provider fails
 
 **Acceptance Criteria**:
@@ -1827,21 +1837,31 @@ class MarketDataAggregator:
 ```
 
 **Definition of Done**:
-- [ ] MarketDataAggregator implemented
-- [ ] Provider priority logic working
-- [ ] Circuit breaker pattern implemented
-- [ ] European ETF special handling
-- [ ] Metrics tracking for providers
-- [ ] Transparent fallback to caller
-- [ ] Cache fallback working
-- [ ] Unit tests (85% coverage)
-- [ ] Integration tests with multiple providers
-- [ ] Performance monitoring endpoint
+- [x] MarketDataAggregator implemented
+- [x] Provider priority logic working
+- [x] Circuit breaker pattern implemented
+- [x] European ETF special handling
+- [x] Metrics tracking for providers
+- [x] Transparent fallback to caller
+- [x] Cache fallback working
+- [x] Unit tests (95% coverage - exceeds 85% requirement)
+- [x] Integration tests with multiple providers
+- [ ] Performance monitoring endpoint (deferred to F4.4-004)
 
 **Story Points**: 5
 **Priority**: Must Have
 **Dependencies**: F4.4-001 (Alpha Vantage Service)
 **Risk Level**: Medium
+
+**Implementation Notes** (2025-10-27):
+- Created `backend/market_data_aggregator.py` (110 statements)
+- Provider priority: European ETFs try Alpha Vantage first, US stocks try Yahoo first
+- Fallback chain: Primary → Alternate → Cache → Error
+- Circuit breaker: Opens after 5 consecutive failures, 5-minute timeout
+- Provider statistics tracking for monitoring dashboard
+- 24 comprehensive tests (95% coverage)
+- **Note**: European ETFs still use Yahoo Finance (Alpha Vantage has no coverage)
+- Commit: `10f4c43`
 
 ---
 

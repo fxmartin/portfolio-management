@@ -8,10 +8,10 @@ This document provides a high-level overview of all user stories for the Portfol
 
 **Development Metrics**:
 - **Active Development Time**: ~14-19 hours (Oct 21-27, 2025)
-- **Project Completion**: 43% (112/263 story points across 8 epics)
-- **Activity**: 29 commits, 13 GitHub issues (10 closed), 5 active development days
+- **Project Completion**: 46% (122/263 story points across 8 epics)
+- **Activity**: 30 commits, 13 GitHub issues (10 closed), 5 active development days
 - *Estimate updated via: `python3 scripts/estimate_hours.py`*
-- *Epic 4 enriched with Alpha Vantage integration (18 story points added)*
+- *Epic 4 enriched with Alpha Vantage integration (18 story points, 10 complete)*
 
 ## Testing Requirements
 
@@ -42,12 +42,12 @@ Stories are organized into 8 major epics, each with its own detailed documentati
 | [Epic 1: Transaction Import](./stories/epic-01-transaction-import.md) | 8 | 31 | ✅ Complete | 100% (31/31 pts) | CSV parsing & storage |
 | [Epic 2: Portfolio Calculation](./stories/epic-02-portfolio-calculation.md) | 5 | 26 | ✅ Complete | 100% (26/26 pts) | FIFO, P&L, currency |
 | [Epic 3: Live Market Data](./stories/epic-03-live-market-data.md) | 4 | 16 | ✅ Complete | 100% (16/16 pts) | Yahoo Finance, Redis |
-| [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 11 | 53 | 🟡 In Progress | 36% (19/53 pts) | Dashboard, charts, Alpha Vantage |
+| [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 11 | 53 | 🟡 In Progress | 55% (29/53 pts) | Dashboard, charts, Alpha Vantage |
 | [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | 🟡 In Progress | 85% (11/13 pts) | Docker, database |
 | [Epic 6: UI Modernization](./stories/epic-06-ui-modernization.md) | 7 | 18 | ✅ Complete | 100% (18/18 pts) | Sidebar, tabs, theme |
 | [Epic 7: Manual Transactions](./stories/epic-07-manual-transaction-management.md) | 6 | 39 | 🔴 Not Started | 0% (0/39 pts) | Create, edit, delete |
 | [Epic 8: AI Market Analysis](./stories/epic-08-ai-market-analysis.md) | 14 | 67 | 🔴 Not Started | 0% (0/67 pts) | Claude insights & forecasts |
-| **Total** | **58** | **263** | **In Progress** | **~43%** (112/263 pts) | |
+| **Total** | **58** | **263** | **In Progress** | **~46%** (122/263 pts) | |
 
 ## Recent Updates (Oct 24, 2025)
 
