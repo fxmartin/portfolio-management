@@ -22,7 +22,9 @@
       "Bash(gh issue list:*)",
       "Bash(gh pr list:*)",
       "Bash(git add:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(docker-compose exec -T backend python -c:*)",
+      "Bash(docker-compose logs:*)"
     ],
     "deny": [],
     "ask": []

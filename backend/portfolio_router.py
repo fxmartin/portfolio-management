@@ -544,3 +544,176 @@ async def _calculate_fee_information(session: AsyncSession, open_positions: List
         "total_fees": float(total_fees),
         "fee_transaction_count": fee_transaction_count
     }
+
+
+@router.get("/history")
+async def get_portfolio_history(
+    period: str = "1M",
+    session: AsyncSession = Depends(get_async_db)
+) -> Dict:
+    """
+    Get historical portfolio values for charting.
+
+    Args:
+        period: Time period (1D, 1W, 1M, 3M, 1Y, All)
+        session: Database session
+
+    Returns:
+        Dictionary with:
+        - data: Array of {date, value} points
+        - period: Selected time period
+        - initial_value: Starting portfolio value
+        - current_value: Current portfolio value
+        - change: Absolute change
+        - change_percent: Percentage change
+    """
+    from datetime import timedelta
+    import asyncio
+
+    try:
+        # Determine date range based on period
+        now = datetime.now()
+        period_map = {
+            "1D": timedelta(days=1),
+            "1W": timedelta(weeks=1),
+            "1M": timedelta(days=30),
+            "3M": timedelta(days=90),
+            "1Y": timedelta(days=365),
+            "All": None  # From first transaction
+        }
+
+        if period not in period_map:
+            raise HTTPException(status_code=400, detail="Invalid period. Use: 1D, 1W, 1M, 3M, 1Y, or All")
+
+        # Get date range
+        end_date = now
+        if period == "All":
+            # Get first transaction date
+            stmt = select(func.min(Transaction.transaction_date))
+            result = await session.execute(stmt)
+            start_date = result.scalar()
+            if not start_date:
+                # No transactions yet
+                return {
+                    "data": [],
+                    "period": period,
+                    "initial_value": 0,
+                    "current_value": 0,
+                    "change": 0,
+                    "change_percent": 0
+                }
+        else:
+            start_date = now - period_map[period]
+
+        # Determine granularity (number of data points)
+        days_diff = (end_date - start_date).days
+        if days_diff <= 1:
+            # Hourly for 1D
+            data_points = 24
+            interval = timedelta(hours=1)
+        elif days_diff <= 7:
+            # Every 6 hours for 1W
+            data_points = days_diff * 4
+            interval = timedelta(hours=6)
+        elif days_diff <= 30:
+            # Daily for 1M
+            data_points = days_diff
+            interval = timedelta(days=1)
+        elif days_diff <= 90:
+            # Every 3 days for 3M
+            data_points = days_diff // 3
+            interval = timedelta(days=3)
+        else:
+            # Weekly for 1Y and All
+            data_points = days_diff // 7
+            interval = timedelta(days=7)
+
+        # Get all transactions up to end_date
+        stmt = select(Transaction).where(
+            Transaction.transaction_date <= end_date
+        ).order_by(Transaction.transaction_date)
+        result = await session.execute(stmt)
+        all_transactions = list(result.scalars().all())
+
+        if not all_transactions:
+            return {
+                "data": [],
+                "period": period,
+                "initial_value": 0,
+                "current_value": 0,
+                "change": 0,
+                "change_percent": 0
+            }
+
+        # Get current prices for all symbols
+        portfolio_service = PortfolioService(session)
+        positions = await portfolio_service.get_all_positions()
+
+        # Build price map (symbol -> current_price)
+        price_map = {}
+        for pos in positions:
+            if pos.current_price:
+                price_map[pos.symbol] = float(pos.current_price)
+
+        # Calculate portfolio value at regular intervals
+        data = []
+        current_date = start_date
+
+        for i in range(data_points + 1):
+            if current_date > end_date:
+                break
+
+            # Get transactions up to this date
+            txns_up_to_date = [t for t in all_transactions if t.transaction_date <= current_date]
+
+            # Calculate positions at this date using FIFO
+            from fifo_calculator import FIFOCalculator
+            calculator = FIFOCalculator()
+
+            # Track quantities by symbol
+            symbol_quantities = {}
+
+            for txn in txns_up_to_date:
+                if txn.transaction_type in [TransactionType.BUY, TransactionType.STAKING,
+                                            TransactionType.AIRDROP, TransactionType.MINING]:
+                    if txn.symbol not in symbol_quantities:
+                        symbol_quantities[txn.symbol] = Decimal("0")
+                    symbol_quantities[txn.symbol] += txn.quantity or Decimal("0")
+
+                elif txn.transaction_type == TransactionType.SELL:
+                    if txn.symbol in symbol_quantities:
+                        symbol_quantities[txn.symbol] -= txn.quantity or Decimal("0")
+                        if symbol_quantities[txn.symbol] <= 0:
+                            del symbol_quantities[txn.symbol]
+
+            # Calculate total value using current prices
+            total_value = Decimal("0")
+            for symbol, quantity in symbol_quantities.items():
+                if symbol in price_map and quantity > 0:
+                    price = Decimal(str(price_map[symbol]))
+                    total_value += quantity * price
+
+            data.append({
+                "date": current_date.isoformat(),
+                "value": float(total_value)
+            })
+
+            current_date += interval
+
+        # Calculate metrics
+        initial_value = data[0]["value"] if data else 0
+        current_value = data[-1]["value"] if data else 0
+        change = current_value - initial_value
+        change_percent = (change / initial_value * 100) if initial_value > 0 else 0
+
+        return {
+            "data": data,
+            "period": period,
+            "initial_value": initial_value,
+            "current_value": current_value,
+            "change": change,
+            "change_percent": change_percent
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to calculate portfolio history: {str(e)}")
