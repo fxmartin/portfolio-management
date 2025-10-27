@@ -553,6 +553,7 @@ async def get_portfolio_history(
 ) -> Dict:
     """
     Get historical portfolio values for charting.
+    Only tracks currently open positions from their first purchase date.
 
     Args:
         period: Time period (1D, 1W, 1M, 3M, 1Y, All)
@@ -571,6 +572,29 @@ async def get_portfolio_history(
     import asyncio
 
     try:
+        # Get currently open positions first
+        portfolio_service = PortfolioService(session)
+        positions = await portfolio_service.get_all_positions()
+        open_positions = [p for p in positions if p.quantity > 0]
+
+        if not open_positions:
+            return {
+                "data": [],
+                "period": period,
+                "initial_value": 0,
+                "current_value": 0,
+                "change": 0,
+                "change_percent": 0
+            }
+
+        # Get symbols for currently open positions
+        open_symbols = {p.symbol for p in open_positions}
+
+        # Find earliest first purchase date among open positions
+        earliest_position_date = min(
+            p.first_purchase_date for p in open_positions if p.first_purchase_date
+        )
+
         # Determine date range based on period
         now = datetime.now()
         period_map = {
@@ -579,7 +603,7 @@ async def get_portfolio_history(
             "1M": timedelta(days=30),
             "3M": timedelta(days=90),
             "1Y": timedelta(days=365),
-            "All": None  # From first transaction
+            "All": None  # From earliest open position
         }
 
         if period not in period_map:
@@ -588,22 +612,12 @@ async def get_portfolio_history(
         # Get date range
         end_date = now
         if period == "All":
-            # Get first transaction date
-            stmt = select(func.min(Transaction.transaction_date))
-            result = await session.execute(stmt)
-            start_date = result.scalar()
-            if not start_date:
-                # No transactions yet
-                return {
-                    "data": [],
-                    "period": period,
-                    "initial_value": 0,
-                    "current_value": 0,
-                    "change": 0,
-                    "change_percent": 0
-                }
+            # Start from earliest open position date
+            start_date = earliest_position_date
         else:
-            start_date = now - period_map[period]
+            # Use period, but not earlier than earliest open position
+            period_start = now - period_map[period]
+            start_date = max(period_start, earliest_position_date)
 
         # Determine granularity (number of data points)
         days_diff = (end_date - start_date).days
@@ -628,9 +642,12 @@ async def get_portfolio_history(
             data_points = days_diff // 7
             interval = timedelta(days=7)
 
-        # Get all transactions up to end_date
+        # Get transactions for currently open positions only
         stmt = select(Transaction).where(
-            Transaction.transaction_date <= end_date
+            and_(
+                Transaction.symbol.in_(open_symbols),
+                Transaction.transaction_date <= end_date
+            )
         ).order_by(Transaction.transaction_date)
         result = await session.execute(stmt)
         all_transactions = list(result.scalars().all())
@@ -645,13 +662,9 @@ async def get_portfolio_history(
                 "change_percent": 0
             }
 
-        # Get current prices for all symbols
-        portfolio_service = PortfolioService(session)
-        positions = await portfolio_service.get_all_positions()
-
-        # Build price map (symbol -> current_price)
+        # Build price map (symbol -> current_price) for open positions only
         price_map = {}
-        for pos in positions:
+        for pos in open_positions:
             if pos.current_price:
                 price_map[pos.symbol] = float(pos.current_price)
 
