@@ -19,10 +19,10 @@
 | Feature | Stories | Points | Status | Progress |
 |---------|---------|--------|--------|----------|
 | F4.1: Portfolio Dashboard | 3 | 11 | ✅ Complete | 100% (11/11 pts) |
-| F4.2: Performance Charts | 2 | 11 | 🟡 In Progress | 73% (8/11 pts) |
+| F4.2: Performance Charts | 2 | 11 | 🟡 On Hold | 27% (3/11 pts) |
 | F4.3: Realized P&L Summary | 2 | 13 | 🔴 Not Started | 0% (0/13 pts) |
-| F4.4: Alpha Vantage Integration | 4 | 18 | 🟡 In Progress | 56% (10/18 pts) |
-| **Total** | **11** | **53** | **In Progress** | **55%** (29/53 pts) |
+| F4.4: Alpha Vantage Integration | 4 | 18 | ✅ Complete | 100% (18/18 pts) |
+| **Total** | **11** | **53** | **In Progress** | **60%** (32/53 pts) |
 
 ---
 
@@ -493,10 +493,13 @@ async def get_open_positions_overview() -> OpenPositionsOverview:
 **User Value**: Understand portfolio trends and asset allocation visually
 **Priority**: Should Have
 **Complexity**: 11 story points
+**Status**: 🟡 On Hold (Portfolio Value Chart removed from dashboard, may be revisited later)
 
 ### Story F4.2-001: Portfolio Value Chart
-**Status**: ✅ Complete (2025-10-27)
+**Status**: 🟡 On Hold (2025-10-27)
 **User Story**: As FX, I want to see my portfolio value over time so that I can track my investment growth
+
+**Note**: This feature has been temporarily removed from the dashboard and put on hold. The PortfolioValueChart component has been deleted and removed from App.tsx. This feature may be revisited in the future with improved historical price data handling.
 
 **Acceptance Criteria**:
 - **Given** historical transaction and price data
@@ -1866,7 +1869,7 @@ class MarketDataAggregator:
 ---
 
 ### Story F4.4-003: Historical Price Fallback for ETFs
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete (2025-10-27)
 **User Story**: As FX, I want my European ETF historical prices to work so that the portfolio performance chart shows accurate data
 
 **Acceptance Criteria**:
@@ -1943,7 +1946,7 @@ async def get_portfolio_history(period: str = "1M") -> Dict:
 ---
 
 ### Story F4.4-004: Configuration and Monitoring
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete (2025-10-27)
 **User Story**: As a developer, I need Alpha Vantage properly configured with monitoring so that I can track API usage and troubleshoot issues
 
 **Acceptance Criteria**:
