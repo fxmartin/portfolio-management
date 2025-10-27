@@ -20,7 +20,9 @@
       "Bash(docker exec:*)",
       "Bash(docker-compose restart:*)",
       "Bash(gh issue list:*)",
-      "Bash(gh pr list:*)"
+      "Bash(gh pr list:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

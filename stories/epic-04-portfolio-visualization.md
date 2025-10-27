@@ -12,14 +12,15 @@
 ## Features in this Epic
 - Feature 4.1: Portfolio Dashboard
 - Feature 4.2: Performance Charts
-- Feature 4.3: Asset Allocation View (Future)
+- Feature 4.3: Realized P&L Summary
 
 ## Progress Tracking
 | Feature | Stories | Points | Status | Progress |
 |---------|---------|--------|--------|----------|
 | F4.1: Portfolio Dashboard | 3 | 11 | ✅ Complete | 100% (11/11 pts) |
-| F4.2: Performance Charts | 2 | 11 | 🔴 Not Started | 0% |
-| **Total** | **5** | **22** | **In Progress** | **50%** (11/22 pts) |
+| F4.2: Performance Charts | 2 | 11 | 🔴 Not Started | 0% (0/11 pts) |
+| F4.3: Realized P&L Summary | 2 | 13 | 🔴 Not Started | 0% (0/13 pts) |
+| **Total** | **7** | **35** | **In Progress** | **31%** (11/35 pts) |
 
 ---
 
@@ -716,6 +717,466 @@ const AssetAllocationChart: React.FC = () => {
 **Dependencies**: F4.1-002 (Holdings Table)
 **Risk Level**: Low
 **Assigned To**: Unassigned
+
+---
+
+## Feature 4.3: Realized P&L Summary
+**Feature Description**: Display realized profit/loss from closed positions with fee breakdown by asset type
+**User Value**: Understand trading performance and tax reporting data with full transparency on transaction costs
+**Priority**: High
+**Complexity**: 13 story points
+
+### Story F4.3-001: Realized P&L Summary Card
+**Status**: 🔴 Not Started
+**User Story**: As FX, I want to see my realized P&L from closed positions broken down by asset type and fees so that I can track my trading performance and prepare tax reports
+
+**Acceptance Criteria**:
+- **Given** I have closed positions (fully sold securities)
+- **When** viewing the dashboard below the Holdings table
+- **Then** I see a "Realized P&L" card displaying:
+  - Total realized P&L (gross gains/losses from closed positions)
+  - Total transaction fees (all buy + sell fees)
+  - Net P&L (realized P&L - total fees)
+  - Number of closed positions
+- **And** I see a breakdown by asset type (Stocks, Crypto, Metals) showing:
+  - Realized P&L per asset type
+  - Transaction fees per asset type
+  - Net P&L per asset type
+  - Number of closed positions per asset type
+- **And** profits are displayed in green, losses in red
+- **And** fees are displayed separately in a muted color
+- **And** the card has the same minimalist design as OpenPositionsCard
+- **And** values are formatted in base currency (EUR)
+
+**Technical Requirements**:
+- React component with TypeScript
+- Fetch data from `/api/portfolio/realized-pnl` endpoint
+- Currency formatting utilities (reuse from existing components)
+- Responsive grid layout (3 columns for asset types)
+- Loading and error states
+- Color coding: green (profit), red (loss), gray (fees)
+
+**Component Design**:
+```typescript
+interface RealizedPnLData {
+  totalRealizedPnL: number;
+  totalFees: number;
+  netPnL: number;
+  closedPositionsCount: number;
+  breakdown: {
+    stocks: AssetTypeBreakdown;
+    crypto: AssetTypeBreakdown;
+    metals: AssetTypeBreakdown;
+  };
+  lastUpdated: Date;
+}
+
+interface AssetTypeBreakdown {
+  realizedPnL: number;
+  fees: number;
+  netPnL: number;
+  closedCount: number;
+}
+
+const RealizedPnLCard: React.FC = () => {
+  const [data, setData] = useState<RealizedPnLData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/portfolio/realized-pnl');
+        const result = await response.json();
+        setData(result);
+      } catch (error) {
+        console.error('Failed to fetch realized P&L:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) return <LoadingSpinner />;
+  if (!data) return <ErrorMessage message="Failed to load realized P&L" />;
+
+  return (
+    <Card className="realized-pnl-card">
+      <h2>Realized P&L (Closed Positions)</h2>
+
+      <div className="main-metrics">
+        <MetricBox
+          label="Total Realized P&L"
+          value={formatCurrency(data.totalRealizedPnL)}
+          className={data.totalRealizedPnL >= 0 ? 'profit' : 'loss'}
+        />
+        <MetricBox
+          label="Transaction Fees"
+          value={formatCurrency(data.totalFees)}
+          className="fees"
+        />
+        <MetricBox
+          label="Net P&L"
+          value={formatCurrency(data.netPnL)}
+          className={data.netPnL >= 0 ? 'profit' : 'loss'}
+        />
+      </div>
+
+      <div className="closed-count">
+        {data.closedPositionsCount} closed position{data.closedPositionsCount !== 1 ? 's' : ''}
+      </div>
+
+      <div className="breakdown">
+        <h3>Breakdown by Asset Type</h3>
+        <div className="breakdown-grid">
+          <AssetBreakdownItem
+            icon="📈"
+            label="Stocks"
+            data={data.breakdown.stocks}
+          />
+          <AssetBreakdownItem
+            icon="💰"
+            label="Crypto"
+            data={data.breakdown.crypto}
+          />
+          <AssetBreakdownItem
+            icon="🥇"
+            label="Metals"
+            data={data.breakdown.metals}
+          />
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+const AssetBreakdownItem: React.FC<{ icon: string; label: string; data: AssetTypeBreakdown }> = ({
+  icon,
+  label,
+  data
+}) => (
+  <div className="breakdown-item">
+    <div className="breakdown-header">
+      <span className="icon">{icon}</span>
+      <span className="label">{label}</span>
+    </div>
+    <div className="breakdown-metrics">
+      <div className="metric">
+        <span className="metric-label">Realized:</span>
+        <span className={`metric-value ${data.realizedPnL >= 0 ? 'profit' : 'loss'}`}>
+          {formatCurrency(data.realizedPnL)}
+        </span>
+      </div>
+      <div className="metric">
+        <span className="metric-label">Fees:</span>
+        <span className="metric-value fees">{formatCurrency(data.fees)}</span>
+      </div>
+      <div className="metric">
+        <span className="metric-label">Net:</span>
+        <span className={`metric-value ${data.netPnL >= 0 ? 'profit' : 'loss'}`}>
+          {formatCurrency(data.netPnL)}
+        </span>
+      </div>
+      <div className="closed-count-item">
+        {data.closedCount} closed
+      </div>
+    </div>
+  </div>
+);
+```
+
+**UI Mockup**:
+```
+┌──────────────────────────────────────────────────────────────┐
+│ Realized P&L (Closed Positions)                               │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│  Total Realized P&L        Transaction Fees    Net P&L        │
+│  +€7,220.17                €125.50             +€7,094.67     │
+│  (15 closed positions)                                        │
+│                                                               │
+├──────────────────────────────────────────────────────────────┤
+│ Breakdown by Asset Type:                                      │
+│                                                               │
+│  📈 Stocks               💰 Crypto              🥇 Metals      │
+│  Realized: +€3,450.00    Realized: +€3,600.00  Realized: +€170.17 │
+│  Fees: €45.20            Fees: €75.30           Fees: €5.00   │
+│  Net: +€3,404.80         Net: +€3,524.70        Net: +€165.17 │
+│  5 closed                8 closed                2 closed      │
+│                                                               │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Styling Notes**:
+- Match OpenPositionsCard aesthetic (borderless, subtle background)
+- Use CSS Grid for 3-column asset breakdown
+- Color palette:
+  - Profit: `#10b981` (green-500)
+  - Loss: `#ef4444` (red-500)
+  - Fees: `#6b7280` (gray-500, muted)
+- Responsive: Stack asset cards vertically on mobile
+
+**Definition of Done**:
+- [ ] RealizedPnLCard component implemented with TypeScript
+- [ ] Fetches data from backend API endpoint
+- [ ] Displays all required metrics (total, fees, net, breakdown)
+- [ ] Color coding for profit/loss/fees
+- [ ] Responsive design (desktop/tablet/mobile)
+- [ ] Loading and error states handled
+- [ ] Matches design system (minimalist, borderless cards)
+- [ ] Unit tests for component rendering (85% coverage)
+- [ ] Integration test with API endpoint
+- [ ] Accessibility (ARIA labels, semantic HTML)
+- [ ] Documentation in component comments
+
+**Story Points**: 8
+**Priority**: Must Have
+**Dependencies**: F4.1-002 (Holdings Table), F2.3-002 (Realized P&L Calculation)
+**Risk Level**: Low
+**Testing Requirements**:
+- Unit tests: Component rendering, state management, formatting
+- Integration tests: API data fetching, error handling
+- Visual tests: Responsive breakpoints, color coding
+
+---
+
+### Story F4.3-002: Backend Realized P&L Calculation
+**Status**: 🔴 Not Started
+**User Story**: As a system, I need to calculate realized P&L from closed positions using FIFO methodology so that the frontend can display accurate trading performance
+
+**Acceptance Criteria**:
+- **Given** the system has transaction data for buy and sell operations
+- **When** the `/api/portfolio/realized-pnl` endpoint is called
+- **Then** the system returns:
+  - Total realized P&L (sum of all realized gains/losses)
+  - Total transaction fees (sum of all buy + sell fees)
+  - Net P&L (realized P&L - total fees)
+  - Count of closed positions
+  - Breakdown by asset type (stocks, crypto, metals)
+- **And** calculations use FIFO methodology from existing FIFOCalculator
+- **And** a position is considered "closed" when sell quantity >= buy quantity
+- **And** fees are aggregated separately from P&L
+- **And** all values are in base currency (EUR)
+
+**Technical Requirements**:
+- New API endpoint: `GET /api/portfolio/realized-pnl`
+- New service method: `PortfolioService.get_realized_pnl_summary()`
+- Leverage existing `FIFOCalculator` for gain/loss calculations
+- Database queries:
+  - Identify closed positions (sum(sell_qty) >= sum(buy_qty))
+  - Aggregate fees by transaction type and asset type
+  - Group results by asset type
+- Return type: `RealizedPnLSummary` Pydantic model
+
+**Backend Implementation**:
+```python
+# models.py
+class AssetTypeBreakdown(BaseModel):
+    realized_pnl: float
+    fees: float
+    net_pnl: float
+    closed_count: int
+
+class RealizedPnLSummary(BaseModel):
+    total_realized_pnl: float
+    total_fees: float
+    net_pnl: float
+    closed_positions_count: int
+    breakdown: Dict[str, AssetTypeBreakdown]
+    last_updated: datetime
+
+# portfolio_service.py
+class PortfolioService:
+    async def get_realized_pnl_summary(self, db: Session) -> RealizedPnLSummary:
+        """
+        Calculate realized P&L from closed positions using FIFO.
+
+        Steps:
+        1. Query all transactions grouped by symbol
+        2. For each symbol, check if position is closed (sum(sells) >= sum(buys))
+        3. Use FIFOCalculator to calculate realized gains for closed positions
+        4. Aggregate fees separately from P&L
+        5. Group by asset type (stocks, crypto, metals)
+        6. Return summary with breakdown
+        """
+
+        # Get all symbols and their transaction totals
+        position_status = db.query(
+            Transaction.symbol,
+            Transaction.asset_type,
+            func.sum(case((Transaction.transaction_type == 'BUY', Transaction.quantity), else_=0)).label('total_bought'),
+            func.sum(case((Transaction.transaction_type == 'SELL', Transaction.quantity), else_=0)).label('total_sold'),
+        ).group_by(Transaction.symbol, Transaction.asset_type).all()
+
+        # Identify closed positions
+        closed_symbols = [
+            (pos.symbol, pos.asset_type)
+            for pos in position_status
+            if pos.total_sold >= pos.total_bought
+        ]
+
+        # Calculate realized P&L for each closed position
+        total_realized_pnl = 0
+        breakdown_data = defaultdict(lambda: {
+            'realized_pnl': 0,
+            'fees': 0,
+            'closed_count': 0
+        })
+
+        for symbol, asset_type in closed_symbols:
+            # Get transactions for this symbol
+            transactions = db.query(Transaction).filter(
+                Transaction.symbol == symbol
+            ).order_by(Transaction.date).all()
+
+            # Calculate realized gains using FIFO
+            calculator = FIFOCalculator()
+            realized_pnl = 0
+            fees = 0
+
+            for txn in transactions:
+                if txn.transaction_type == 'BUY':
+                    calculator.add_purchase(
+                        symbol=txn.symbol,
+                        quantity=txn.quantity,
+                        price=txn.price,
+                        date=txn.date,
+                        fee=txn.fee
+                    )
+                    fees += txn.fee
+                elif txn.transaction_type == 'SELL':
+                    sale_result = calculator.process_sale(
+                        symbol=txn.symbol,
+                        quantity=txn.quantity,
+                        price=txn.price,
+                        date=txn.date
+                    )
+                    realized_pnl += sale_result.realized_gain
+                    fees += txn.fee
+
+            # Aggregate by asset type
+            breakdown_data[asset_type]['realized_pnl'] += realized_pnl
+            breakdown_data[asset_type]['fees'] += fees
+            breakdown_data[asset_type]['closed_count'] += 1
+            total_realized_pnl += realized_pnl
+
+        # Calculate total fees across all transactions
+        total_fees = db.query(func.sum(Transaction.fee)).scalar() or 0
+
+        # Build breakdown with net P&L
+        breakdown = {
+            'stocks': AssetTypeBreakdown(
+                realized_pnl=breakdown_data['stock']['realized_pnl'],
+                fees=breakdown_data['stock']['fees'],
+                net_pnl=breakdown_data['stock']['realized_pnl'] - breakdown_data['stock']['fees'],
+                closed_count=breakdown_data['stock']['closed_count']
+            ),
+            'crypto': AssetTypeBreakdown(
+                realized_pnl=breakdown_data['crypto']['realized_pnl'],
+                fees=breakdown_data['crypto']['fees'],
+                net_pnl=breakdown_data['crypto']['realized_pnl'] - breakdown_data['crypto']['fees'],
+                closed_count=breakdown_data['crypto']['closed_count']
+            ),
+            'metals': AssetTypeBreakdown(
+                realized_pnl=breakdown_data['forex']['realized_pnl'],  # metals stored as 'forex' in DB
+                fees=breakdown_data['forex']['fees'],
+                net_pnl=breakdown_data['forex']['realized_pnl'] - breakdown_data['forex']['fees'],
+                closed_count=breakdown_data['forex']['closed_count']
+            )
+        }
+
+        return RealizedPnLSummary(
+            total_realized_pnl=total_realized_pnl,
+            total_fees=total_fees,
+            net_pnl=total_realized_pnl - total_fees,
+            closed_positions_count=len(closed_symbols),
+            breakdown=breakdown,
+            last_updated=datetime.now()
+        )
+
+# portfolio_router.py
+@router.get("/api/portfolio/realized-pnl", response_model=RealizedPnLSummary)
+async def get_realized_pnl(db: Session = Depends(get_db)):
+    """
+    Get realized P&L summary from closed positions.
+
+    Returns:
+        RealizedPnLSummary: Total realized P&L, fees, net P&L, and breakdown by asset type
+    """
+    portfolio_service = PortfolioService(db)
+    return await portfolio_service.get_realized_pnl_summary(db)
+```
+
+**Database Queries**:
+```sql
+-- Query 1: Identify closed positions
+SELECT
+    symbol,
+    asset_type,
+    SUM(CASE WHEN transaction_type = 'BUY' THEN quantity ELSE 0 END) as total_bought,
+    SUM(CASE WHEN transaction_type = 'SELL' THEN quantity ELSE 0 END) as total_sold
+FROM transactions
+GROUP BY symbol, asset_type
+HAVING SUM(CASE WHEN transaction_type = 'SELL' THEN quantity ELSE 0 END) >=
+       SUM(CASE WHEN transaction_type = 'BUY' THEN quantity ELSE 0 END);
+
+-- Query 2: Aggregate fees by asset type
+SELECT
+    asset_type,
+    SUM(fee) as total_fees,
+    COUNT(CASE WHEN fee > 0 THEN 1 END) as fee_transaction_count
+FROM transactions
+GROUP BY asset_type;
+
+-- Query 3: Get transactions for FIFO calculation (per symbol)
+SELECT * FROM transactions
+WHERE symbol = :symbol
+ORDER BY date ASC;
+```
+
+**FIFO Calculation Logic**:
+```python
+# For each closed position:
+# 1. Process BUY transactions chronologically (add to FIFO queue)
+# 2. Process SELL transactions (match against oldest buys)
+# 3. Calculate realized gain: (sell_price - buy_price) * quantity
+# 4. Track fees separately (not part of gain calculation in this view)
+
+# Example:
+BUY 100 AAPL @ $150 (fee: $1)  -> Cost basis: $150/share
+BUY 50 AAPL @ $160 (fee: $0.50) -> Cost basis: $160/share
+SELL 120 AAPL @ $170 (fee: $1.50)
+
+# FIFO matching:
+# - First 100 shares from first buy: gain = (170-150)*100 = $2,000
+# - Next 20 shares from second buy: gain = (170-160)*20 = $200
+# Total realized gain: $2,200
+# Total fees: $1 + $0.50 + $1.50 = $3
+# Net P&L: $2,200 - $3 = $2,197
+```
+
+**Definition of Done**:
+- [ ] API endpoint implemented and returns correct data structure
+- [ ] PortfolioService method correctly calculates realized P&L using FIFO
+- [ ] Closed positions identified correctly (sell >= buy)
+- [ ] Fees aggregated separately from P&L
+- [ ] Breakdown by asset type working
+- [ ] All values in base currency (EUR)
+- [ ] Unit tests for FIFO calculation logic (85% coverage)
+- [ ] Integration tests for API endpoint (15 tests)
+- [ ] Performance tested with 100+ closed positions (<500ms response)
+- [ ] Documentation: API endpoint, calculation methodology
+
+**Story Points**: 5
+**Priority**: Must Have
+**Dependencies**: F2.1-001 (FIFO Calculator), F1.3-001 (Transaction Storage)
+**Risk Level**: Medium (complex FIFO calculations)
+**Testing Requirements**:
+- Unit tests: FIFO calculations, fee aggregation, closed position detection
+- Integration tests: End-to-end API call with real transaction data
+- Performance tests: Large datasets (1000+ transactions)
+- Edge cases: No closed positions, single asset type, zero fees
 
 ---
 

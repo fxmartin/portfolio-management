@@ -8,7 +8,7 @@ This document provides a high-level overview of all user stories for the Portfol
 
 **Development Metrics**:
 - **Active Development Time**: ~14-19 hours (Oct 21-26, 2025)
-- **Project Completion**: 45% (104/229 story points across 8 epics)
+- **Project Completion**: 42% (104/245 story points across 8 epics)
 - **Activity**: 27 commits, 13 GitHub issues (10 closed), 4 active development days
 - *Estimate updated via: `python3 scripts/estimate_hours.py`*
 
@@ -41,12 +41,12 @@ Stories are organized into 8 major epics, each with its own detailed documentati
 | [Epic 1: Transaction Import](./stories/epic-01-transaction-import.md) | 8 | 31 | ✅ Complete | 100% (31/31 pts) | CSV parsing & storage |
 | [Epic 2: Portfolio Calculation](./stories/epic-02-portfolio-calculation.md) | 5 | 26 | ✅ Complete | 100% (26/26 pts) | FIFO, P&L, currency |
 | [Epic 3: Live Market Data](./stories/epic-03-live-market-data.md) | 4 | 16 | ✅ Complete | 100% (16/16 pts) | Yahoo Finance, Redis |
-| [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 4 | 19 | 🟡 In Progress | 42% (8/19 pts) | Dashboard, auto-refresh |
+| [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 7 | 35 | 🟡 In Progress | 31% (11/35 pts) | Dashboard, charts, P&L |
 | [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | 🟡 In Progress | 85% (11/13 pts) | Docker, database |
 | [Epic 6: UI Modernization](./stories/epic-06-ui-modernization.md) | 7 | 18 | ✅ Complete | 100% (18/18 pts) | Sidebar, tabs, theme |
 | [Epic 7: Manual Transactions](./stories/epic-07-manual-transaction-management.md) | 6 | 39 | 🔴 Not Started | 0% (0/39 pts) | Create, edit, delete |
 | [Epic 8: AI Market Analysis](./stories/epic-08-ai-market-analysis.md) | 14 | 67 | 🔴 Not Started | 0% (0/67 pts) | Claude insights & forecasts |
-| **Total** | **51** | **229** | **In Progress** | **~45%** (104/229 pts) | |
+| **Total** | **54** | **245** | **In Progress** | **~42%** (104/245 pts) | |
 
 ## Recent Updates (Oct 24, 2025)
 
@@ -198,10 +198,10 @@ Stories are organized into 8 major epics, each with its own detailed documentati
 - **Status**: ✅ Complete (100% complete - All features implemented with auto-refresh and currency fixes)
 
 ### [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md)
-- **Goal**: Interactive dashboard with charts
-- **Features**: Portfolio summary, holdings table, performance charts
-- **Key Stories**: 4 stories, 19 points
-- **Status**: 🟡 In Progress (42% complete - Dashboard feature complete)
+- **Goal**: Interactive dashboard with charts and realized P&L tracking
+- **Features**: Portfolio summary, holdings table, performance charts, realized P&L with fee breakdown
+- **Key Stories**: 7 stories, 35 points
+- **Status**: 🟡 In Progress (31% complete - Dashboard complete, charts & realized P&L pending)
 
 ### [Epic 5: Infrastructure & DevOps](./stories/epic-05-infrastructure.md)
 - **Goal**: Docker environment with hot-reload

@@ -36,7 +36,7 @@ portfolio-management/
 **Development Time**: ~14-19 hours active development (Oct 21-26, 2025)
 - 27 git commits across 4 active days
 - 13 GitHub issues (10 closed)
-- **Completion**: 64% (104/162 story points) - 7 epics total
+- **Completion**: 42% (104/245 story points) - 8 epics total
 
 *Run `python3 scripts/estimate_hours.py` to see updated time estimates*
 
