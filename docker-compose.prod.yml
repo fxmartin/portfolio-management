@@ -1,0 +1,50 @@
+# Production overrides for docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+version: '3.8'
+
+services:
+  backend:
+    environment:
+      - DEBUG=false
+      - LOG_LEVEL=info
+      - PYTHONOPTIMIZE=2  # Enable Python optimizations
+    volumes:
+      # In production, don't mount source code - build it into the image
+      - ./data:/data  # Only mount data directory
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4 --log-level info
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    environment:
+      - NODE_ENV=production
+    volumes:
+      # In production, serve built static files
+      - /app/node_modules
+    command: npm run preview  # Or use nginx to serve dist/
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres:
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

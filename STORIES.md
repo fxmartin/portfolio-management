@@ -7,10 +7,12 @@ This document provides a high-level overview of all user stories for the Portfol
 **Project Goal**: Build a personal portfolio tracker that imports Revolut transactions and displays real-time portfolio performance with live market data.
 
 **Development Metrics**:
-- **Active Development Time**: ~14-19 hours (Oct 21-27, 2025)
-- **Project Completion**: 48% (125/263 story points across 8 epics)
-- **Activity**: 31 commits, 13 GitHub issues (11 closed), 5 active development days
+- **Active Development Time**: ~14-19 hours (Oct 21-28, 2025)
+- **Project Completion**: 57% (151/263 story points across 8 epics)
+- **Activity**: 32 commits, 13 GitHub issues (11 closed), 6 active development days
 - *Estimate updated via: `python3 scripts/estimate_hours.py`*
+- *Epic 5: Infrastructure & DevOps complete! (13/13 story points) ✅*
+- *Epic 4: Realized P&L feature complete! (13/13 story points) ✅*
 - *Epic 4: Alpha Vantage integration complete! (18/18 story points) ✅*
 
 ## Testing Requirements
@@ -42,14 +44,86 @@ Stories are organized into 8 major epics, each with its own detailed documentati
 | [Epic 1: Transaction Import](./stories/epic-01-transaction-import.md) | 8 | 31 | ✅ Complete | 100% (31/31 pts) | CSV parsing & storage |
 | [Epic 2: Portfolio Calculation](./stories/epic-02-portfolio-calculation.md) | 5 | 26 | ✅ Complete | 100% (26/26 pts) | FIFO, P&L, currency |
 | [Epic 3: Live Market Data](./stories/epic-03-live-market-data.md) | 4 | 16 | ✅ Complete | 100% (16/16 pts) | Yahoo Finance, Redis |
-| [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 11 | 53 | 🟡 In Progress | 60% (32/53 pts) | Dashboard, charts, Alpha Vantage ✅ |
-| [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | 🟡 In Progress | 85% (11/13 pts) | Docker, database |
+| [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 11 | 53 | 🟡 In Progress | 85% (45/53 pts) | Dashboard ✅, Realized P&L ✅, Alpha Vantage ✅ |
+| [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | ✅ Complete | 100% (13/13 pts) | Docker, dev tools, debugging |
 | [Epic 6: UI Modernization](./stories/epic-06-ui-modernization.md) | 7 | 18 | ✅ Complete | 100% (18/18 pts) | Sidebar, tabs, theme |
 | [Epic 7: Manual Transactions](./stories/epic-07-manual-transaction-management.md) | 6 | 39 | 🔴 Not Started | 0% (0/39 pts) | Create, edit, delete |
 | [Epic 8: AI Market Analysis](./stories/epic-08-ai-market-analysis.md) | 14 | 67 | 🔴 Not Started | 0% (0/67 pts) | Claude insights & forecasts |
-| **Total** | **58** | **263** | **In Progress** | **~48%** (125/263 pts) | |
+| **Total** | **58** | **263** | **In Progress** | **~57%** (151/263 pts) | |
 
-## Recent Updates (Oct 24, 2025)
+## Recent Updates (Oct 28, 2025)
+
+### Epic 5: Infrastructure & DevOps Complete! ✅
+**All Stories Complete** (13/13 story points, 100%):
+- ✅ **F5.1-001**: Multi-Service Docker Setup - Complete
+- ✅ **F5.2-001**: Create Database Tables - Complete
+- ✅ **F5.3-001**: Hot Reload Setup - **COMPLETED TODAY!**
+
+**What's New**:
+- **Development Environment**: Complete hot-reload setup for backend (FastAPI) and frontend (Vite)
+- **Docker Configs**: Separate dev and production configurations with optimized settings
+- **Developer Tools**: Comprehensive Makefile with 30+ commands (dev, test, logs, shell, backup, format, lint, etc.)
+- **VS Code Integration**: Debug configurations for backend (attach/test), frontend (Chrome/Edge), and full-stack debugging
+- **Pre-commit Hooks**: Automated code quality checks (black, isort, ruff, prettier, bandit, hadolint)
+- **Documentation**: Complete debugging guide (DEBUGGING.md) covering VS Code, Docker, database, and troubleshooting
+
+**Files Created**:
+- `docker-compose.dev.yml` - Development overrides with DEBUG mode, verbose logging, PgAdmin
+- `docker-compose.prod.yml` - Production config with workers, restart policies, log rotation
+- `Makefile` - 30+ developer helper commands
+- `.vscode/launch.json` - 4 debug configurations + compound debugging
+- `.vscode/settings.json` - Python/TypeScript formatting and linting
+- `.pre-commit-config.yaml` - Pre-commit hooks for code quality
+- `DEBUGGING.md` - Comprehensive debugging and troubleshooting guide
+
+**Files Modified**:
+- `frontend/vite.config.ts` - Added HMR overlay and source maps for debugging
+- `backend/pyproject.toml` - Added dev dependencies and tool configurations
+
+**Impact**: Development experience dramatically improved with one-command environment setup, hot-reload working across all services, comprehensive debugging tools, and automated code quality checks. Epic 5 now 100% complete!
+
+---
+
+## Recent Updates (Oct 27, 2025)
+
+### Realized P&L Feature Complete (Stories F4.3-001, F4.3-002)
+- **Feature: Realized P&L Summary Card with Asset Breakdown**
+  - Displays total realized P&L from closed positions across all asset types
+  - Shows transaction fees separately for transparent cost tracking
+  - Calculates net P&L (realized gains - fees) for accurate performance reporting
+  - Breakdown by asset type (Stocks, Crypto, Metals) with individual P&L and fee totals
+  - Closed positions count with proper pluralization
+  - Color-coded display: green (profit), red (loss), gray (fees)
+  - Empty state for portfolios with no closed positions
+  - Test Coverage: 25/25 tests passing (100%)
+  - Files Created: `RealizedPnLCard.tsx`, `RealizedPnLCard.css`, `RealizedPnLCard.test.tsx`
+  - Backend: `/api/portfolio/realized-pnl` endpoint already implemented
+  - Status: ✅ Complete (13 story points)
+
+- **Critical Bug Fix: Metals Realized P&L Calculation**
+  - **Issue**: Metals showing -€0.07 loss instead of actual +€459.11 profit (28.7% return!)
+  - **Root Cause**: Revolut metals CSV lacks EUR transaction amounts - only metal quantities and fees
+  - **Investigation**: All buy/sell prices were $0.00, making P&L calculation impossible
+  - **Solution**: Extracted EUR amounts from 4 Revolut app screenshots (FX provided)
+  - **Implementation**:
+    - Created `EUR_AMOUNT_MAPPING` in `MetalsParser` class
+    - Mapped all 11 metal transactions with actual EUR values from app
+    - 7 buys: €1,200 total investment across XAU, XAG, XPT, XPD
+    - 4 sells: €1,659.18 total proceeds
+  - **Calculation Verification**:
+    - Gross Realized P&L: **€459.18**
+    - Transaction Fees: **€0.07**
+    - **Net Realized P&L: €459.11** (accurate 28.7% return)
+  - **Details by Metal**:
+    - XAU (Gold): +€99.03 on €500 invested
+    - XAG (Silver): +€157.89 on €400 invested
+    - XPT (Platinum): +€88.48 on €400 invested
+    - XPD (Palladium): +€113.78 on €300 invested
+  - Files Modified: `backend/csv_parser.py` (EUR_AMOUNT_MAPPING added)
+  - Impact: Metals P&L now accurate for tax reporting and performance tracking
+  - Commit: TBD
+
+## Previous Updates (Oct 24, 2025)
 
 ### Asset Breakdown Layout with Trend Indicators (GitHub Issue #9)
 - **Redesigned Asset Breakdown with Two-Line Layout and 24h Trend Arrows**
@@ -162,12 +236,23 @@ Stories are organized into 8 major epics, each with its own detailed documentati
   - F6.2-002 - Component Integration ✅
   - F6.3-001 - Design System ✅
   - F6.3-002 - Modern Styling ✅
-- 🟡 Epic 4: Portfolio Visualization (4 stories, 19 points) - **IN PROGRESS**
+- ✅ Epic 5: Infrastructure (3 stories, 13 points) - **100% COMPLETE**
+  - F5.1-001 - Multi-Service Docker Setup ✅
+  - F5.2-001 - Create Database Tables ✅
+  - F5.3-001 - Hot Reload Setup ✅
+- 🟡 Epic 4: Portfolio Visualization (11 stories, 53 points) - **IN PROGRESS (85% complete)**
   - ✅ F4.1-001 - Portfolio Summary View (3 pts) - **COMPLETE**
   - ✅ F4.1-002 - Holdings Table (5 pts) - **COMPLETE**
+  - ✅ F4.1-003 - Open Positions Overview (3 pts) - **COMPLETE**
+  - ✅ F4.3-001 - Realized P&L Summary Card (8 pts) - **COMPLETE**
+  - ✅ F4.3-002 - Backend Realized P&L Calculation (5 pts) - **COMPLETE**
+  - ✅ F4.4-001 - Alpha Vantage Service Implementation (5 pts) - **COMPLETE**
+  - ✅ F4.4-002 - Intelligent Fallback Logic (5 pts) - **COMPLETE**
+  - ✅ F4.4-003 - Historical Price Fallback for ETFs (5 pts) - **COMPLETE**
+  - ✅ F4.4-004 - Configuration and Monitoring (3 pts) - **COMPLETE**
 **Next Stories**:
-- F4.2-001 - Portfolio Value Chart (8 pts)
 - F4.2-002 - Asset Allocation Pie Chart (3 pts)
+- F4.2-001 - Portfolio Value Chart (8 pts) - On Hold
 **Blockers**: None
 
 ## User Personas
@@ -200,15 +285,15 @@ Stories are organized into 8 major epics, each with its own detailed documentati
 
 ### [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md)
 - **Goal**: Interactive dashboard with charts and realized P&L tracking
-- **Features**: Portfolio summary, holdings table, performance charts, realized P&L with fee breakdown
-- **Key Stories**: 7 stories, 35 points
-- **Status**: 🟡 In Progress (54% complete - Dashboard & Portfolio Value Chart complete, Asset Allocation & Realized P&L pending)
+- **Features**: Portfolio summary, holdings table, performance charts, realized P&L with fee breakdown, Alpha Vantage integration
+- **Key Stories**: 11 stories, 53 points
+- **Status**: 🟡 In Progress (85% complete - Dashboard ✅, Realized P&L ✅, Alpha Vantage ✅, Charts pending)
 
 ### [Epic 5: Infrastructure & DevOps](./stories/epic-05-infrastructure.md)
-- **Goal**: Docker environment with hot-reload
-- **Features**: Docker Compose, database schema, development tools
+- **Goal**: Docker environment with hot-reload and development tools
+- **Features**: Docker Compose, database schema, hot-reload, debugging, pre-commit hooks
 - **Key Stories**: 3 stories, 13 points
-- **Status**: 🟢 Mostly Complete (85% complete - F5.1-001 and F5.2-001 done)
+- **Status**: ✅ Complete (100% complete - All stories done, comprehensive dev environment ready)
 
 ### [Epic 6: UI Modernization & Navigation](./stories/epic-06-ui-modernization.md)
 - **Goal**: Modern, professional UI with icon sidebar and tab navigation

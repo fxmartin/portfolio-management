@@ -1,0 +1,42 @@
+# Development overrides for docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+version: '3.8'
+
+services:
+  backend:
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=debug
+      - PYTHONDONTWRITEBYTECODE=1  # Don't write .pyc files
+    volumes:
+      - ./backend:/app:cached  # Cached mount for better performance
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app --log-level debug
+
+  frontend:
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./frontend/src:/app/src:cached
+      - ./frontend/public:/app/public:cached
+      - ./frontend/index.html:/app/index.html:cached
+      - ./frontend/vite.config.ts:/app/vite.config.ts:cached
+      - ./frontend/tsconfig.json:/app/tsconfig.json:cached
+      - ./frontend/package.json:/app/package.json:cached
+      - /app/node_modules  # Prevent overwriting
+    stdin_open: true  # Keep stdin open for React error overlay
+    tty: true  # Allocate pseudo-TTY for better logging
+
+  # Optional: PgAdmin for database management (development only)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: portfolio-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@portfolio.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    profiles:
+      - dev-tools  # Only start with --profile dev-tools

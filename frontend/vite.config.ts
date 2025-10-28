@@ -14,7 +14,13 @@ export default defineConfig({
       },
     },
     watch: {
-      usePolling: true,
+      usePolling: true,  // Required for Docker
     },
+    hmr: {
+      overlay: true,  // Show errors in browser overlay
+    },
+  },
+  build: {
+    sourcemap: true,  // Enable source maps for debugging
   },
 })

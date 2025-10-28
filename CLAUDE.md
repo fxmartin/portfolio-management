@@ -6,17 +6,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Portfolio management application for tracking stocks, metals, and cryptocurrency investments. Imports transactions from Revolut (metals & stocks) and Koinly (crypto) CSV exports, calculates FIFO cost basis with fee-inclusive calculations, and displays real-time portfolio performance with live market data.
 
-**Current Status**: ~45% complete (104/229 story points across 8 epics) - All core features implemented. Transaction import, FIFO calculations, live prices, and dashboard visualization complete. Cost basis calculations validated against Koinly at 99.77% accuracy. Epic 8 (AI Market Analysis) now planned.
+**Current Status**: ~57% complete (151/263 story points across 8 epics) - All core features implemented. Transaction import, FIFO calculations, live prices, and dashboard visualization complete. Cost basis calculations validated against Koinly at 99.77% accuracy. Infrastructure & DevOps (Epic 5) complete with comprehensive development tools. Epic 8 (AI Market Analysis) now planned.
 
 ## Essential Commands
 
 ### Development Environment
-```bash
-# Start all services (PostgreSQL, Redis, Backend, Frontend)
-docker-compose up
 
-# Start with rebuild (after dependency changes)
-docker-compose up --build
+**Quick Start** (recommended):
+```bash
+# Show all available commands
+make help
+
+# Start all services in development mode (hot-reload enabled)
+make dev
+
+# Start with PgAdmin for database management
+make dev-tools
+
+# Run all tests
+make test
+
+# View logs from all services
+make logs
+```
+
+**Docker Compose** (alternative):
+```bash
+# Development mode (with hot-reload, debug logging, PgAdmin)
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+# Production mode
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+
+# Standard mode
+docker-compose up
 
 # Stop all services
 docker-compose down
@@ -24,6 +47,11 @@ docker-compose down
 # Reset everything including volumes
 docker-compose down -v
 ```
+
+**See Also**:
+- `Makefile` - 30+ developer helper commands
+- `DEBUGGING.md` - Comprehensive debugging guide
+- `.vscode/launch.json` - VS Code debug configurations
 
 ### Backend Development
 ```bash
@@ -275,11 +303,19 @@ Current test files (all passing):
 4. ✅ FIFO calculations (F2.1-001) - Fee-inclusive cost basis with 99.77% accuracy
 5. ✅ Live prices (F3.1-001, F3.1-002) - Yahoo Finance with auto-refresh
 6. ✅ Dashboard (F4.1-001, F4.1-002) - OpenPositionsCard + HoldingsTable
+7. ✅ **Infrastructure & DevOps (Epic 5) - COMPLETE** (F5.1-001, F5.2-001, F5.3-001):
+   - Docker Compose multi-service setup
+   - Database schema with auto-migrations
+   - Hot-reload for backend (FastAPI) and frontend (Vite)
+   - Development vs production configs
+   - Comprehensive Makefile with 30+ commands
+   - VS Code debugging configurations
+   - Pre-commit hooks for code quality
+   - Complete debugging documentation
 
 ### Next Steps
 - Complete Epic 4 remaining stories (F4.2-001, F4.2-002): Portfolio value chart and asset allocation pie chart
-- Complete Epic 5 remaining story (F5.3-001): Hot reload setup
-- **NEW: Epic 8 - AI Market Analysis** (67 points, 14 stories):
+- **Epic 8 - AI Market Analysis** (67 points, 14 stories):
   - Claude API integration for intelligent market analysis
   - Database-backed prompt management system
   - Global market analysis and position-specific insights
