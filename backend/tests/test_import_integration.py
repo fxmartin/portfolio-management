@@ -2,7 +2,6 @@
 # ABOUTME: Tests end-to-end transaction import with real parsers and database
 
 import pytest
-from fastapi.testclient import TestClient
 from datetime import datetime
 import json
 import sys
@@ -12,18 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from main import app
 from models import Transaction, AssetType, TransactionType
 from transaction_service import TransactionService
 
 
 class TestImportIntegration:
     """Integration tests for the complete import flow"""
-
-    @pytest.fixture
-    def client(self):
-        """Create test client"""
-        return TestClient(app)
 
     @pytest.fixture
     def mock_db_session(self):
@@ -70,7 +63,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
 2024-01-17 08:45:00,deposit,,,,0.0001,BTC,,,2.50,EUR,reward,Staking Reward,0xghi789"""
 
     @pytest.mark.asyncio
-    async def test_upload_metals_csv_to_database(self, client, mock_db_session, metals_csv):
+    async def test_upload_metals_csv_to_database(self, test_client, mock_db_session, metals_csv):
         """Test uploading and storing metals CSV to database"""
 
         # Mock the database dependency - need to use async generator
@@ -84,7 +77,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
             ]
 
             # Upload file
-            response = client.post("/api/import/upload", files=files)
+            response = test_client.post("/api/import/upload", files=files)
 
             # Check response
             assert response.status_code == 200
@@ -110,12 +103,12 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
             assert file_result["file_type"] == "METALS"
             assert file_result["saved_count"] == 3
 
-            # Verify database operations were called
-            assert mock_db_session.add.call_count >= 3
-            mock_db_session.commit.assert_called()
+            # Verify saved transaction details
+            assert len(file_result["details"]["saved"]) == 3
+            assert all("symbol" in tx for tx in file_result["details"]["saved"])
 
     @pytest.mark.asyncio
-    async def test_upload_stocks_csv_to_database(self, client, mock_db_session, stocks_csv):
+    async def test_upload_stocks_csv_to_database(self, test_client, mock_db_session, stocks_csv):
         """Test uploading and storing stocks CSV to database"""
 
         with patch('import_router.get_async_db', return_value=mock_db_session):
@@ -125,7 +118,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
             ]
 
             # Upload file
-            response = client.post("/api/import/upload", files=files)
+            response = test_client.post("/api/import/upload", files=files)
 
             # Check response
             assert response.status_code == 200
@@ -148,7 +141,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
             assert "date" in first_tx
 
     @pytest.mark.asyncio
-    async def test_upload_crypto_csv_to_database(self, client, mock_db_session, crypto_csv):
+    async def test_upload_crypto_csv_to_database(self, test_client, mock_db_session, crypto_csv):
         """Test uploading and storing crypto CSV to database"""
 
         with patch('import_router.get_async_db', return_value=mock_db_session):
@@ -158,7 +151,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
             ]
 
             # Upload file
-            response = client.post("/api/import/upload", files=files)
+            response = test_client.post("/api/import/upload", files=files)
 
             # Check response
             assert response.status_code == 200
@@ -172,7 +165,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
             assert data["summary"]["total_saved"] >= 3
 
     @pytest.mark.asyncio
-    async def test_upload_multiple_files(self, client, mock_db_session, metals_csv, stocks_csv):
+    async def test_upload_multiple_files(self, test_client, mock_db_session, metals_csv, stocks_csv):
         """Test uploading multiple CSV files at once"""
 
         with patch('import_router.get_async_db', return_value=mock_db_session):
@@ -183,7 +176,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
             ]
 
             # Upload files
-            response = client.post("/api/import/upload", files=files)
+            response = test_client.post("/api/import/upload", files=files)
 
             # Check response
             assert response.status_code == 200
@@ -200,7 +193,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
             assert data["files"][1]["file_type"] == "STOCKS"
 
     @pytest.mark.asyncio
-    async def test_duplicate_detection(self, client, mock_db_session, stocks_csv):
+    async def test_duplicate_detection(self, test_client, mock_db_session, stocks_csv):
         """Test duplicate transaction detection"""
 
         # Mock finding existing transaction
@@ -221,7 +214,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
             ]
 
             # Upload with duplicate detection
-            response = client.post(
+            response = test_client.post(
                 "/api/import/upload?allow_duplicates=true",
                 files=files
             )
@@ -238,7 +231,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
             assert len(file_result["details"]["skipped_reasons"]) > 0
 
     @pytest.mark.asyncio
-    async def test_duplicate_strategies(self, client, mock_db_session, stocks_csv):
+    async def test_duplicate_strategies(self, test_client, mock_db_session, stocks_csv):
         """Test different duplicate handling strategies"""
 
         # Test skip strategy (default)
@@ -247,7 +240,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
                 ('files', ('stocks.csv', stocks_csv, 'text/csv'))
             ]
 
-            response = client.post(
+            response = test_client.post(
                 "/api/import/upload?duplicate_strategy=skip",
                 files=files
             )
@@ -257,7 +250,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
 
         # Test update strategy
         with patch('import_router.get_async_db', return_value=mock_db_session):
-            response = client.post(
+            response = test_client.post(
                 "/api/import/upload?duplicate_strategy=update",
                 files=files
             )
@@ -267,7 +260,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
 
         # Test force strategy
         with patch('import_router.get_async_db', return_value=mock_db_session):
-            response = client.post(
+            response = test_client.post(
                 "/api/import/upload?duplicate_strategy=force",
                 files=files
             )
@@ -277,7 +270,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
 
         # Test invalid strategy
         with patch('import_router.get_async_db', return_value=mock_db_session):
-            response = client.post(
+            response = test_client.post(
                 "/api/import/upload?duplicate_strategy=invalid",
                 files=files
             )
@@ -285,7 +278,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
             assert "Invalid duplicate_strategy" in response.json()["detail"]
 
     @pytest.mark.asyncio
-    async def test_check_duplicates_endpoint(self, client, mock_db_session, stocks_csv):
+    async def test_check_duplicates_endpoint(self, test_client, mock_db_session, stocks_csv):
         """Test the check-duplicates endpoint"""
 
         # Mock finding duplicates
@@ -305,7 +298,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
                 ('file', ('B5A12617-2B56-4A79-B83D-13C6715DC0BA.csv', stocks_csv, 'text/csv'))
             ]
 
-            response = client.post("/api/import/check-duplicates", files=files)
+            response = test_client.post("/api/import/check-duplicates", files=files)
 
             assert response.status_code == 200
             data = response.json()
@@ -317,7 +310,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
             assert data["duplicates"][0]["existing_id"] == 456
 
     @pytest.mark.asyncio
-    async def test_get_import_summary(self, client, mock_db_session):
+    async def test_get_import_summary(self, test_client, mock_db_session):
         """Test getting import summary"""
 
         # Mock transactions in database
@@ -341,7 +334,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
         mock_db_session.execute.return_value = mock_result
 
         with patch('import_router.get_async_db', return_value=mock_db_session):
-            response = client.get("/api/import/summary")
+            response = test_client.get("/api/import/summary")
 
             assert response.status_code == 200
             data = response.json()
@@ -352,7 +345,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
             assert "BUY" in data["by_transaction_type"]
 
     @pytest.mark.asyncio
-    async def test_error_handling(self, client, mock_db_session):
+    async def test_error_handling(self, test_client, mock_db_session):
         """Test error handling in import process"""
 
         # Test with invalid CSV
@@ -363,7 +356,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
                 ('files', ('account-statement_2024.csv', invalid_csv, 'text/csv'))
             ]
 
-            response = client.post("/api/import/upload", files=files)
+            response = test_client.post("/api/import/upload", files=files)
 
             assert response.status_code == 200
             data = response.json()
@@ -374,7 +367,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
             assert len(data["files"][0]["errors"]) > 0
 
     @pytest.mark.asyncio
-    async def test_large_batch_import(self, client, mock_db_session):
+    async def test_large_batch_import(self, test_client, mock_db_session):
         """Test importing large CSV file"""
 
         # Generate large CSV with 1000 transactions
@@ -392,7 +385,7 @@ Exchange,Silver,2024-01-17 09:15:00,2024-01-17 09:15:01,Bought XAG 10,10,0.05,XA
                 ('files', ('large-batch.csv', large_csv, 'text/csv'))
             ]
 
-            response = client.post("/api/import/upload", files=files)
+            response = test_client.post("/api/import/upload", files=files)
 
             assert response.status_code == 200
             data = response.json()
