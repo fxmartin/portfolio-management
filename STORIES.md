@@ -10,7 +10,7 @@ This document provides a high-level overview of all user stories for the Portfol
 - **Active Development Time**: ~35-45 hours (Oct 21-28, 2025)
 - **Project Completion**: 74% (198/268 story points across 8 epics)
 - **Activity**: 53 commits, 19 GitHub issues (17 closed), 7 active development days
-- **Test Quality**: 99.8% backend tests passing (445/446 tests) ✅
+- **Test Quality**: 100% backend tests passing (446/446 tests) ✅
 - *Epic 7: Manual Transaction Management complete! (39/39 story points) ✅*
 - *Epic 5: Infrastructure & DevOps complete! (13/13 story points) ✅*
 - *Epic 4: Realized P&L feature complete! (13/13 story points) ✅*
@@ -27,20 +27,22 @@ This document provides a high-level overview of all user stories for the Portfol
 ### Test Infrastructure Status ✅
 
 **Backend Test Suite** (Oct 28, 2025):
-- **Test Pass Rate**: 99.8% (445/446 tests passing)
+- **Test Pass Rate**: 100% (446/446 tests passing) ✅
 - **Test Infrastructure**: Complete with SQLite in-memory test database
 - **Import API Tests**: 15/15 passing (100%)
 - **Integration Tests**: 10/10 passing (100%)
 - **Portfolio Tests**: 71/71 passing (100%)
+- **Realized P&L Tests**: 8/8 passing (100%)
 - **Test Execution**: <1s per test (fast SQLite in-memory)
 - **CI/CD Ready**: No external dependencies required
 
-**Recent Improvements** (Issue #6 - Closed):
+**Recent Improvements** (Issues #6, Realized P&L Fix):
 - Created `tests/conftest.py` with comprehensive test fixtures
 - Refactored all integration tests to use real database
 - Removed 279 lines of brittle mock code
 - Added proper test isolation with per-function database cleanup
-- Improved pass rate from 95.7% to 99.8% (+4.1%)
+- Fixed partially closed position logic in `get_realized_pnl_summary()`
+- Improved pass rate from 95.7% to 100% (+4.3%) ✅
 
 **Frontend Test Suite**:
 - **Test Pass Rate**: 82% (219/267 tests passing)
@@ -77,9 +79,9 @@ Stories are organized into 8 major epics, each with its own detailed documentati
 ## Recent Updates (Oct 28, 2025)
 
 ### Test Infrastructure Overhaul - ✅ COMPLETE! 🎉
-**Status**: 99.8% backend tests passing (445/446 tests)
-**Achievement**: Fixed 12 of 13 test failures, improved pass rate from 95.7% to 99.8%
-**Issue**: #6 (Closed)
+**Status**: 100% backend tests passing (446/446 tests) ✅
+**Achievement**: Fixed all 13 test failures, improved pass rate from 95.7% to 100%
+**Issues**: #6 (Closed), Realized P&L fix (Oct 28, 2025)
 
 #### What Was Built
 - **Test Database Infrastructure** (`tests/conftest.py` - 65 lines):
@@ -93,7 +95,8 @@ Stories are organized into 8 major epics, each with its own detailed documentati
 - **Import API Tests**: 15/15 passing (100%) ✅
 - **Integration Tests**: 10/10 passing (100%) ✅
 - **Portfolio Tests**: 71/71 passing (100%) ✅
-- **Overall Backend**: 445/446 passing (99.8%)
+- **Realized P&L Tests**: 8/8 passing (100%) ✅
+- **Overall Backend**: 446/446 passing (100%) ✅
 - **Test Execution**: <1 second per test (SQLite in-memory)
 
 #### Code Quality Improvements
@@ -106,6 +109,45 @@ Stories are organized into 8 major epics, each with its own detailed documentati
 #### Commits
 - `6cd4c0b` - Created test database infrastructure (8/13 failures fixed)
 - `afa2b04` - Completed integration test refactor (4/13 more failures fixed)
+- (pending) - Fixed partially closed position logic (final test fixed - 100% pass rate achieved)
+
+---
+
+### Realized P&L Partially Closed Position Bug Fix ✅
+**Status**: Fixed (Oct 28, 2025)
+**Impact**: Final backend test now passing - 100% test pass rate achieved!
+
+#### Issue
+The `test_partially_closed_position` test was failing because the realized P&L calculation incorrectly counted ANY position with sales as a "closed position", even when only partially sold.
+
+**Example**:
+- Buy 100 shares of GOOGL
+- Sell 30 shares
+- ❌ Was counting as: 1 closed position (incorrect)
+- ✅ Should be: 0 closed positions (70 shares still open)
+
+#### Root Cause
+In `portfolio_service.py:get_realized_pnl_summary()`, the logic was:
+```python
+if total_sold > 0:  # Wrong: counts ANY sales
+    symbols_with_sales.append((symbol, asset_type))
+```
+
+#### Solution
+Added condition to only count fully closed positions:
+```python
+if total_sold > 0 and total_sold >= total_bought:  # Correct: only fully closed
+    symbols_with_sales.append((symbol, asset_type))
+```
+
+#### Files Modified
+- `portfolio_service.py:489-499` - Fixed partially closed position logic
+- `portfolio_service.py:441-457` - Updated docstring for clarity
+
+#### Test Results
+- ✅ `test_partially_closed_position` now passing
+- ✅ All 8 realized P&L tests passing (100%)
+- ✅ All 446 backend tests passing (100%)
 
 ---
 
