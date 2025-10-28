@@ -45,8 +45,8 @@ This document provides a high-level overview of all user stories for the Portfol
 - Improved pass rate from 95.7% to 100% (+4.3%) ✅
 
 **Frontend Test Suite**:
-- **Test Pass Rate**: 82% (219/267 tests passing)
-- **Status**: 46 tests need mock data and timeout fixes (Issue #7 - Open)
+- **Test Pass Rate**: 94.4% (351/372 tests passing)
+- **Status**: 15 tests remaining - PortfolioSummary & RealizedPnLCard edge cases (Issue #7 - In Progress)
 
 ## Story Organization
 
