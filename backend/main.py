@@ -13,12 +13,14 @@ try:
     from .database_router import router as database_router
     from .portfolio_router import router as portfolio_router
     from .monitoring_router import router as monitoring_router
+    from .transaction_router import router as transaction_router
 except ImportError:
     from database import init_db_async, test_connection
     from import_router import router as import_router
     from database_router import router as database_router
     from portfolio_router import router as portfolio_router
     from monitoring_router import router as monitoring_router
+    from transaction_router import router as transaction_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -79,6 +81,7 @@ app.include_router(import_router)
 app.include_router(database_router)
 app.include_router(monitoring_router)
 app.include_router(portfolio_router)
+app.include_router(transaction_router)
 
 @app.get("/")
 async def root():

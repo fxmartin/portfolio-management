@@ -5,6 +5,7 @@ import { useState } from 'react'
 import Sidebar from './components/Sidebar'
 import TabView from './components/TabView'
 import TransactionImport from './components/TransactionImport'
+import TransactionList from './components/TransactionList'
 import OpenPositionsCard from './components/OpenPositionsCard'
 import HoldingsTable from './components/HoldingsTable'
 import RealizedPnLCard from './components/RealizedPnLCard'
@@ -48,6 +49,11 @@ function App() {
           {/* Upload Tab */}
           <div data-tab="upload" className="upload-tab">
             <TransactionImport />
+          </div>
+
+          {/* Transactions Tab */}
+          <div data-tab="transactions" className="transactions-tab">
+            <TransactionList />
           </div>
 
           {/* Database Stats Tab */}

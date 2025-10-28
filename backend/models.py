@@ -54,6 +54,9 @@ class Transaction(Base):
     raw_data = Column(JSON)  # Original CSV row for audit
     source_file = Column(String(255), index=True)
     source_type = Column(String(10))  # REVOLUT, KOINLY
+    source = Column(String(20), default='CSV', index=True)  # CSV or MANUAL
+    notes = Column(String(500))  # User notes for manual transactions
+    deleted_at = Column(DateTime)  # Soft delete timestamp
     import_timestamp = Column(DateTime, default=func.now())
     created_at = Column(DateTime, default=func.now())
 
@@ -68,6 +71,27 @@ class Transaction(Base):
 
     def __repr__(self):
         return f"<Transaction({self.transaction_date}, {self.symbol}, {self.transaction_type}, {self.quantity})>"
+
+
+class TransactionAudit(Base):
+    """Transaction audit log for tracking changes to transactions"""
+    __tablename__ = 'transaction_audit'
+
+    id = Column(Integer, primary_key=True)
+    transaction_id = Column(Integer, ForeignKey('transactions.id'), nullable=False, index=True)
+    changed_at = Column(DateTime, default=func.now(), nullable=False, index=True)
+    changed_by = Column(String(100), default='system')
+    old_values = Column(JSON)  # Previous values
+    new_values = Column(JSON)  # New values
+    change_reason = Column(String(500))
+    action = Column(String(20), nullable=False)  # CREATE, UPDATE, DELETE, RESTORE
+
+    __table_args__ = (
+        Index('idx_audit_transaction_date', 'transaction_id', 'changed_at'),
+    )
+
+    def __repr__(self):
+        return f"<TransactionAudit(tx_id={self.transaction_id}, action={self.action}, at={self.changed_at})>"
 
 
 class Position(Base):

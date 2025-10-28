@@ -72,10 +72,11 @@ class PortfolioService:
         Returns:
             Updated Position object
         """
-        # Get all transactions for this symbol, ordered by date
+        # Get all non-deleted transactions for this symbol, ordered by date
         stmt = (
             select(Transaction)
             .where(Transaction.symbol == symbol)
+            .where(Transaction.deleted_at.is_(None))
             .order_by(Transaction.transaction_date)
         )
         result = await self.session.execute(stmt)
