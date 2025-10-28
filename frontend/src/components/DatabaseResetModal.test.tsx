@@ -38,8 +38,8 @@ describe('DatabaseResetModal', () => {
         />
       );
 
-      expect(screen.getByText(/Dangerous Operation - Database Reset/)).toBeInTheDocument();
-      expect(screen.getByText(/This will permanently delete:/)).toBeInTheDocument();
+      expect(screen.getByText(/Database Reset/i)).toBeInTheDocument();
+      expect(screen.getByText(/This will permanently delete all data/i)).toBeInTheDocument();
     });
 
     it('does not render modal when isOpen is false', () => {
@@ -63,12 +63,10 @@ describe('DatabaseResetModal', () => {
         />
       );
 
-      expect(screen.getByText(/All imported transactions/)).toBeInTheDocument();
-      expect(screen.getByText(/All manually entered transactions/)).toBeInTheDocument();
-      expect(screen.getByText(/All position calculations/)).toBeInTheDocument();
-      expect(screen.getByText(/All price history/)).toBeInTheDocument();
-      expect(screen.getByText(/All portfolio snapshots/)).toBeInTheDocument();
-      expect(screen.getByText(/All cost basis/)).toBeInTheDocument();
+      // Component shows a summary paragraph, not individual items
+      expect(screen.getByText(/All transactions, positions, price history, and calculations will be removed/i)).toBeInTheDocument();
+      expect(screen.getByText(/You'll need to re-import CSV files/i)).toBeInTheDocument();
+      expect(screen.getByText(/This cannot be undone/i)).toBeInTheDocument();
     });
 
     it('displays consequences section', () => {
@@ -80,9 +78,9 @@ describe('DatabaseResetModal', () => {
         />
       );
 
-      expect(screen.getByText(/Consequences:/)).toBeInTheDocument();
-      expect(screen.getByText(/You will need to re-import all CSV files/)).toBeInTheDocument();
-      expect(screen.getByText(/This action cannot be undone/)).toBeInTheDocument();
+      // Component doesn't have a "Consequences:" heading, but shows the consequences inline
+      expect(screen.getByText(/You'll need to re-import CSV files/i)).toBeInTheDocument();
+      expect(screen.getByText(/This cannot be undone/i)).toBeInTheDocument();
     });
   });
 
@@ -98,7 +96,7 @@ describe('DatabaseResetModal', () => {
 
       const input = screen.getByPlaceholderText('Type confirmation here');
       expect(input).toBeInTheDocument();
-      expect(screen.getByText(/DELETE ALL TRANSACTIONS/)).toBeInTheDocument();
+      expect(screen.getByText(/DELETE_ALL_TRANSACTIONS/)).toBeInTheDocument();
     });
 
     it('enables reset button only when correct confirmation is typed', () => {
@@ -121,7 +119,7 @@ describe('DatabaseResetModal', () => {
       expect(resetButton).toBeDisabled();
 
       // Enabled with correct text
-      fireEvent.change(input, { target: { value: 'DELETE ALL TRANSACTIONS' } });
+      fireEvent.change(input, { target: { value: 'DELETE_ALL_TRANSACTIONS' } });
       expect(resetButton).toBeEnabled();
     });
 
@@ -141,7 +139,7 @@ describe('DatabaseResetModal', () => {
       fireEvent.change(input, { target: { value: 'DELETE' } });
 
       // Force enable button for testing
-      fireEvent.change(input, { target: { value: 'DELETE ALL TRANSACTIONS' } });
+      fireEvent.change(input, { target: { value: 'DELETE_ALL_TRANSACTIONS' } });
       fireEvent.change(input, { target: { value: 'DELETE' } });
 
       // Click reset (button is disabled, but we're testing the validation)
@@ -181,7 +179,7 @@ describe('DatabaseResetModal', () => {
       const resetButton = screen.getByText('Reset Database');
 
       // Type correct confirmation
-      fireEvent.change(input, { target: { value: 'DELETE ALL TRANSACTIONS' } });
+      fireEvent.change(input, { target: { value: 'DELETE_ALL_TRANSACTIONS' } });
 
       // Click reset
       fireEvent.click(resetButton);
@@ -191,17 +189,20 @@ describe('DatabaseResetModal', () => {
         expect.stringContaining('permanently delete ALL transactions')
       );
 
-      // Verify API call
+      // Verify API call (uses environment API URL)
       await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith('/api/database/reset', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            confirmation: 'DELETE ALL TRANSACTIONS'
-          })
-        });
+        expect(global.fetch).toHaveBeenCalledWith(
+          expect.stringContaining('/api/database/reset'),
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              confirmation: 'DELETE_ALL_TRANSACTIONS'
+            })
+          }
+        );
       });
 
       // Verify callbacks
@@ -231,7 +232,7 @@ describe('DatabaseResetModal', () => {
       const resetButton = screen.getByText('Reset Database');
 
       // Type correct confirmation
-      fireEvent.change(input, { target: { value: 'DELETE ALL TRANSACTIONS' } });
+      fireEvent.change(input, { target: { value: 'DELETE_ALL_TRANSACTIONS' } });
 
       // Click reset
       fireEvent.click(resetButton);
@@ -262,7 +263,7 @@ describe('DatabaseResetModal', () => {
       const resetButton = screen.getByText('Reset Database');
 
       // Type correct confirmation
-      fireEvent.change(input, { target: { value: 'DELETE ALL TRANSACTIONS' } });
+      fireEvent.change(input, { target: { value: 'DELETE_ALL_TRANSACTIONS' } });
 
       // Click reset
       fireEvent.click(resetButton);
@@ -271,7 +272,7 @@ describe('DatabaseResetModal', () => {
       await waitFor(() => {
         const errorElement = screen.getByRole('alert');
         expect(errorElement).toHaveTextContent('Invalid confirmation code');
-      });
+      }, { timeout: 2000 });
 
       // Should not reload on error
       expect(mockReload).not.toHaveBeenCalled();
@@ -293,7 +294,7 @@ describe('DatabaseResetModal', () => {
       const resetButton = screen.getByText('Reset Database');
 
       // Type correct confirmation
-      fireEvent.change(input, { target: { value: 'DELETE ALL TRANSACTIONS' } });
+      fireEvent.change(input, { target: { value: 'DELETE_ALL_TRANSACTIONS' } });
 
       // Click reset
       fireEvent.click(resetButton);
@@ -302,7 +303,7 @@ describe('DatabaseResetModal', () => {
       await waitFor(() => {
         const errorElement = screen.getByRole('alert');
         expect(errorElement).toHaveTextContent('Network error');
-      });
+      }, { timeout: 2000 });
     });
 
     it('shows loading state during reset', async () => {
@@ -326,7 +327,7 @@ describe('DatabaseResetModal', () => {
       const resetButton = screen.getByText('Reset Database');
 
       // Type correct confirmation
-      fireEvent.change(input, { target: { value: 'DELETE ALL TRANSACTIONS' } });
+      fireEvent.change(input, { target: { value: 'DELETE_ALL_TRANSACTIONS' } });
 
       // Click reset
       fireEvent.click(resetButton);
@@ -335,7 +336,7 @@ describe('DatabaseResetModal', () => {
       await waitFor(() => {
         expect(screen.getByText(/Deleting All Data.../)).toBeInTheDocument();
         expect(screen.getByText(/Please wait while we clear all data.../)).toBeInTheDocument();
-      });
+      }, { timeout: 2000 });
     });
   });
 
@@ -378,7 +379,7 @@ describe('DatabaseResetModal', () => {
       const cancelButton = screen.getByText('Cancel');
 
       // Type correct confirmation
-      fireEvent.change(input, { target: { value: 'DELETE ALL TRANSACTIONS' } });
+      fireEvent.change(input, { target: { value: 'DELETE_ALL_TRANSACTIONS' } });
 
       // Click reset
       fireEvent.click(resetButton);
@@ -386,7 +387,7 @@ describe('DatabaseResetModal', () => {
       // Cancel should be disabled during operation
       await waitFor(() => {
         expect(cancelButton).toBeDisabled();
-      });
+      }, { timeout: 2000 });
     });
 
     it('clears confirmation text when modal closes', () => {

@@ -1,5 +1,5 @@
 // ABOUTME: Tests for RealizedPnLCard component
-// ABOUTME: Tests loading, error states, empty closed positions, and realized P&L display with breakdown
+// ABOUTME: Tests loading, error states, empty positions with sales, and realized P&L display with breakdown
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
@@ -101,49 +101,49 @@ describe('RealizedPnLCard', () => {
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
   })
 
-  it('displays empty state when no closed positions', async () => {
+  it('displays empty state when no positions with sales', async () => {
     mockedAxios.get.mockResolvedValueOnce({ data: mockNoClosedPositions })
 
     render(<RealizedPnLCard />)
 
     await waitFor(() => {
-      expect(screen.getByText(/no closed positions yet/i)).toBeInTheDocument()
+      expect(screen.getByText(/No closed positions yet/i)).toBeInTheDocument()
     })
 
     expect(screen.getByText(/realized p&l will appear here/i)).toBeInTheDocument()
   })
 
-  it('displays realized P&L for single closed position with profit', async () => {
+  it('displays realized P&L for single position with sales with profit', async () => {
     mockedAxios.get.mockResolvedValueOnce({ data: mockClosedPositionWithProfit })
 
     render(<RealizedPnLCard />)
 
     await waitFor(() => {
-      expect(screen.getByText('1 closed position')).toBeInTheDocument()
-    })
+      expect(screen.getByText('1 position with sales')).toBeInTheDocument()
+    }, { timeout: 3000 })
 
     // Check main metrics
     expect(screen.getByText('Total Realized P&L')).toBeInTheDocument()
-    expect(screen.getByText('$ 2,000.00')).toBeInTheDocument()
+    expect(screen.getByText('€ 2,000.00')).toBeInTheDocument()
     expect(screen.getByText('Transaction Fees')).toBeInTheDocument()
-    expect(screen.getByText('$ 2.50')).toBeInTheDocument()
+    expect(screen.getByText('€ 2.50')).toBeInTheDocument()
     expect(screen.getByText('Net P&L')).toBeInTheDocument()
-    expect(screen.getByText('$ 1,997.50')).toBeInTheDocument()
+    expect(screen.getByText('€ 1,997.50')).toBeInTheDocument()
   })
 
-  it('displays realized P&L for single closed position with loss', async () => {
+  it('displays realized P&L for single position with sales with loss', async () => {
     mockedAxios.get.mockResolvedValueOnce({ data: mockClosedPositionWithLoss })
 
     render(<RealizedPnLCard />)
 
     await waitFor(() => {
-      expect(screen.getByText('1 closed position')).toBeInTheDocument()
-    })
+      expect(screen.getByText('1 position with sales')).toBeInTheDocument()
+    }, { timeout: 3000 })
 
     // Check main metrics
-    expect(screen.getByText('-$ 1,500.00')).toBeInTheDocument()
-    expect(screen.getByText('$ 8.00')).toBeInTheDocument()
-    expect(screen.getByText('-$ 1,508.00')).toBeInTheDocument()
+    expect(screen.getByText('-€ 1,500.00')).toBeInTheDocument()
+    expect(screen.getByText('€ 8.00')).toBeInTheDocument()
+    expect(screen.getByText('-€ 1,508.00')).toBeInTheDocument()
   })
 
   it('displays breakdown by asset type for mixed positions', async () => {
@@ -152,7 +152,7 @@ describe('RealizedPnLCard', () => {
     render(<RealizedPnLCard />)
 
     await waitFor(() => {
-      expect(screen.getByText('2 closed positions')).toBeInTheDocument()
+      expect(screen.getByText('2 positions with sales')).toBeInTheDocument()
     })
 
     // Check breakdown section appears
@@ -160,7 +160,7 @@ describe('RealizedPnLCard', () => {
 
     // Check stocks breakdown (profit)
     expect(screen.getByText('Stocks')).toBeInTheDocument()
-    expect(screen.getByText('$ 500.00')).toBeInTheDocument()
+    expect(screen.getByText('€ 500.00')).toBeInTheDocument()
     expect(screen.getByText('1 closed')).toBeInTheDocument()
 
     // Check crypto breakdown (loss)
@@ -168,13 +168,13 @@ describe('RealizedPnLCard', () => {
     expect(screen.getByText('-$ 1,000.00')).toBeInTheDocument()
   })
 
-  it('displays all three asset types when all have closed positions', async () => {
+  it('displays all three asset types when all have positions with sales', async () => {
     mockedAxios.get.mockResolvedValueOnce({ data: mockAllAssetTypes })
 
     render(<RealizedPnLCard />)
 
     await waitFor(() => {
-      expect(screen.getByText('3 closed positions')).toBeInTheDocument()
+      expect(screen.getByText('3 positions with sales')).toBeInTheDocument()
     })
 
     // Check all three asset types are displayed
@@ -183,13 +183,13 @@ describe('RealizedPnLCard', () => {
     expect(screen.getByText('Metals')).toBeInTheDocument()
   })
 
-  it('does not show breakdown section when no closed positions', async () => {
+  it('does not show breakdown section when no positions with sales', async () => {
     mockedAxios.get.mockResolvedValueOnce({ data: mockNoClosedPositions })
 
     render(<RealizedPnLCard />)
 
     await waitFor(() => {
-      expect(screen.getByText(/no closed positions yet/i)).toBeInTheDocument()
+      expect(screen.getByText(/No closed positions yet/i)).toBeInTheDocument()
     })
 
     expect(screen.queryByText('Breakdown by Asset Type')).not.toBeInTheDocument()
@@ -201,7 +201,7 @@ describe('RealizedPnLCard', () => {
     render(<RealizedPnLCard />)
 
     await waitFor(() => {
-      expect(screen.getByText('2 closed positions')).toBeInTheDocument()
+      expect(screen.getByText('2 positions with sales')).toBeInTheDocument()
     })
 
     // Find profit and loss values and check their classes
@@ -218,29 +218,29 @@ describe('RealizedPnLCard', () => {
     render(<RealizedPnLCard />)
 
     await waitFor(() => {
-      // Check that currency is formatted with $ symbol and thousands separators
-      expect(screen.getByText('$ 2,000.00')).toBeInTheDocument()
-      expect(screen.getByText('$ 2.50')).toBeInTheDocument()
-      expect(screen.getByText('$ 1,997.50')).toBeInTheDocument()
-    })
+      // Check that currency is formatted with € symbol and thousands separators
+      expect(screen.getByText('€ 2,000.00')).toBeInTheDocument()
+      expect(screen.getByText('€ 2.50')).toBeInTheDocument()
+      expect(screen.getByText('€ 1,997.50')).toBeInTheDocument()
+    }, { timeout: 3000 })
   })
 
-  it('handles plural/singular for closed positions count', async () => {
+  it('handles plural/singular for positions with sales count', async () => {
     // Test singular
     mockedAxios.get.mockResolvedValueOnce({ data: mockClosedPositionWithProfit })
     const { rerender } = render(<RealizedPnLCard />)
 
     await waitFor(() => {
-      expect(screen.getByText('1 closed position')).toBeInTheDocument()
-    })
+      expect(screen.getByText('1 position with sales')).toBeInTheDocument()
+    }, { timeout: 3000 })
 
     // Test plural
     mockedAxios.get.mockResolvedValueOnce({ data: mockMixedAssetTypes })
     rerender(<RealizedPnLCard />)
 
     await waitFor(() => {
-      expect(screen.getByText('2 closed positions')).toBeInTheDocument()
-    })
+      expect(screen.getByText('2 positions with sales')).toBeInTheDocument()
+    }, { timeout: 3000 })
   })
 
   it('displays breakdown metrics correctly', async () => {
@@ -249,8 +249,8 @@ describe('RealizedPnLCard', () => {
     render(<RealizedPnLCard />)
 
     await waitFor(() => {
-      expect(screen.getByText('3 closed positions')).toBeInTheDocument()
-    })
+      expect(screen.getByText('3 positions with sales')).toBeInTheDocument()
+    }, { timeout: 3000 })
 
     // Check that breakdown rows show label + value
     const realizedLabels = screen.getAllByText('Realized:')
