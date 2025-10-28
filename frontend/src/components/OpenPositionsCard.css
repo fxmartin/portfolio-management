@@ -136,7 +136,7 @@
   align-items: stretch;
 }
 
-.breakdown-grid {
+.open-positions-card .breakdown-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.75rem;
@@ -145,8 +145,8 @@
 }
 
 /* Compact layout when 1-2 items */
-.breakdown-grid:has(.breakdown-item:only-child),
-.breakdown-grid:has(.breakdown-item:first-child:nth-last-child(2)) {
+.open-positions-card .breakdown-grid:has(.breakdown-item:only-child),
+.open-positions-card .breakdown-grid:has(.breakdown-item:first-child:nth-last-child(2)) {
   max-width: 400px;
   grid-template-columns: 1fr;
 }

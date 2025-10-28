@@ -1,0 +1,221 @@
+/* Closed transactions expandable panel styles */
+
+.closed-transactions-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.01);
+  border-radius: 0.5rem;
+  animation: slideDown 0.3s ease-out;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 800px;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.08);
+}
+
+.panel-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  line-height: 1;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  border-radius: 0.25rem;
+}
+
+.close-button:hover {
+  color: #111827;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.close-button:active {
+  transform: scale(0.95);
+}
+
+.panel-body {
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+}
+
+.closed-transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.closed-transactions-table thead {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.closed-transactions-table th {
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: #6b7280;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.closed-transactions-table td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  color: #374151;
+}
+
+.closed-transactions-table tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.closed-transactions-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.symbol-cell {
+  font-weight: 600;
+  color: #111827;
+}
+
+.fees-cell {
+  color: #6b7280;
+}
+
+.net-pnl-cell {
+  font-weight: 600;
+}
+
+.panel-footer {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  text-align: right;
+}
+
+.panel-footer p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Loading state */
+.loading-transactions {
+  padding: 3rem 2rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.loading-transactions .loading-spinner {
+  margin: 0 auto 1rem;
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-transactions p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Error state */
+.transaction-error {
+  padding: 2rem;
+  text-align: center;
+  color: #dc2626;
+}
+
+.transaction-error p {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+}
+
+.close-button-text {
+  padding: 0.5rem 1rem;
+  background-color: #f3f4f6;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.close-button-text:hover {
+  background-color: #e5e7eb;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .closed-transactions-panel {
+    padding: 0.75rem 1rem;
+  }
+
+  .panel-header h4 {
+    font-size: 0.875rem;
+  }
+
+  .closed-transactions-table {
+    font-size: 0.8125rem;
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .closed-transactions-table thead,
+  .closed-transactions-table tbody,
+  .closed-transactions-table tr {
+    display: table;
+    width: 100%;
+  }
+
+  .closed-transactions-table th,
+  .closed-transactions-table td {
+    padding: 0.5rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (max-width: 1024px) {
+  .closed-transactions-table {
+    min-width: 100%;
+  }
+}

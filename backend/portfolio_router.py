@@ -176,6 +176,62 @@ async def get_positions(
         )
 
 
+@router.get("/positions/{symbol}/transactions")
+async def get_position_transactions(
+    symbol: str,
+    session: AsyncSession = Depends(get_async_db)
+) -> List[Dict]:
+    """
+    Get all transactions for a specific position symbol.
+
+    Args:
+        symbol: The ticker symbol (e.g., 'BTC', 'AAPL', 'MSTR')
+
+    Returns:
+        List of transactions ordered by date (newest first)
+    """
+    try:
+        # Query transactions for this symbol, ordered by date descending (newest first)
+        stmt = (
+            select(Transaction)
+            .where(Transaction.symbol == symbol)
+            .order_by(Transaction.transaction_date.desc())
+        )
+
+        result = await session.execute(stmt)
+        transactions = result.scalars().all()
+
+        if not transactions:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No transactions found for symbol: {symbol}"
+            )
+
+        # Format transactions for frontend
+        return [
+            {
+                "id": txn.id,
+                "date": txn.transaction_date.isoformat(),
+                "type": txn.transaction_type.value,
+                "quantity": float(txn.quantity),
+                "price": float(txn.price_per_unit),
+                "fee": float(txn.fee),
+                "total_amount": float(txn.quantity * txn.price_per_unit + txn.fee),
+                "currency": txn.currency,
+                "asset_type": txn.asset_type.value
+            }
+            for txn in transactions
+        ]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch transactions for {symbol}: {str(e)}"
+        )
+
+
 @router.post("/refresh-prices")
 async def refresh_all_prices(
     session: AsyncSession = Depends(get_async_db)
@@ -794,3 +850,179 @@ async def get_portfolio_history(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to calculate portfolio history: {str(e)}")
+
+
+@router.get("/realized-pnl")
+async def get_realized_pnl_summary(
+    session: AsyncSession = Depends(get_async_db)
+) -> Dict:
+    """
+    Get realized P&L summary from closed positions with fee breakdown.
+
+    A position is considered "closed" when total sold quantity >= total bought quantity.
+    Uses FIFO methodology to calculate realized gains/losses.
+
+    Returns:
+        Dictionary with:
+        - total_realized_pnl: Total realized gains/losses across all closed positions
+        - total_fees: Sum of all transaction fees (buy + sell)
+        - net_pnl: Realized P&L minus total fees
+        - closed_positions_count: Number of closed positions
+        - breakdown: Per-asset-type breakdown (stocks, crypto, metals) with:
+            - realized_pnl: Realized gains/losses for this asset type
+            - fees: Transaction fees for this asset type
+            - net_pnl: Net P&L after fees for this asset type
+            - closed_count: Number of closed positions in this asset type
+        - last_updated: Timestamp of calculation (ISO format)
+    """
+    try:
+        portfolio_service = PortfolioService(session)
+        summary = await portfolio_service.get_realized_pnl_summary()
+        return summary
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to calculate realized P&L summary: {str(e)}"
+        )
+
+
+@router.get("/realized-pnl/{asset_type}/transactions")
+async def get_closed_transactions(
+    asset_type: str,
+    session: AsyncSession = Depends(get_async_db)
+) -> List[Dict]:
+    """
+    Get all closed (sold) transactions for a specific asset type.
+
+    Args:
+        asset_type: The asset type ('stocks', 'crypto', or 'metals')
+
+    Returns:
+        List of closed transactions with FIFO-calculated P&L, ordered by sell date (newest first)
+    """
+    try:
+        # Validate and convert asset type
+        asset_type_lower = asset_type.lower()
+        if asset_type_lower not in ['stocks', 'crypto', 'metals']:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid asset type: {asset_type}. Must be 'stocks', 'crypto', or 'metals'"
+            )
+
+        # Map to enum value
+        asset_type_map = {
+            'stocks': AssetType.STOCK,
+            'crypto': AssetType.CRYPTO,
+            'metals': AssetType.METAL
+        }
+        asset_type_enum = asset_type_map[asset_type_lower]
+
+        # Query all SELL transactions for this asset type
+        stmt = (
+            select(Transaction)
+            .where(
+                and_(
+                    Transaction.asset_type == asset_type_enum,
+                    Transaction.transaction_type == TransactionType.SELL
+                )
+            )
+            .order_by(Transaction.transaction_date.desc())
+        )
+
+        result = await session.execute(stmt)
+        sell_transactions = result.scalars().all()
+
+        if not sell_transactions:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No closed transactions found for {asset_type}"
+            )
+
+        # For each sell transaction, calculate FIFO P&L
+        portfolio_service = PortfolioService(session)
+        closed_transactions = []
+
+        for sell_txn in sell_transactions:
+            # Get all transactions for this symbol up to but NOT including the sell date
+            symbol_stmt = (
+                select(Transaction)
+                .where(
+                    and_(
+                        Transaction.symbol == sell_txn.symbol,
+                        Transaction.transaction_date < sell_txn.transaction_date
+                    )
+                )
+                .order_by(Transaction.transaction_date.asc())
+            )
+
+            symbol_result = await session.execute(symbol_stmt)
+            prior_txns = symbol_result.scalars().all()
+
+            # Calculate FIFO cost basis for this sale
+            from fifo_calculator import FIFOCalculator
+            fifo_calc = FIFOCalculator()
+
+            # Process all prior transactions to build FIFO queue
+            for txn in prior_txns:
+                if txn.transaction_type == TransactionType.BUY:
+                    fifo_calc.add_purchase(
+                        ticker=txn.symbol,
+                        quantity=Decimal(str(txn.quantity)),
+                        price=Decimal(str(txn.price_per_unit)),
+                        date=txn.transaction_date,
+                        transaction_id=txn.id,
+                        fee=Decimal(str(txn.fee))
+                    )
+                elif txn.transaction_type == TransactionType.SELL:
+                    # Process prior sales to consume lots
+                    fifo_calc.process_sale(
+                        ticker=txn.symbol,
+                        quantity=Decimal(str(txn.quantity)),
+                        sale_price=Decimal(str(txn.price_per_unit)),
+                        date=txn.transaction_date,
+                        transaction_id=txn.id,
+                        fee=Decimal(str(txn.fee))
+                    )
+
+            # Process this sale to get the FIFO-calculated realized P&L
+            sale_result = fifo_calc.process_sale(
+                ticker=sell_txn.symbol,
+                quantity=Decimal(str(sell_txn.quantity)),
+                sale_price=Decimal(str(sell_txn.price_per_unit)),
+                date=sell_txn.transaction_date,
+                transaction_id=sell_txn.id,
+                fee=Decimal(str(sell_txn.fee))
+            )
+
+            # Calculate average buy price from lots sold
+            # cost_basis in lots_sold is price per unit, so we need weighted average
+            total_cost = sum(Decimal(str(lot['cost_basis'])) * Decimal(str(lot['quantity'])) for lot in sale_result.lots_sold)
+            total_qty = sum(Decimal(str(lot['quantity'])) for lot in sale_result.lots_sold)
+            avg_buy_price = float(total_cost / total_qty) if total_qty > 0 else 0.0
+
+            # Gross P&L is the realized P&L from FIFO calculator
+            gross_pnl = float(sale_result.realized_pnl)
+
+            closed_transactions.append({
+                "id": sell_txn.id,
+                "symbol": sell_txn.symbol,
+                "sell_date": sell_txn.transaction_date.isoformat(),
+                "quantity": float(sell_txn.quantity),
+                "buy_price": avg_buy_price,  # FIFO average cost basis from sold lots
+                "sell_price": float(sell_txn.price_per_unit),
+                "gross_pnl": gross_pnl,
+                "sell_fee": float(sell_txn.fee),
+                "net_pnl": gross_pnl - float(sell_txn.fee),
+                "currency": sell_txn.currency
+            })
+
+        return closed_transactions
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch closed transactions for {asset_type}: {str(e)}"
+        )

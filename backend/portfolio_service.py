@@ -435,3 +435,177 @@ class PortfolioService:
             "total_pnl": float(total_pnl),
             "net_total_pnl": float(net_total_pnl),
         }
+
+    async def get_realized_pnl_summary(self) -> Dict:
+        """
+        Calculate realized P&L summary from all sell transactions (including partial sales).
+
+        Uses FIFO methodology to calculate realized gains/losses for any symbol that has
+        been sold (partially or fully).
+
+        Returns:
+            Dictionary with:
+            - total_realized_pnl: Total realized gains/losses from all sales
+            - total_fees: Sum of all transaction fees (buy + sell)
+            - net_pnl: Realized P&L minus total fees
+            - closed_positions_count: Number of symbols with sales
+            - breakdown: Per-asset-type breakdown (stocks, crypto, metals) with:
+                - realized_pnl: Realized gains/losses for this asset type
+                - fees: Transaction fees for this asset type
+                - net_pnl: Net P&L after fees for this asset type
+                - closed_count: Number of symbols with sales in this asset type
+        """
+        from sqlalchemy import func, case
+        from collections import defaultdict
+
+        # Step 1: Get all symbols that have any SELL transactions
+        # Query to get symbols with sales and their asset types
+        stmt = select(
+            Transaction.symbol,
+            Transaction.asset_type,
+            func.sum(
+                case(
+                    (Transaction.transaction_type.in_([
+                        TransactionType.BUY,
+                        TransactionType.STAKING,
+                        TransactionType.AIRDROP,
+                        TransactionType.MINING
+                    ]), Transaction.quantity),
+                    else_=Decimal("0")
+                )
+            ).label('total_bought'),
+            func.sum(
+                case(
+                    (Transaction.transaction_type == TransactionType.SELL, Transaction.quantity),
+                    else_=Decimal("0")
+                )
+            ).label('total_sold'),
+        ).group_by(Transaction.symbol, Transaction.asset_type)
+
+        result = await self.session.execute(stmt)
+        position_status = result.all()
+
+        # Get all symbols that have any sales (partial or full)
+        symbols_with_sales = []
+        for row in position_status:
+            symbol = row.symbol
+            asset_type = row.asset_type
+            total_sold = row.total_sold or Decimal("0")
+
+            # Include any symbol that has sales
+            if total_sold > 0:
+                symbols_with_sales.append((symbol, asset_type))
+
+        # Step 2: Calculate realized P&L for all symbols with sales using FIFO
+        total_realized_pnl = Decimal("0")
+        breakdown_data = defaultdict(lambda: {
+            'realized_pnl': Decimal("0"),
+            'fees': Decimal("0"),
+            'closed_count': 0
+        })
+
+        for symbol, asset_type in symbols_with_sales:
+            # Get all transactions for this symbol
+            txn_stmt = (
+                select(Transaction)
+                .where(Transaction.symbol == symbol)
+                .order_by(Transaction.transaction_date)
+            )
+            txn_result = await self.session.execute(txn_stmt)
+            transactions = list(txn_result.scalars().all())
+
+            # Calculate realized P&L using FIFO
+            calc = FIFOCalculator()
+            realized_pnl = Decimal("0")
+            fees = Decimal("0")
+
+            for txn in transactions:
+                if txn.transaction_type in [TransactionType.BUY, TransactionType.STAKING,
+                                           TransactionType.AIRDROP, TransactionType.MINING]:
+                    # Don't include fees in cost basis for realized P&L calculation
+                    # We want to show gross P&L and fees separately
+                    calc.add_purchase(
+                        ticker=symbol,
+                        quantity=txn.quantity,
+                        price=txn.price_per_unit,
+                        date=txn.transaction_date,
+                        transaction_id=txn.id,
+                        fee=Decimal("0")  # Track fees separately
+                    )
+                    fees += txn.fee or Decimal("0")
+
+                elif txn.transaction_type == TransactionType.SELL:
+                    try:
+                        sale_result = calc.process_sale(
+                            ticker=symbol,
+                            quantity=txn.quantity,
+                            sale_price=txn.price_per_unit,
+                            date=txn.transaction_date,
+                            transaction_id=txn.id,
+                            fee=Decimal("0")  # Track fees separately
+                        )
+                        realized_pnl += sale_result.realized_pnl
+                        fees += txn.fee or Decimal("0")
+                    except ValueError as e:
+                        print(f"Warning: FIFO error for {symbol}: {e}")
+
+            # Map asset type to breakdown key
+            asset_key = self._map_asset_type_to_key(asset_type)
+            breakdown_data[asset_key]['realized_pnl'] += realized_pnl
+            breakdown_data[asset_key]['fees'] += fees
+            breakdown_data[asset_key]['closed_count'] += 1
+            total_realized_pnl += realized_pnl
+
+        # Step 3: Calculate total fees across ALL transactions (not just closed positions)
+        fee_stmt = select(func.sum(Transaction.fee))
+        fee_result = await self.session.execute(fee_stmt)
+        total_fees = fee_result.scalar() or Decimal("0")
+
+        # Step 4: Build breakdown response
+        breakdown = {
+            'stocks': {
+                'realized_pnl': float(breakdown_data['stocks']['realized_pnl']),
+                'fees': float(breakdown_data['stocks']['fees']),
+                'net_pnl': float(breakdown_data['stocks']['realized_pnl'] - breakdown_data['stocks']['fees']),
+                'closed_count': breakdown_data['stocks']['closed_count']
+            },
+            'crypto': {
+                'realized_pnl': float(breakdown_data['crypto']['realized_pnl']),
+                'fees': float(breakdown_data['crypto']['fees']),
+                'net_pnl': float(breakdown_data['crypto']['realized_pnl'] - breakdown_data['crypto']['fees']),
+                'closed_count': breakdown_data['crypto']['closed_count']
+            },
+            'metals': {
+                'realized_pnl': float(breakdown_data['metals']['realized_pnl']),
+                'fees': float(breakdown_data['metals']['fees']),
+                'net_pnl': float(breakdown_data['metals']['realized_pnl'] - breakdown_data['metals']['fees']),
+                'closed_count': breakdown_data['metals']['closed_count']
+            }
+        }
+
+        return {
+            'total_realized_pnl': float(total_realized_pnl),
+            'total_fees': float(total_fees),
+            'net_pnl': float(total_realized_pnl - total_fees),
+            'closed_positions_count': len(symbols_with_sales),
+            'breakdown': breakdown,
+            'last_updated': datetime.now().isoformat()
+        }
+
+    def _map_asset_type_to_key(self, asset_type: AssetType) -> str:
+        """
+        Map AssetType enum to breakdown key.
+
+        Args:
+            asset_type: AssetType enum value
+
+        Returns:
+            String key for breakdown dictionary ('stocks', 'crypto', or 'metals')
+        """
+        if asset_type == AssetType.STOCK:
+            return 'stocks'
+        elif asset_type == AssetType.CRYPTO:
+            return 'crypto'
+        elif asset_type == AssetType.METAL:
+            return 'metals'
+        return 'stocks'  # Default fallback

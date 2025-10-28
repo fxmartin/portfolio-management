@@ -24,7 +24,8 @@
       "Bash(git add:*)",
       "Bash(git push:*)",
       "Bash(docker-compose exec -T backend python -c:*)",
-      "Bash(docker-compose logs:*)"
+      "Bash(docker-compose logs:*)",
+      "WebFetch(domain:www.alphavantage.co)"
     ],
     "deny": [],
     "ask": []

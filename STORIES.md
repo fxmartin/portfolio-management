@@ -7,9 +7,9 @@ This document provides a high-level overview of all user stories for the Portfol
 **Project Goal**: Build a personal portfolio tracker that imports Revolut transactions and displays real-time portfolio performance with live market data.
 
 **Development Metrics**:
-- **Active Development Time**: ~14-19 hours (Oct 21-28, 2025)
-- **Project Completion**: 57% (151/263 story points across 8 epics)
-- **Activity**: 32 commits, 13 GitHub issues (11 closed), 6 active development days
+- **Active Development Time**: ~22-30 hours (Oct 21-28, 2025)
+- **Project Completion**: 59% (159/268 story points across 8 epics)
+- **Activity**: 46 commits, 19 GitHub issues (16 closed), 6 active development days
 - *Estimate updated via: `python3 scripts/estimate_hours.py`*
 - *Epic 5: Infrastructure & DevOps complete! (13/13 story points) ✅*
 - *Epic 4: Realized P&L feature complete! (13/13 story points) ✅*
@@ -44,14 +44,79 @@ Stories are organized into 8 major epics, each with its own detailed documentati
 | [Epic 1: Transaction Import](./stories/epic-01-transaction-import.md) | 8 | 31 | ✅ Complete | 100% (31/31 pts) | CSV parsing & storage |
 | [Epic 2: Portfolio Calculation](./stories/epic-02-portfolio-calculation.md) | 5 | 26 | ✅ Complete | 100% (26/26 pts) | FIFO, P&L, currency |
 | [Epic 3: Live Market Data](./stories/epic-03-live-market-data.md) | 4 | 16 | ✅ Complete | 100% (16/16 pts) | Yahoo Finance, Redis |
-| [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 11 | 53 | 🟡 In Progress | 85% (45/53 pts) | Dashboard ✅, Realized P&L ✅, Alpha Vantage ✅ |
+| [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md) | 13 | 63 | 🟡 In Progress | 84% (53/63 pts) | Dashboard ✅, Realized P&L ✅, Alpha Vantage ✅ |
 | [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | ✅ Complete | 100% (13/13 pts) | Docker, dev tools, debugging |
 | [Epic 6: UI Modernization](./stories/epic-06-ui-modernization.md) | 7 | 18 | ✅ Complete | 100% (18/18 pts) | Sidebar, tabs, theme |
 | [Epic 7: Manual Transactions](./stories/epic-07-manual-transaction-management.md) | 6 | 39 | 🔴 Not Started | 0% (0/39 pts) | Create, edit, delete |
 | [Epic 8: AI Market Analysis](./stories/epic-08-ai-market-analysis.md) | 14 | 67 | 🔴 Not Started | 0% (0/67 pts) | Claude insights & forecasts |
-| **Total** | **58** | **263** | **In Progress** | **~57%** (151/263 pts) | |
+| **Total** | **58** | **268** | **In Progress** | **~59%** (159/268 pts) | |
 
 ## Recent Updates (Oct 28, 2025)
+
+### Story F4.3-003: Expandable Closed Transaction Details Complete! ✅
+**Feature: Click-to-Expand Closed Transactions in Realized P&L Card** (5 story points):
+- **User Experience**: Click any asset type card (Stocks 📈, Crypto 💰, Metals 🥇) to see closed transactions
+- **Backend**: New API endpoint `GET /api/portfolio/realized-pnl/{asset_type}/transactions`
+  - FIFO-calculated P&L for each SELL transaction
+  - Processes all prior BUY/SELL transactions to build accurate FIFO state
+  - Weighted average cost basis from lots sold
+  - Returns gross P&L and net P&L (after fees)
+  - Test Coverage: 7/7 tests passing (100%)
+- **Frontend**: ClosedTransactionsPanel component + RealizedPnLCard integration
+  - Nested transaction table: Symbol, Date, Quantity, Buy Price, Sell Price, Gross P&L, Fees, Net P&L
+  - Smooth slide-down animation
+  - Color-coded P&L: profit (green), loss (red)
+  - Rotating arrow indicator (▶ collapsed, ▼ expanded)
+  - Multiple cards expandable simultaneously
+  - Keyboard accessible (Enter/Space, Escape)
+  - Loading states, error handling
+  - Test Coverage: 10/10 tests passing (100%)
+- **Visual Design**:
+  - Clickable asset type cards with hover effects
+  - Expanded cards highlighted with subtle blue background
+  - Professional table layout with proper alignment
+  - Responsive design with horizontal scroll on mobile
+- **Files Created**:
+  - `ClosedTransactionsPanel.tsx/css/test.tsx` (635 lines total)
+  - Backend tests in `test_portfolio_router.py::TestClosedTransactionsEndpoint` (7 tests, 392 lines)
+- **Files Modified**:
+  - `backend/portfolio_router.py` (new endpoint, 128 lines)
+  - `RealizedPnLCard.tsx/css` (expand/collapse logic + styles)
+- **Epic 4 Progress**: F4.3 Realized P&L now 100% complete (18/18 pts)! 🎉
+- **Status**: ✅ Complete - All 17 tests passing, feature ready for production
+
+---
+
+### Story F4.1-004: Expandable Position Transaction Details Complete! ✅
+**Feature: Click-to-Expand Transaction History in Holdings Table** (5 story points):
+- **User Experience**: Click any position row to see all transactions for that asset
+- **Backend**: New API endpoint `GET /api/portfolio/positions/{symbol}/transactions`
+  - Returns transactions ordered newest first with all details (date, type, quantity, price, fee, total)
+  - Handles 404 for non-existent symbols
+  - Test Coverage: 6/6 tests passing (100%)
+- **Frontend**: TransactionDetailsRow component + HoldingsTable integration
+  - Smooth slide-down animation when expanding rows
+  - Click or keyboard navigation (Enter/Space) to expand/collapse
+  - Color-coded transaction type badges: BUY (green), SELL (red), STAKING/AIRDROP/MINING (blue)
+  - Loading states, error handling, full accessibility (ARIA attributes)
+  - Multiple rows can be expanded simultaneously
+  - Expanded state persists when filtering or searching
+  - Test Coverage: 23/23 tests passing (100%) - 13 TransactionDetailsRow + 10 HoldingsTable
+- **Visual Design**:
+  - Rotating arrow indicator (▶ collapsed, ▼ expanded)
+  - Subtle blue highlight on expanded rows
+  - Nested transaction table with Date, Time, Type, Quantity, Price, Fee, Total columns
+  - Mobile-responsive with horizontal scroll
+- **Files Created**:
+  - `TransactionDetailsRow.tsx/css/test.tsx` (729 lines total)
+  - Backend tests in `test_portfolio_router.py` (323 lines)
+- **Files Modified**:
+  - `portfolio_router.py` (new endpoint)
+  - `HoldingsTable.tsx/css/test.tsx` (expandable row logic + 10 new tests)
+- **Epic 4 Progress**: F4.1 Portfolio Dashboard now 100% complete (16/16 pts)! 🎉
+- **Status**: ✅ Complete - All tests passing, feature ready for production
+
+---
 
 ### Epic 5: Infrastructure & DevOps Complete! ✅
 **All Stories Complete** (13/13 story points, 100%):
@@ -240,12 +305,14 @@ Stories are organized into 8 major epics, each with its own detailed documentati
   - F5.1-001 - Multi-Service Docker Setup ✅
   - F5.2-001 - Create Database Tables ✅
   - F5.3-001 - Hot Reload Setup ✅
-- 🟡 Epic 4: Portfolio Visualization (11 stories, 53 points) - **IN PROGRESS (85% complete)**
+- 🟡 Epic 4: Portfolio Visualization (13 stories, 63 points) - **IN PROGRESS (84% complete)**
   - ✅ F4.1-001 - Portfolio Summary View (3 pts) - **COMPLETE**
   - ✅ F4.1-002 - Holdings Table (5 pts) - **COMPLETE**
   - ✅ F4.1-003 - Open Positions Overview (3 pts) - **COMPLETE**
+  - ✅ F4.1-004 - Expandable Position Transaction Details (5 pts) - **COMPLETE**
   - ✅ F4.3-001 - Realized P&L Summary Card (8 pts) - **COMPLETE**
   - ✅ F4.3-002 - Backend Realized P&L Calculation (5 pts) - **COMPLETE**
+  - ✅ F4.3-003 - Expandable Closed Transaction Details (5 pts) - **COMPLETE**
   - ✅ F4.4-001 - Alpha Vantage Service Implementation (5 pts) - **COMPLETE**
   - ✅ F4.4-002 - Intelligent Fallback Logic (5 pts) - **COMPLETE**
   - ✅ F4.4-003 - Historical Price Fallback for ETFs (5 pts) - **COMPLETE**
@@ -285,9 +352,9 @@ Stories are organized into 8 major epics, each with its own detailed documentati
 
 ### [Epic 4: Portfolio Visualization](./stories/epic-04-portfolio-visualization.md)
 - **Goal**: Interactive dashboard with charts and realized P&L tracking
-- **Features**: Portfolio summary, holdings table, performance charts, realized P&L with fee breakdown, Alpha Vantage integration
-- **Key Stories**: 11 stories, 53 points
-- **Status**: 🟡 In Progress (85% complete - Dashboard ✅, Realized P&L ✅, Alpha Vantage ✅, Charts pending)
+- **Features**: Portfolio summary, holdings table, expandable transaction details, performance charts, realized P&L with fee breakdown and expandable closed transactions, Alpha Vantage integration
+- **Key Stories**: 13 stories, 63 points
+- **Status**: 🟡 In Progress (84% complete - Dashboard ✅ (F4.1 complete!), Realized P&L ✅ (F4.3 complete!), Alpha Vantage ✅, Charts pending)
 
 ### [Epic 5: Infrastructure & DevOps](./stories/epic-05-infrastructure.md)
 - **Goal**: Docker environment with hot-reload and development tools

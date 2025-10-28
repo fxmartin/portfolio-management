@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { formatCurrency, formatPercentage, getPnLClassName } from '../utils/formatters'
 import { API_CONFIG, PORTFOLIO_CONFIG, REFRESH_INTERVALS } from '../config/app.config'
+import TransactionDetailsRow from './TransactionDetailsRow'
 import './HoldingsTable.css'
 
 const API_URL = API_CONFIG.BASE_URL
@@ -90,6 +91,7 @@ export default function HoldingsTable({
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [assetTypeFilter, setAssetTypeFilter] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
 
   const fetchPositions = useCallback(async () => {
     try {
@@ -196,6 +198,27 @@ export default function HoldingsTable({
     return sortDirection === 'asc' ? '↑' : '↓'
   }
 
+  const toggleRowExpansion = (symbol: string) => {
+    const newExpanded = new Set(expandedRows)
+    if (newExpanded.has(symbol)) {
+      newExpanded.delete(symbol)
+    } else {
+      newExpanded.add(symbol)
+    }
+    setExpandedRows(newExpanded)
+  }
+
+  const handleRowClick = (symbol: string) => {
+    toggleRowExpansion(symbol)
+  }
+
+  const handleRowKeyDown = (event: React.KeyboardEvent, symbol: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      toggleRowExpansion(symbol)
+    }
+  }
+
   if (loading) {
     return (
       <div className="holdings-table-container loading">
@@ -297,35 +320,62 @@ export default function HoldingsTable({
               </tr>
             </thead>
             <tbody>
-              {filteredPositions.map((position) => (
-                <tr key={position.symbol}>
-                  <td className="symbol-cell">
-                    <div className="symbol-name">{position.symbol}</div>
-                    <div className="asset-name">{position.asset_name || ASSET_NAMES[position.symbol] || ''}</div>
-                  </td>
-                  <td className="align-right">
-                    {position.quantity.toFixed(position.asset_type === 'CRYPTO' ? 8 : 2)}
-                  </td>
-                  <td className="align-right">
-                    {formatCurrency(position.avg_cost_basis, position.currency)}
-                  </td>
-                  <td className="align-right">
-                    {formatCurrency(position.current_price, position.currency)}
-                  </td>
-                  <td className="align-right">
-                    {formatCurrency(position.current_value, BASE_CURRENCY)}
-                  </td>
-                  <td className="align-right" title={`${position.fee_transaction_count} transaction${position.fee_transaction_count === 1 ? '' : 's'} with fees`}>
-                    {formatCurrency(position.total_fees, BASE_CURRENCY)}
-                  </td>
-                  <td className={`align-right ${getPnLClassName(position.unrealized_pnl)}`}>
-                    {formatCurrency(position.unrealized_pnl, BASE_CURRENCY)}
-                  </td>
-                  <td className={`align-right ${getPnLClassName(position.unrealized_pnl)}`}>
-                    {formatPercentage(position.unrealized_pnl_percent)}
-                  </td>
-                </tr>
-              ))}
+              {filteredPositions.map((position) => {
+                const isExpanded = expandedRows.has(position.symbol)
+                return (
+                  <>
+                    <tr
+                      key={position.symbol}
+                      className={`position-row ${isExpanded ? 'expanded' : ''}`}
+                      onClick={() => handleRowClick(position.symbol)}
+                      onKeyDown={(e) => handleRowKeyDown(e, position.symbol)}
+                      tabIndex={0}
+                      role="button"
+                      aria-expanded={isExpanded}
+                      aria-label={`${position.symbol} - Click to ${isExpanded ? 'collapse' : 'expand'} transaction details`}
+                    >
+                      <td className="symbol-cell">
+                        <div className="symbol-wrapper">
+                          <span className={`expand-indicator ${isExpanded ? 'expanded' : ''}`}>
+                            ▶
+                          </span>
+                          <div className="symbol-info">
+                            <div className="symbol-name">{position.symbol}</div>
+                            <div className="asset-name">{position.asset_name || ASSET_NAMES[position.symbol] || ''}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="align-right">
+                        {position.quantity.toFixed(position.asset_type === 'CRYPTO' ? 8 : 2)}
+                      </td>
+                      <td className="align-right">
+                        {formatCurrency(position.avg_cost_basis, position.currency)}
+                      </td>
+                      <td className="align-right">
+                        {formatCurrency(position.current_price, position.currency)}
+                      </td>
+                      <td className="align-right">
+                        {formatCurrency(position.current_value, BASE_CURRENCY)}
+                      </td>
+                      <td className="align-right" title={`${position.fee_transaction_count} transaction${position.fee_transaction_count === 1 ? '' : 's'} with fees`}>
+                        {formatCurrency(position.total_fees, BASE_CURRENCY)}
+                      </td>
+                      <td className={`align-right ${getPnLClassName(position.unrealized_pnl)}`}>
+                        {formatCurrency(position.unrealized_pnl, BASE_CURRENCY)}
+                      </td>
+                      <td className={`align-right ${getPnLClassName(position.unrealized_pnl)}`}>
+                        {formatPercentage(position.unrealized_pnl_percent)}
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <TransactionDetailsRow
+                        symbol={position.symbol}
+                        onClose={() => toggleRowExpansion(position.symbol)}
+                      />
+                    )}
+                  </>
+                )
+              })}
             </tbody>
           </table>
         </div>
