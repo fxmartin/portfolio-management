@@ -106,6 +106,27 @@ class MetalsParser(CSVParser):
     # Precious metals symbols
     METAL_SYMBOLS = {"XAU", "XAG", "XPT", "XPD"}  # Gold, Silver, Platinum, Palladium
 
+    # EUR amounts extracted from Revolut app screenshots
+    # Maps (date, symbol, quantity) -> eur_amount
+    # These are the actual EUR amounts paid/received for each transaction
+    EUR_AMOUNT_MAPPING = {
+        # XAU (Gold)
+        ("2025-06-15 10:00:42", "XAU", "0.082566"): Decimal("250.00"),    # Buy
+        ("2025-07-06 12:14:17", "XAU", "0.086701"): Decimal("250.00"),    # Buy
+        ("2025-10-15 15:44:46", "XAU", "0.169267"): Decimal("599.03"),    # Sell
+        # XAG (Silver)
+        ("2025-06-15 10:00:59", "XAG", "12.490514"): Decimal("400.00"),   # Buy
+        ("2025-10-15 15:45:19", "XAG", "12.490514"): Decimal("557.89"),   # Sell
+        # XPT (Platinum)
+        ("2025-06-15 10:01:13", "XPT", "0.184237"): Decimal("200.00"),    # Buy
+        ("2025-07-06 12:15:26", "XPT", "0.165430"): Decimal("200.00"),    # Buy
+        ("2025-10-15 15:45:34", "XPT", "0.349667"): Decimal("488.48"),    # Sell
+        # XPD (Palladium)
+        ("2025-06-15 10:01:28", "XPD", "0.163823"): Decimal("150.00"),    # Buy
+        ("2025-07-06 12:15:45", "XPD", "0.152277"): Decimal("150.00"),    # Buy
+        ("2025-10-15 15:45:54", "XPD", "0.316100"): Decimal("413.78"),    # Sell
+    }
+
     def parse(self, content: bytes) -> List[Dict]:
         """Parse Revolut metals CSV and return list of transactions"""
 
@@ -180,6 +201,19 @@ class MetalsParser(CSVParser):
             date_str = row["Completed Date"]
             transaction_date = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
 
+            # Look up EUR amount from mapping
+            # Create lookup key: (date, symbol, quantity after fees for buys OR gross for sells)
+            lookup_qty = quantity if tx_type == TransactionType.BUY else abs(amount)
+            lookup_key = (date_str, symbol, f"{lookup_qty:.6f}")
+
+            eur_amount = self.EUR_AMOUNT_MAPPING.get(lookup_key, Decimal("0"))
+
+            # Calculate price per unit if we have EUR amount
+            if eur_amount > 0 and quantity > 0:
+                price_per_unit = float(eur_amount / quantity)
+            else:
+                price_per_unit = 0.0
+
             # Build transaction - convert Decimals to float for JSON serialization
             transaction = {
                 "transaction_type": tx_type,
@@ -187,6 +221,9 @@ class MetalsParser(CSVParser):
                 "symbol": symbol,
                 "quantity": float(quantity),
                 "gross_quantity": float(abs(amount)),
+                "price_per_unit": price_per_unit,
+                "total_amount": float(eur_amount),
+                "currency": "EUR",
                 "fee": float(fee),
                 "fee_currency": currency,
                 "transaction_date": transaction_date,
@@ -195,12 +232,6 @@ class MetalsParser(CSVParser):
                 "source_type": "REVOLUT",
                 "raw_data": dict(row)
             }
-
-            # For metals, we don't have price per unit in the CSV
-            # This would need to be calculated from exchange rate if needed
-            transaction["price_per_unit"] = 0.0
-            transaction["total_amount"] = 0.0
-            transaction["currency"] = "EUR"  # Default base currency
 
             transactions.append(transaction)
 

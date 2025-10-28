@@ -7,6 +7,7 @@ import TabView from './components/TabView'
 import TransactionImport from './components/TransactionImport'
 import OpenPositionsCard from './components/OpenPositionsCard'
 import HoldingsTable from './components/HoldingsTable'
+import RealizedPnLCard from './components/RealizedPnLCard'
 import { DatabaseResetModal, useDatabaseReset } from './components/DatabaseResetModal'
 import DatabaseStats from './components/DatabaseStats'
 import './App.css'
@@ -41,6 +42,7 @@ function App() {
             <h1>Portfolio Dashboard</h1>
             <OpenPositionsCard onAssetTypeFilter={setAssetTypeFilter} />
             <HoldingsTable externalFilter={assetTypeFilter} />
+            <RealizedPnLCard />
           </div>
 
           {/* Upload Tab */}

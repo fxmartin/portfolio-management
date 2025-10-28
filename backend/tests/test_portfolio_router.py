@@ -1171,3 +1171,921 @@ class TestAssetNames:
 
         mstr_position = next(p for p in data if p["symbol"] == "MSTR")
         assert mstr_position["asset_name"] == "MicroStrategy Incorporated"
+
+
+class TestRealizedPnLAPI:
+    """Test realized P&L summary API endpoint"""
+
+    @pytest.mark.asyncio
+    async def test_get_realized_pnl_with_no_closed_positions(
+        self, test_client, db_session
+    ):
+        """Test API returns zero realized P&L when no positions are closed"""
+        # Add only BUY transaction (open position)
+        transaction = Transaction(
+            transaction_date=datetime(2024, 1, 1),
+            asset_type=AssetType.STOCK,
+            transaction_type=TransactionType.BUY,
+            symbol="AAPL",
+            quantity=Decimal("100"),
+            price_per_unit=Decimal("150.00"),
+            total_amount=Decimal("15000.00"),
+            currency="USD",
+            fee=Decimal("2.50"),
+            source_type="REVOLUT",
+            source_file="test.csv"
+        )
+        db_session.add(transaction)
+        await db_session.commit()
+
+        response = await test_client.get("/api/portfolio/realized-pnl")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert data["total_realized_pnl"] == 0
+        assert data["total_fees"] == 2.50
+        assert data["net_pnl"] == -2.50
+        assert data["closed_positions_count"] == 0
+        assert data["breakdown"]["stocks"]["closed_count"] == 0
+        assert data["breakdown"]["crypto"]["closed_count"] == 0
+        assert data["breakdown"]["metals"]["closed_count"] == 0
+        assert "last_updated" in data
+
+    @pytest.mark.asyncio
+    async def test_get_realized_pnl_with_single_closed_position(
+        self, test_client, db_session
+    ):
+        """Test API returns correct realized P&L for single closed position"""
+        transactions = [
+            Transaction(
+                transaction_date=datetime(2024, 1, 1),
+                asset_type=AssetType.STOCK,
+                transaction_type=TransactionType.BUY,
+                symbol="AAPL",
+                quantity=Decimal("100"),
+                price_per_unit=Decimal("150.00"),
+                total_amount=Decimal("15000.00"),
+                currency="USD",
+                fee=Decimal("1.00"),
+                source_type="REVOLUT",
+                source_file="test.csv"
+            ),
+            Transaction(
+                transaction_date=datetime(2024, 2, 1),
+                asset_type=AssetType.STOCK,
+                transaction_type=TransactionType.SELL,
+                symbol="AAPL",
+                quantity=Decimal("100"),
+                price_per_unit=Decimal("170.00"),
+                total_amount=Decimal("17000.00"),
+                currency="USD",
+                fee=Decimal("1.50"),
+                source_type="REVOLUT",
+                source_file="test.csv"
+            ),
+        ]
+
+        for txn in transactions:
+            db_session.add(txn)
+        await db_session.commit()
+
+        response = await test_client.get("/api/portfolio/realized-pnl")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Realized: (170-150)*100 = 2000
+        # Fees: 1 + 1.50 = 2.50
+        # Net: 2000 - 2.50 = 1997.50
+        assert data["total_realized_pnl"] == 2000.0
+        assert data["total_fees"] == 2.50
+        assert data["net_pnl"] == 1997.50
+        assert data["closed_positions_count"] == 1
+        assert data["breakdown"]["stocks"]["realized_pnl"] == 2000.0
+        assert data["breakdown"]["stocks"]["fees"] == 2.50
+        assert data["breakdown"]["stocks"]["net_pnl"] == 1997.50
+        assert data["breakdown"]["stocks"]["closed_count"] == 1
+
+    @pytest.mark.asyncio
+    async def test_get_realized_pnl_with_mixed_asset_types(
+        self, test_client, db_session
+    ):
+        """Test API returns correct breakdown for multiple asset types"""
+        transactions = [
+            # Closed STOCK position (profit)
+            Transaction(
+                transaction_date=datetime(2024, 1, 1),
+                asset_type=AssetType.STOCK,
+                transaction_type=TransactionType.BUY,
+                symbol="AAPL",
+                quantity=Decimal("50"),
+                price_per_unit=Decimal("150.00"),
+                total_amount=Decimal("7500.00"),
+                currency="USD",
+                fee=Decimal("1.00"),
+                source_type="REVOLUT",
+                source_file="test.csv"
+            ),
+            Transaction(
+                transaction_date=datetime(2024, 2, 1),
+                asset_type=AssetType.STOCK,
+                transaction_type=TransactionType.SELL,
+                symbol="AAPL",
+                quantity=Decimal("50"),
+                price_per_unit=Decimal("160.00"),
+                total_amount=Decimal("8000.00"),
+                currency="USD",
+                fee=Decimal("1.50"),
+                source_type="REVOLUT",
+                source_file="test.csv"
+            ),
+            # Closed CRYPTO position (loss)
+            Transaction(
+                transaction_date=datetime(2024, 1, 15),
+                asset_type=AssetType.CRYPTO,
+                transaction_type=TransactionType.BUY,
+                symbol="ETH",
+                quantity=Decimal("5.0"),
+                price_per_unit=Decimal("2000.00"),
+                total_amount=Decimal("10000.00"),
+                currency="USD",
+                fee=Decimal("5.00"),
+                source_type="KOINLY",
+                source_file="test.csv"
+            ),
+            Transaction(
+                transaction_date=datetime(2024, 3, 1),
+                asset_type=AssetType.CRYPTO,
+                transaction_type=TransactionType.SELL,
+                symbol="ETH",
+                quantity=Decimal("5.0"),
+                price_per_unit=Decimal("1800.00"),
+                total_amount=Decimal("9000.00"),
+                currency="USD",
+                fee=Decimal("4.50"),
+                source_type="KOINLY",
+                source_file="test.csv"
+            ),
+        ]
+
+        for txn in transactions:
+            db_session.add(txn)
+        await db_session.commit()
+
+        response = await test_client.get("/api/portfolio/realized-pnl")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # AAPL: (160-150)*50 = 500
+        # ETH: (1800-2000)*5 = -1000
+        # Total realized: 500 - 1000 = -500
+        # Total fees: 1 + 1.50 + 5 + 4.50 = 12
+        # Net: -500 - 12 = -512
+        assert data["total_realized_pnl"] == -500.0
+        assert data["total_fees"] == 12.0
+        assert data["net_pnl"] == -512.0
+        assert data["closed_positions_count"] == 2
+
+        # Check breakdown
+        assert data["breakdown"]["stocks"]["realized_pnl"] == 500.0
+        assert data["breakdown"]["stocks"]["closed_count"] == 1
+        assert data["breakdown"]["crypto"]["realized_pnl"] == -1000.0
+        assert data["breakdown"]["crypto"]["closed_count"] == 1
+        assert data["breakdown"]["metals"]["closed_count"] == 0
+
+    @pytest.mark.asyncio
+    async def test_get_realized_pnl_response_structure(
+        self, test_client, db_session
+    ):
+        """Test API response has correct structure and fields"""
+        response = await test_client.get("/api/portfolio/realized-pnl")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check top-level fields
+        assert "total_realized_pnl" in data
+        assert "total_fees" in data
+        assert "net_pnl" in data
+        assert "closed_positions_count" in data
+        assert "breakdown" in data
+        assert "last_updated" in data
+
+        # Check breakdown structure
+        assert "stocks" in data["breakdown"]
+        assert "crypto" in data["breakdown"]
+        assert "metals" in data["breakdown"]
+
+        # Check asset type breakdown fields
+        for asset_type in ["stocks", "crypto", "metals"]:
+            breakdown = data["breakdown"][asset_type]
+            assert "realized_pnl" in breakdown
+            assert "fees" in breakdown
+            assert "net_pnl" in breakdown
+            assert "closed_count" in breakdown
+
+
+class TestPositionTransactionsEndpoint:
+    """Tests for the position transactions endpoint"""
+
+    @pytest.mark.asyncio
+    async def test_get_transactions_for_symbol(
+        self, test_client, db_session
+    ):
+        """Test fetching transactions for a specific symbol"""
+        # Create multiple transactions for the same symbol
+        transactions = [
+            Transaction(
+                transaction_date=datetime(2024, 1, 1),
+                asset_type=AssetType.CRYPTO,
+                transaction_type=TransactionType.BUY,
+                symbol="BTC",
+                quantity=Decimal("0.5"),
+                price_per_unit=Decimal("45000.00"),
+                total_amount=Decimal("22500.00"),
+                fee=Decimal("25.50"),
+                currency="EUR",
+                source_type="KOINLY",
+            ),
+            Transaction(
+                transaction_date=datetime(2024, 2, 1),
+                asset_type=AssetType.CRYPTO,
+                transaction_type=TransactionType.STAKING,
+                symbol="BTC",
+                quantity=Decimal("0.001"),
+                price_per_unit=Decimal("50000.00"),
+                total_amount=Decimal("50.00"),
+                fee=Decimal("0.00"),
+                currency="EUR",
+                source_type="KOINLY",
+            ),
+            Transaction(
+                transaction_date=datetime(2024, 3, 1),
+                asset_type=AssetType.CRYPTO,
+                transaction_type=TransactionType.SELL,
+                symbol="BTC",
+                quantity=Decimal("0.2"),
+                price_per_unit=Decimal("52000.00"),
+                total_amount=Decimal("10400.00"),
+                fee=Decimal("10.00"),
+                currency="EUR",
+                source_type="KOINLY",
+            ),
+        ]
+
+        for txn in transactions:
+            db_session.add(txn)
+        await db_session.commit()
+
+        # Fetch transactions for BTC
+        response = await test_client.get("/api/portfolio/positions/BTC/transactions")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Should return 3 transactions
+        assert len(data) == 3
+
+        # Check first transaction (should be newest - SELL from March)
+        first_txn = data[0]
+        assert first_txn["type"] == "SELL"  # Newest
+        assert first_txn["quantity"] == 0.2
+        assert first_txn["price"] == 52000.0
+        assert first_txn["fee"] == 10.0
+        assert first_txn["currency"] == "EUR"
+        assert first_txn["asset_type"] == "CRYPTO"
+
+        # Check ordering (newest first)
+        assert data[0]["date"] > data[1]["date"]
+        assert data[1]["date"] > data[2]["date"]
+
+        # Check all transaction types are present
+        types = [txn["type"] for txn in data]
+        assert "BUY" in types
+        assert "SELL" in types
+        assert "STAKING" in types
+
+    @pytest.mark.asyncio
+    async def test_get_transactions_404_for_nonexistent_symbol(
+        self, test_client, db_session
+    ):
+        """Test 404 response for symbol with no transactions"""
+        response = await test_client.get("/api/portfolio/positions/NONEXISTENT/transactions")
+
+        assert response.status_code == 404
+        assert "No transactions found" in response.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_get_transactions_ordering(
+        self, test_client, db_session
+    ):
+        """Test transactions are ordered by date descending (newest first)"""
+        # Create transactions with different dates
+        transactions = [
+            Transaction(
+                transaction_date=datetime(2024, 1, 1),
+                asset_type=AssetType.STOCK,
+                transaction_type=TransactionType.BUY,
+                symbol="AAPL",
+                quantity=Decimal("10"),
+                price_per_unit=Decimal("150.00"),
+                total_amount=Decimal("1500.00"),
+                fee=Decimal("1.00"),
+                currency="USD",
+                source_type="REVOLUT",
+            ),
+            Transaction(
+                transaction_date=datetime(2024, 6, 15),
+                asset_type=AssetType.STOCK,
+                transaction_type=TransactionType.BUY,
+                symbol="AAPL",
+                quantity=Decimal("5"),
+                price_per_unit=Decimal("180.00"),
+                total_amount=Decimal("900.00"),
+                fee=Decimal("1.00"),
+                currency="USD",
+                source_type="REVOLUT",
+            ),
+            Transaction(
+                transaction_date=datetime(2024, 3, 10),
+                asset_type=AssetType.STOCK,
+                transaction_type=TransactionType.BUY,
+                symbol="AAPL",
+                quantity=Decimal("3"),
+                price_per_unit=Decimal("160.00"),
+                total_amount=Decimal("480.00"),
+                fee=Decimal("1.00"),
+                currency="USD",
+                source_type="REVOLUT",
+            ),
+        ]
+
+        for txn in transactions:
+            db_session.add(txn)
+        await db_session.commit()
+
+        response = await test_client.get("/api/portfolio/positions/AAPL/transactions")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert len(data) == 3
+
+        # Verify descending order by date
+        dates = [datetime.fromisoformat(txn["date"]) for txn in data]
+        assert dates == sorted(dates, reverse=True)
+
+        # First should be June (newest)
+        assert data[0]["quantity"] == 5.0
+        # Last should be January (oldest)
+        assert data[2]["quantity"] == 10.0
+
+    @pytest.mark.asyncio
+    async def test_get_transactions_total_amount_calculation(
+        self, test_client, db_session
+    ):
+        """Test that total_amount is calculated correctly (price * quantity + fee)"""
+        transaction = Transaction(
+            transaction_date=datetime(2024, 1, 1),
+            asset_type=AssetType.CRYPTO,
+            transaction_type=TransactionType.BUY,
+            symbol="ETH",
+            quantity=Decimal("2.5"),
+            price_per_unit=Decimal("3000.00"),
+            total_amount=Decimal("7500.00"),
+            fee=Decimal("15.25"),
+            currency="EUR",
+            source_type="KOINLY",
+        )
+
+        db_session.add(transaction)
+        await db_session.commit()
+
+        response = await test_client.get("/api/portfolio/positions/ETH/transactions")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert len(data) == 1
+        txn = data[0]
+
+        # total_amount should be quantity * price + fee
+        expected_total = 2.5 * 3000.0 + 15.25
+        assert abs(txn["total_amount"] - expected_total) < 0.01
+
+    @pytest.mark.asyncio
+    async def test_get_transactions_with_all_transaction_types(
+        self, test_client, db_session
+    ):
+        """Test that all transaction types are returned correctly"""
+        transactions = [
+            Transaction(
+                transaction_date=datetime(2024, 1, 1),
+                asset_type=AssetType.CRYPTO,
+                transaction_type=TransactionType.BUY,
+                symbol="SOL",
+                quantity=Decimal("10"),
+                price_per_unit=Decimal("100.00"),
+                total_amount=Decimal("1000.00"),
+                fee=Decimal("1.00"),
+                currency="EUR",
+                source_type="KOINLY",
+            ),
+            Transaction(
+                transaction_date=datetime(2024, 2, 1),
+                asset_type=AssetType.CRYPTO,
+                transaction_type=TransactionType.STAKING,
+                symbol="SOL",
+                quantity=Decimal("0.5"),
+                price_per_unit=Decimal("110.00"),
+                total_amount=Decimal("55.00"),
+                fee=Decimal("0.00"),
+                currency="EUR",
+                source_type="KOINLY",
+            ),
+            Transaction(
+                transaction_date=datetime(2024, 3, 1),
+                asset_type=AssetType.CRYPTO,
+                transaction_type=TransactionType.AIRDROP,
+                symbol="SOL",
+                quantity=Decimal("1.0"),
+                price_per_unit=Decimal("115.00"),
+                total_amount=Decimal("115.00"),
+                fee=Decimal("0.00"),
+                currency="EUR",
+                source_type="KOINLY",
+            ),
+            Transaction(
+                transaction_date=datetime(2024, 4, 1),
+                asset_type=AssetType.CRYPTO,
+                transaction_type=TransactionType.SELL,
+                symbol="SOL",
+                quantity=Decimal("5.0"),
+                price_per_unit=Decimal("120.00"),
+                total_amount=Decimal("600.00"),
+                fee=Decimal("2.00"),
+                currency="EUR",
+                source_type="KOINLY",
+            ),
+        ]
+
+        for txn in transactions:
+            db_session.add(txn)
+        await db_session.commit()
+
+        response = await test_client.get("/api/portfolio/positions/SOL/transactions")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert len(data) == 4
+
+        # Check all transaction types are present
+        types = [txn["type"] for txn in data]
+        assert "BUY" in types
+        assert "SELL" in types
+        assert "STAKING" in types
+        assert "AIRDROP" in types
+
+    @pytest.mark.asyncio
+    async def test_get_transactions_response_structure(
+        self, test_client, db_session
+    ):
+        """Test that API response has correct structure and fields"""
+        transaction = Transaction(
+            transaction_date=datetime(2024, 1, 1),
+            asset_type=AssetType.STOCK,
+            transaction_type=TransactionType.BUY,
+            symbol="MSTR",
+            quantity=Decimal("1.0"),
+            price_per_unit=Decimal("500.00"),
+            total_amount=Decimal("500.00"),
+            fee=Decimal("0.50"),
+            currency="USD",
+            source_type="REVOLUT",
+        )
+
+        db_session.add(transaction)
+        await db_session.commit()
+
+        response = await test_client.get("/api/portfolio/positions/MSTR/transactions")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert len(data) == 1
+        txn = data[0]
+
+        # Check all required fields are present
+        required_fields = [
+            "id",
+            "date",
+            "type",
+            "quantity",
+            "price",
+            "fee",
+            "total_amount",
+            "currency",
+            "asset_type",
+        ]
+
+        for field in required_fields:
+            assert field in txn, f"Missing required field: {field}"
+
+        # Check field types and values
+        assert isinstance(txn["id"], int)
+        assert isinstance(txn["date"], str)
+        assert txn["type"] == "BUY"
+        assert txn["quantity"] == 1.0
+        assert txn["price"] == 500.0
+        assert txn["fee"] == 0.50
+        assert txn["currency"] == "USD"
+        assert txn["asset_type"] == "STOCK"
+
+
+class TestClosedTransactionsEndpoint:
+    """Tests for the closed transactions endpoint (realized P&L details)"""
+
+    @pytest.mark.asyncio
+    async def test_get_closed_transactions_for_metals(
+        self, test_client, db_session
+    ):
+        """Test fetching closed transactions for metals asset type"""
+        # Create a BUY and SELL for XAU (gold)
+        buy_txn = Transaction(
+            transaction_date=datetime(2024, 1, 1),
+            asset_type=AssetType.METAL,
+            transaction_type=TransactionType.BUY,
+            symbol="XAU",
+            quantity=Decimal("0.5"),
+            price_per_unit=Decimal("1950.00"),
+            total_amount=Decimal("975.00"),
+            fee=Decimal("1.00"),
+            currency="EUR",
+            source_type="REVOLUT",
+        )
+        sell_txn = Transaction(
+            transaction_date=datetime(2024, 2, 1),
+            asset_type=AssetType.METAL,
+            transaction_type=TransactionType.SELL,
+            symbol="XAU",
+            quantity=Decimal("0.5"),
+            price_per_unit=Decimal("2148.00"),
+            total_amount=Decimal("1074.00"),
+            fee=Decimal("1.00"),
+            currency="EUR",
+            source_type="REVOLUT",
+        )
+
+        db_session.add(buy_txn)
+        db_session.add(sell_txn)
+        await db_session.commit()
+
+        # Fetch closed transactions for metals
+        response = await test_client.get("/api/portfolio/realized-pnl/metals/transactions")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Should return 1 closed transaction (the SELL)
+        assert len(data) == 1
+
+        closed_txn = data[0]
+        assert closed_txn["symbol"] == "XAU"
+        assert closed_txn["quantity"] == 0.5
+        assert closed_txn["sell_price"] == 2148.0
+        assert closed_txn["sell_fee"] == 1.0
+        assert closed_txn["currency"] == "EUR"
+
+        # Verify FIFO cost basis is calculated correctly
+        # Buy price with fee: (1950 * 0.5 + 1) / 0.5 = 1952
+        expected_buy_price = (1950.0 * 0.5 + 1.0) / 0.5
+        assert abs(closed_txn["buy_price"] - expected_buy_price) < 0.01
+
+        # Gross P&L: (2148 - 1952) * 0.5 = 98
+        expected_gross_pnl = (2148.0 - expected_buy_price) * 0.5
+        assert abs(closed_txn["gross_pnl"] - expected_gross_pnl) < 0.01
+
+        # Net P&L: gross - sell fee = 98 - 1 = 97
+        assert abs(closed_txn["net_pnl"] - (expected_gross_pnl - 1.0)) < 0.01
+
+    @pytest.mark.asyncio
+    async def test_get_closed_transactions_404_for_no_sales(
+        self, test_client, db_session
+    ):
+        """Test 404 response when asset type has no SELL transactions"""
+        # Create only a BUY transaction
+        buy_txn = Transaction(
+            transaction_date=datetime(2024, 1, 1),
+            asset_type=AssetType.STOCK,
+            transaction_type=TransactionType.BUY,
+            symbol="AAPL",
+            quantity=Decimal("10"),
+            price_per_unit=Decimal("150.00"),
+            total_amount=Decimal("1500.00"),
+            fee=Decimal("1.00"),
+            currency="USD",
+            source_type="REVOLUT",
+        )
+
+        db_session.add(buy_txn)
+        await db_session.commit()
+
+        response = await test_client.get("/api/portfolio/realized-pnl/stocks/transactions")
+
+        assert response.status_code == 404
+        assert "No closed transactions found" in response.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_get_closed_transactions_400_for_invalid_asset_type(
+        self, test_client, db_session
+    ):
+        """Test 400 response for invalid asset type"""
+        response = await test_client.get("/api/portfolio/realized-pnl/invalid/transactions")
+
+        assert response.status_code == 400
+        assert "Invalid asset type" in response.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_get_closed_transactions_ordering(
+        self, test_client, db_session
+    ):
+        """Test closed transactions are ordered by sell date (newest first)"""
+        # Create BUY transactions
+        buy1 = Transaction(
+            transaction_date=datetime(2024, 1, 1),
+            asset_type=AssetType.CRYPTO,
+            transaction_type=TransactionType.BUY,
+            symbol="BTC",
+            quantity=Decimal("1.0"),
+            price_per_unit=Decimal("40000.00"),
+            total_amount=Decimal("40000.00"),
+            fee=Decimal("10.00"),
+            currency="EUR",
+            source_type="KOINLY",
+        )
+
+        # Create SELL transactions on different dates
+        sell1 = Transaction(
+            transaction_date=datetime(2024, 6, 1),
+            asset_type=AssetType.CRYPTO,
+            transaction_type=TransactionType.SELL,
+            symbol="BTC",
+            quantity=Decimal("0.3"),
+            price_per_unit=Decimal("50000.00"),
+            total_amount=Decimal("15000.00"),
+            fee=Decimal("5.00"),
+            currency="EUR",
+            source_type="KOINLY",
+        )
+
+        sell2 = Transaction(
+            transaction_date=datetime(2024, 3, 1),
+            asset_type=AssetType.CRYPTO,
+            transaction_type=TransactionType.SELL,
+            symbol="BTC",
+            quantity=Decimal("0.2"),
+            price_per_unit=Decimal("45000.00"),
+            total_amount=Decimal("9000.00"),
+            fee=Decimal("3.00"),
+            currency="EUR",
+            source_type="KOINLY",
+        )
+
+        db_session.add_all([buy1, sell1, sell2])
+        await db_session.commit()
+
+        response = await test_client.get("/api/portfolio/realized-pnl/crypto/transactions")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert len(data) == 2
+
+        # First should be June sale (newest)
+        assert data[0]["quantity"] == 0.3
+        assert "2024-06-01" in data[0]["sell_date"]
+
+        # Second should be March sale (older)
+        assert data[1]["quantity"] == 0.2
+        assert "2024-03-01" in data[1]["sell_date"]
+
+    @pytest.mark.asyncio
+    async def test_get_closed_transactions_fifo_calculation(
+        self, test_client, db_session
+    ):
+        """Test FIFO cost basis calculation with multiple buy lots"""
+        # Create multiple BUY transactions at different prices
+        buy1 = Transaction(
+            transaction_date=datetime(2024, 1, 1),
+            asset_type=AssetType.STOCK,
+            transaction_type=TransactionType.BUY,
+            symbol="TSLA",
+            quantity=Decimal("10"),
+            price_per_unit=Decimal("200.00"),
+            total_amount=Decimal("2000.00"),
+            fee=Decimal("2.00"),
+            currency="USD",
+            source_type="REVOLUT",
+        )
+
+        buy2 = Transaction(
+            transaction_date=datetime(2024, 2, 1),
+            asset_type=AssetType.STOCK,
+            transaction_type=TransactionType.BUY,
+            symbol="TSLA",
+            quantity=Decimal("10"),
+            price_per_unit=Decimal("250.00"),
+            total_amount=Decimal("2500.00"),
+            fee=Decimal("2.50"),
+            currency="USD",
+            source_type="REVOLUT",
+        )
+
+        # Sell 15 shares (should use FIFO: 10 @ 200 + 5 @ 250)
+        sell = Transaction(
+            transaction_date=datetime(2024, 3, 1),
+            asset_type=AssetType.STOCK,
+            transaction_type=TransactionType.SELL,
+            symbol="TSLA",
+            quantity=Decimal("15"),
+            price_per_unit=Decimal("300.00"),
+            total_amount=Decimal("4500.00"),
+            fee=Decimal("5.00"),
+            currency="USD",
+            source_type="REVOLUT",
+        )
+
+        db_session.add_all([buy1, buy2, sell])
+        await db_session.commit()
+
+        response = await test_client.get("/api/portfolio/realized-pnl/stocks/transactions")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert len(data) == 1
+        closed_txn = data[0]
+
+        # FIFO cost basis calculation:
+        # Buy 1: (200 * 10 + 2) / 10 = 200.20 per share
+        # Buy 2: (250 * 10 + 2.50) / 10 = 250.25 per share
+        # Average for 15 shares: (10 * 200.20 + 5 * 250.25) / 15 = 217.55
+        expected_avg_cost = (10 * 200.20 + 5 * 250.25) / 15
+        assert abs(closed_txn["buy_price"] - expected_avg_cost) < 0.01
+
+        # Gross P&L: (300 - 217.55) * 15 = 1236.75
+        expected_gross_pnl = (300.0 - expected_avg_cost) * 15
+        assert abs(closed_txn["gross_pnl"] - expected_gross_pnl) < 0.01
+
+        # Net P&L: 1236.75 - 5 = 1231.75
+        assert abs(closed_txn["net_pnl"] - (expected_gross_pnl - 5.0)) < 0.01
+
+    @pytest.mark.asyncio
+    async def test_get_closed_transactions_multiple_symbols(
+        self, test_client, db_session
+    ):
+        """Test endpoint returns all closed transactions for the asset type"""
+        # Create BUY and SELL for XAU
+        xau_buy = Transaction(
+            transaction_date=datetime(2024, 1, 1),
+            asset_type=AssetType.METAL,
+            transaction_type=TransactionType.BUY,
+            symbol="XAU",
+            quantity=Decimal("0.5"),
+            price_per_unit=Decimal("1950.00"),
+            total_amount=Decimal("975.00"),
+            fee=Decimal("1.00"),
+            currency="EUR",
+            source_type="REVOLUT",
+        )
+        xau_sell = Transaction(
+            transaction_date=datetime(2024, 2, 1),
+            asset_type=AssetType.METAL,
+            transaction_type=TransactionType.SELL,
+            symbol="XAU",
+            quantity=Decimal("0.5"),
+            price_per_unit=Decimal("2148.00"),
+            total_amount=Decimal("1074.00"),
+            fee=Decimal("1.00"),
+            currency="EUR",
+            source_type="REVOLUT",
+        )
+
+        # Create BUY and SELL for XAG
+        xag_buy = Transaction(
+            transaction_date=datetime(2024, 1, 5),
+            asset_type=AssetType.METAL,
+            transaction_type=TransactionType.BUY,
+            symbol="XAG",
+            quantity=Decimal("15.0"),
+            price_per_unit=Decimal("26.67"),
+            total_amount=Decimal("400.00"),
+            fee=Decimal("0.50"),
+            currency="EUR",
+            source_type="REVOLUT",
+        )
+        xag_sell = Transaction(
+            transaction_date=datetime(2024, 2, 15),
+            asset_type=AssetType.METAL,
+            transaction_type=TransactionType.SELL,
+            symbol="XAG",
+            quantity=Decimal("15.0"),
+            price_per_unit=Decimal("37.19"),
+            total_amount=Decimal("557.85"),
+            fee=Decimal("0.50"),
+            currency="EUR",
+            source_type="REVOLUT",
+        )
+
+        db_session.add_all([xau_buy, xau_sell, xag_buy, xag_sell])
+        await db_session.commit()
+
+        response = await test_client.get("/api/portfolio/realized-pnl/metals/transactions")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Should return 2 closed transactions
+        assert len(data) == 2
+
+        # Check both symbols are present
+        symbols = [txn["symbol"] for txn in data]
+        assert "XAU" in symbols
+        assert "XAG" in symbols
+
+    @pytest.mark.asyncio
+    async def test_get_closed_transactions_response_structure(
+        self, test_client, db_session
+    ):
+        """Test API response has correct structure and fields"""
+        buy = Transaction(
+            transaction_date=datetime(2024, 1, 1),
+            asset_type=AssetType.CRYPTO,
+            transaction_type=TransactionType.BUY,
+            symbol="ETH",
+            quantity=Decimal("2.0"),
+            price_per_unit=Decimal("3000.00"),
+            total_amount=Decimal("6000.00"),
+            fee=Decimal("10.00"),
+            currency="EUR",
+            source_type="KOINLY",
+        )
+
+        sell = Transaction(
+            transaction_date=datetime(2024, 2, 1),
+            asset_type=AssetType.CRYPTO,
+            transaction_type=TransactionType.SELL,
+            symbol="ETH",
+            quantity=Decimal("1.0"),
+            price_per_unit=Decimal("3500.00"),
+            total_amount=Decimal("3500.00"),
+            fee=Decimal("5.00"),
+            currency="EUR",
+            source_type="KOINLY",
+        )
+
+        db_session.add_all([buy, sell])
+        await db_session.commit()
+
+        response = await test_client.get("/api/portfolio/realized-pnl/crypto/transactions")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert len(data) == 1
+        txn = data[0]
+
+        # Check all required fields are present
+        required_fields = [
+            "id",
+            "symbol",
+            "sell_date",
+            "quantity",
+            "buy_price",
+            "sell_price",
+            "gross_pnl",
+            "sell_fee",
+            "net_pnl",
+            "currency",
+        ]
+
+        for field in required_fields:
+            assert field in txn, f"Missing required field: {field}"
+
+        # Check field types and values
+        assert isinstance(txn["id"], int)
+        assert isinstance(txn["symbol"], str)
+        assert isinstance(txn["sell_date"], str)
+        assert isinstance(txn["quantity"], float)
+        assert isinstance(txn["buy_price"], float)
+        assert isinstance(txn["sell_price"], float)
+        assert isinstance(txn["gross_pnl"], float)
+        assert isinstance(txn["sell_fee"], float)
+        assert isinstance(txn["net_pnl"], float)
+        assert isinstance(txn["currency"], str)
+
+        assert txn["symbol"] == "ETH"
+        assert txn["currency"] == "EUR"

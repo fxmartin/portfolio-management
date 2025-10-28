@@ -231,6 +231,76 @@ class AlphaVantageService:
 
         return prices
 
+    async def get_fx_historical_daily(
+        self,
+        from_currency: str,
+        to_currency: str,
+        start_date: datetime,
+        end_date: datetime
+    ) -> Dict[datetime, Decimal]:
+        """
+        Get historical daily FX rates using FX_DAILY function.
+        Supports precious metals (XAU, XAG, XPT, XPD) and currencies.
+
+        Args:
+            from_currency: Source currency (e.g., "XAU", "USD", "BTC")
+            to_currency: Target currency (e.g., "EUR", "USD")
+            start_date: Start date for historical data
+            end_date: End date for historical data
+
+        Returns:
+            Dictionary mapping datetime -> closing exchange rate
+
+        Raises:
+            Exception: When API returns no data or an error
+        """
+        cache_key = f"av:fx:{from_currency}{to_currency}:{start_date.date()}:{end_date.date()}"
+
+        # Check cache first
+        if self.redis_client:
+            cached = await self.redis_client.get(cache_key)
+            if cached:
+                return self._deserialize_historical_data(cached)
+
+        # Acquire rate limit token
+        await self.rate_limiter.acquire()
+
+        # Fetch from API
+        params = {
+            'function': 'FX_DAILY',
+            'from_symbol': from_currency,
+            'to_symbol': to_currency,
+            'outputsize': 'full',  # Get all available data
+            'apikey': self.api_key
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(self.BASE_URL, params=params) as response:
+                data = await response.json()
+
+        # Parse response
+        if 'Time Series FX (Daily)' not in data:
+            raise Exception(f"No FX data for {from_currency}/{to_currency}")
+
+        time_series = data['Time Series FX (Daily)']
+        prices = {}
+
+        # Filter to requested date range
+        for date_str, values in time_series.items():
+            date = datetime.strptime(date_str, '%Y-%m-%d')
+            if start_date <= date <= end_date:
+                prices[date] = Decimal(values['4. close'])
+
+        # Cache result
+        if self.redis_client:
+            await self.redis_client.setex(
+                cache_key,
+                self.cache_ttl['daily'],
+                self._serialize_historical_data(prices)
+            )
+
+        return prices
+
     async def get_crypto_quote(self, symbol: str, market: str = 'USD') -> AlphaVantagePriceData:
         """
         Get real-time quote for cryptocurrency using CURRENCY_EXCHANGE_RATE function

@@ -126,12 +126,22 @@
   text-overflow: ellipsis;
 }
 
-.holdings-table tbody tr {
+.holdings-table tbody tr.position-row {
   transition: background-color 0.2s;
+  cursor: pointer;
 }
 
-.holdings-table tbody tr:hover {
+.holdings-table tbody tr.position-row:hover {
   background-color: #fafafa;
+}
+
+.holdings-table tbody tr.position-row.expanded {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.holdings-table tbody tr.position-row:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: -2px;
 }
 
 /* Column width optimization */
@@ -185,6 +195,35 @@
   gap: 1px;
   white-space: normal !important;
   overflow: visible !important;
+}
+
+.symbol-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.expand-indicator {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  font-size: 0.625rem;
+  color: #6b7280;
+  transition: transform 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.expand-indicator.expanded {
+  transform: rotate(90deg);
+  color: #3b82f6;
+}
+
+.symbol-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .symbol-name {

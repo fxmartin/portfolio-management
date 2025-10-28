@@ -794,4 +794,378 @@ describe('HoldingsTable', () => {
       })
     })
   })
+
+  describe('Expandable Row Functionality', () => {
+    beforeEach(() => {
+      mockedAxios.get.mockResolvedValue({ data: mockPositions })
+    })
+
+    it('should show expand indicator on all position rows', async () => {
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+      })
+
+      // Check for expand indicators
+      const indicators = document.querySelectorAll('.expand-indicator')
+      expect(indicators.length).toBe(mockPositions.length)
+    })
+
+    it('should expand row when clicked', async () => {
+      const user = userEvent.setup()
+
+      // Mock TransactionDetailsRow rendering
+      const mockTransactions = [
+        {
+          id: 1,
+          date: '2024-01-15T00:00:00',
+          type: 'BUY',
+          quantity: 0.5,
+          price: 45000,
+          fee: 25.5,
+          total_amount: 22525.5,
+          currency: 'USD',
+          asset_type: 'CRYPTO',
+        },
+      ]
+
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
+      mockedAxios.get.mockResolvedValueOnce({ data: mockTransactions })
+
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+      })
+
+      // Find and click the BTC row
+      const btcRow = screen.getByText('BTC').closest('tr')
+      expect(btcRow).toBeInTheDocument()
+
+      await user.click(btcRow!)
+
+      // Should show expanded state
+      await waitFor(() => {
+        expect(btcRow).toHaveClass('expanded')
+      })
+    })
+
+    it('should collapse row when clicked again', async () => {
+      const user = userEvent.setup()
+
+      const mockTransactions = [
+        {
+          id: 1,
+          date: '2024-01-15T00:00:00',
+          type: 'BUY',
+          quantity: 0.5,
+          price: 45000,
+          fee: 25.5,
+          total_amount: 22525.5,
+          currency: 'USD',
+          asset_type: 'CRYPTO',
+        },
+      ]
+
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
+      mockedAxios.get.mockResolvedValueOnce({ data: mockTransactions })
+
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+      })
+
+      const btcRow = screen.getByText('BTC').closest('tr')
+
+      // First click - expand
+      await user.click(btcRow!)
+      await waitFor(() => {
+        expect(btcRow).toHaveClass('expanded')
+      })
+
+      // Second click - collapse
+      await user.click(btcRow!)
+      await waitFor(() => {
+        expect(btcRow).not.toHaveClass('expanded')
+      })
+    })
+
+    it('should support keyboard navigation to expand rows', async () => {
+      const user = userEvent.setup()
+
+      const mockTransactions = [
+        {
+          id: 1,
+          date: '2024-01-15T00:00:00',
+          type: 'BUY',
+          quantity: 0.5,
+          price: 45000,
+          fee: 25.5,
+          total_amount: 22525.5,
+          currency: 'USD',
+          asset_type: 'CRYPTO',
+        },
+      ]
+
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
+      mockedAxios.get.mockResolvedValueOnce({ data: mockTransactions })
+
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+      })
+
+      const btcRow = screen.getByText('BTC').closest('tr')
+
+      // Focus and press Enter
+      btcRow!.focus()
+      await user.keyboard('{Enter}')
+
+      await waitFor(() => {
+        expect(btcRow).toHaveClass('expanded')
+      })
+    })
+
+    it('should support Space key to expand rows', async () => {
+      const user = userEvent.setup()
+
+      const mockTransactions = [
+        {
+          id: 1,
+          date: '2024-01-15T00:00:00',
+          type: 'BUY',
+          quantity: 0.5,
+          price: 45000,
+          fee: 25.5,
+          total_amount: 22525.5,
+          currency: 'USD',
+          asset_type: 'CRYPTO',
+        },
+      ]
+
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
+      mockedAxios.get.mockResolvedValueOnce({ data: mockTransactions })
+
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+      })
+
+      const btcRow = screen.getByText('BTC').closest('tr')
+
+      // Focus and press Space
+      btcRow!.focus()
+      await user.keyboard(' ')
+
+      await waitFor(() => {
+        expect(btcRow).toHaveClass('expanded')
+      })
+    })
+
+    it('should allow multiple rows to be expanded simultaneously', async () => {
+      const user = userEvent.setup()
+
+      const mockBtcTransactions = [
+        {
+          id: 1,
+          date: '2024-01-15T00:00:00',
+          type: 'BUY',
+          quantity: 0.5,
+          price: 45000,
+          fee: 25.5,
+          total_amount: 22525.5,
+          currency: 'USD',
+          asset_type: 'CRYPTO',
+        },
+      ]
+
+      const mockEthTransactions = [
+        {
+          id: 2,
+          date: '2024-01-10T00:00:00',
+          type: 'BUY',
+          quantity: 2.5,
+          price: 2000,
+          fee: 15.75,
+          total_amount: 5015.75,
+          currency: 'USD',
+          asset_type: 'CRYPTO',
+        },
+      ]
+
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
+      mockedAxios.get.mockResolvedValueOnce({ data: mockBtcTransactions })
+      mockedAxios.get.mockResolvedValueOnce({ data: mockEthTransactions })
+
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+        expect(screen.getByText('ETH')).toBeInTheDocument()
+      })
+
+      const btcRow = screen.getByText('BTC').closest('tr')
+      const ethRow = screen.getByText('ETH').closest('tr')
+
+      // Expand BTC
+      await user.click(btcRow!)
+      await waitFor(() => {
+        expect(btcRow).toHaveClass('expanded')
+      })
+
+      // Expand ETH
+      await user.click(ethRow!)
+      await waitFor(() => {
+        expect(ethRow).toHaveClass('expanded')
+      })
+
+      // Both should be expanded
+      expect(btcRow).toHaveClass('expanded')
+      expect(ethRow).toHaveClass('expanded')
+    })
+
+    it('should have proper ARIA attributes for expandable rows', async () => {
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+      })
+
+      const btcRow = screen.getByText('BTC').closest('tr')
+
+      // Check ARIA attributes
+      expect(btcRow).toHaveAttribute('role', 'button')
+      expect(btcRow).toHaveAttribute('aria-expanded', 'false')
+      expect(btcRow).toHaveAttribute('tabIndex', '0')
+      expect(btcRow).toHaveAttribute('aria-label', expect.stringContaining('BTC'))
+    })
+
+    it('should update ARIA expanded state when row is clicked', async () => {
+      const user = userEvent.setup()
+
+      const mockTransactions = [
+        {
+          id: 1,
+          date: '2024-01-15T00:00:00',
+          type: 'BUY',
+          quantity: 0.5,
+          price: 45000,
+          fee: 25.5,
+          total_amount: 22525.5,
+          currency: 'USD',
+          asset_type: 'CRYPTO',
+        },
+      ]
+
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
+      mockedAxios.get.mockResolvedValueOnce({ data: mockTransactions })
+
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+      })
+
+      const btcRow = screen.getByText('BTC').closest('tr')
+
+      // Initially collapsed
+      expect(btcRow).toHaveAttribute('aria-expanded', 'false')
+
+      // Click to expand
+      await user.click(btcRow!)
+
+      await waitFor(() => {
+        expect(btcRow).toHaveAttribute('aria-expanded', 'true')
+      })
+    })
+
+    it('should rotate expand indicator when row is expanded', async () => {
+      const user = userEvent.setup()
+
+      const mockTransactions = [
+        {
+          id: 1,
+          date: '2024-01-15T00:00:00',
+          type: 'BUY',
+          quantity: 0.5,
+          price: 45000,
+          fee: 25.5,
+          total_amount: 22525.5,
+          currency: 'USD',
+          asset_type: 'CRYPTO',
+        },
+      ]
+
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
+      mockedAxios.get.mockResolvedValueOnce({ data: mockTransactions })
+
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+      })
+
+      const btcRow = screen.getByText('BTC').closest('tr')
+      const indicator = btcRow!.querySelector('.expand-indicator')
+
+      // Initially not expanded
+      expect(indicator).not.toHaveClass('expanded')
+
+      // Click to expand
+      await user.click(btcRow!)
+
+      await waitFor(() => {
+        expect(indicator).toHaveClass('expanded')
+      })
+    })
+
+    it('should maintain row state when filtering', async () => {
+      const user = userEvent.setup()
+
+      const mockTransactions = [
+        {
+          id: 1,
+          date: '2024-01-15T00:00:00',
+          type: 'BUY',
+          quantity: 0.5,
+          price: 45000,
+          fee: 25.5,
+          total_amount: 22525.5,
+          currency: 'USD',
+          asset_type: 'CRYPTO',
+        },
+      ]
+
+      mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
+      mockedAxios.get.mockResolvedValueOnce({ data: mockTransactions })
+
+      render(<HoldingsTable />)
+
+      await waitFor(() => {
+        expect(screen.getByText('BTC')).toBeInTheDocument()
+      })
+
+      const btcRow = screen.getByText('BTC').closest('tr')
+
+      // Expand BTC row
+      await user.click(btcRow!)
+      await waitFor(() => {
+        expect(btcRow).toHaveClass('expanded')
+      })
+
+      // Filter to show only BTC
+      const searchInput = screen.getByPlaceholderText(/search by symbol or name/i)
+      await user.type(searchInput, 'BTC')
+
+      await waitFor(() => {
+        // BTC should still be expanded after filtering
+        const filteredBtcRow = screen.getByText('BTC').closest('tr')
+        expect(filteredBtcRow).toHaveClass('expanded')
+      })
+    })
+  })
 })
