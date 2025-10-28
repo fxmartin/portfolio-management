@@ -48,6 +48,7 @@ postgres_data/
 *.csv
 uploads/
 data/
+backups/
 Revolut_import*/
 Revolut_export*/
 revolut*/

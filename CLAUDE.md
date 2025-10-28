@@ -332,6 +332,44 @@ Current test files (all passing):
 
 Health checks ensure services start in correct order. Backend waits for PostgreSQL, Frontend waits for Backend.
 
+### Data Storage Locations
+
+**PostgreSQL Database** (Primary storage):
+- **Docker Volume**: `portfolio-management_postgres_data`
+- **Host Path**: `/var/lib/docker/volumes/portfolio-management_postgres_data/_data`
+- **Container Path**: `/var/lib/postgresql/data`
+- **Persistence**: Survives container restarts and `docker-compose down`
+- **Deleted by**: `docker-compose down -v` or `make clean-all` ⚠️
+
+**CSV Uploads**:
+- **Host Path**: `./data/` (project directory)
+- **Container Path**: `/data` (backend container)
+- **Purpose**: Temporary storage for uploaded CSV files
+
+**Backup Location**:
+- **Host Path**: `./backups/` (created by `make backup`)
+- **Format**: SQL dumps with timestamp (e.g., `backup_20251028_120500.sql`)
+
+### Database Management Commands
+
+```bash
+# Backup database
+make backup  # Creates timestamped SQL dump in ./backups/
+
+# Restore from backup
+make restore FILE=./backups/backup_20251028_120500.sql
+
+# Access database shell
+make shell-db  # or: docker-compose exec postgres psql -U trader portfolio
+
+# View volume information
+docker volume inspect portfolio-management_postgres_data
+
+# ⚠️ DANGER: Delete all data
+docker-compose down -v  # Removes volumes!
+make clean-all          # Nuclear option
+```
+
 ## Environment Variables
 
 **SECURITY**: All credentials are stored in `.env` file (never committed to git). See `SECURITY.md` for details.

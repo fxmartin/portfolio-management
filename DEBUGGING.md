@@ -285,6 +285,110 @@ docker-compose logs postgres
 docker-compose logs -f postgres
 ```
 
+### Database Storage Locations
+
+**Understanding Where Your Data Lives**:
+
+The PostgreSQL database uses a **Docker named volume** for persistent storage:
+
+```
+PostgreSQL Data Storage:
+├── Docker Volume Name: portfolio-management_postgres_data
+├── Host Location: /var/lib/docker/volumes/portfolio-management_postgres_data/_data
+├── Container Mount: /var/lib/postgresql/data
+└── Size: View with `docker volume inspect portfolio-management_postgres_data`
+```
+
+**Persistence Behavior**:
+- ✅ **Survives**: `docker-compose restart`, `docker-compose down`, container rebuilds
+- ⚠️ **Deleted by**: `docker-compose down -v`, `make clean-all`, `docker volume rm`
+
+**View Volume Details**:
+```bash
+# Inspect volume
+docker volume inspect portfolio-management_postgres_data
+
+# List all volumes
+docker volume ls | grep portfolio
+
+# Check volume size (requires root/sudo)
+sudo du -sh /var/lib/docker/volumes/portfolio-management_postgres_data/_data
+```
+
+**CSV Upload Storage**:
+```
+CSV Files Location:
+├── Host Path: ./data/ (project directory)
+├── Container Path: /data (backend container)
+└── Purpose: Temporary storage for uploaded CSV files
+```
+
+**Backup Storage**:
+```
+Backups Location:
+├── Directory: ./backups/ (created by make backup)
+├── Format: backup_YYYYMMDD_HHMMSS.sql
+└── Create: make backup
+```
+
+### Database Backup & Restore
+
+**Create Backup**:
+```bash
+# Using Makefile (recommended)
+make backup
+# Creates: ./backups/backup_20251028_120500.sql
+
+# Manual backup
+docker-compose exec -T postgres pg_dump -U trader portfolio > backup.sql
+```
+
+**Restore from Backup**:
+```bash
+# Using Makefile
+make restore FILE=./backups/backup_20251028_120500.sql
+
+# Manual restore
+docker-compose exec -T postgres psql -U trader portfolio < backup.sql
+```
+
+**Migration Workflow** (preserve data when upgrading):
+```bash
+# 1. Backup current database
+make backup
+
+# 2. Stop services
+docker-compose down
+
+# 3. Update code/config
+git pull
+
+# 4. Start services (migrations run automatically)
+make dev
+
+# 5. If issues occur, restore
+make restore FILE=./backups/backup_20251028_120500.sql
+```
+
+**⚠️ DANGER ZONE - Data Deletion**:
+```bash
+# Delete database volume (ALL DATA LOST!)
+docker-compose down -v
+
+# Complete cleanup (volumes + containers + images)
+make clean-all
+
+# Remove specific volume
+docker volume rm portfolio-management_postgres_data
+```
+
+**Best Practices**:
+- 📅 **Regular backups**: Run `make backup` before major changes
+- 🔄 **Pre-migration**: Always backup before running migrations
+- 🧪 **Test restores**: Verify backups work by testing restore occasionally
+- 📁 **Backup storage**: Keep backups in `./backups/` (gitignored)
+- ☁️ **Off-site**: Consider copying critical backups to cloud storage
+
 ---
 
 ## Common Issues
