@@ -351,6 +351,61 @@ class TestYahooFinanceFundamentals:
         assert result.get('industry') is None  # Missing field
         assert result.get('volume') is None  # Missing field
 
+    @pytest.mark.asyncio
+    async def test_get_stock_fundamentals_etf_ticker_transformation(self, data_collector):
+        """Test that European ETFs are transformed to correct Yahoo Finance format."""
+        mock_ticker = Mock()
+        mock_ticker.info = {
+            'longName': 'Amundi MSCI Emerging Markets',
+            'sector': None,  # ETFs don't have sectors
+            'industry': None,
+            'fiftyTwoWeekLow': 5.80,
+            'fiftyTwoWeekHigh': 6.50,
+            'volume': 50000,
+            'averageVolume': 45000,
+            'marketCap': 1000000000,
+            'trailingPE': None
+        }
+
+        # Mock yfinance.Ticker to verify it's called with transformed symbol
+        with patch('yfinance.Ticker', return_value=mock_ticker) as mock_yf_ticker:
+            result = await data_collector._get_stock_fundamentals("AMEM")
+
+            # Verify yfinance.Ticker was called with AMEM.BE (transformed)
+            mock_yf_ticker.assert_called_once_with("AMEM.BE")
+
+        # Verify data returned correctly
+        assert result['name'] == 'Amundi MSCI Emerging Markets'
+        assert result['fiftyTwoWeekLow'] == 5.80
+        assert result['fiftyTwoWeekHigh'] == 6.50
+
+    @pytest.mark.asyncio
+    async def test_get_stock_fundamentals_regular_stock_no_transformation(self, data_collector):
+        """Test that regular US stocks are not transformed."""
+        mock_ticker = Mock()
+        mock_ticker.info = {
+            'longName': 'Apple Inc.',
+            'sector': 'Technology',
+            'industry': 'Consumer Electronics',
+            'fiftyTwoWeekLow': 150.0,
+            'fiftyTwoWeekHigh': 200.0,
+            'volume': 50000000,
+            'averageVolume': 45000000,
+            'marketCap': 3000000000000,
+            'trailingPE': 28.5
+        }
+
+        # Mock yfinance.Ticker to verify it's called with untransformed symbol
+        with patch('yfinance.Ticker', return_value=mock_ticker) as mock_yf_ticker:
+            result = await data_collector._get_stock_fundamentals("AAPL")
+
+            # Verify yfinance.Ticker was called with AAPL (not transformed)
+            mock_yf_ticker.assert_called_once_with("AAPL")
+
+        # Verify data returned correctly
+        assert result['name'] == 'Apple Inc.'
+        assert result['sector'] == 'Technology'
+
 
 class TestPerformanceMetrics:
     """Test performance metrics calculation."""

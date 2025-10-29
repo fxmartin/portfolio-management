@@ -1,5 +1,5 @@
 # ABOUTME: Intelligent market data aggregator with fallback logic and circuit breaker
-# ABOUTME: Routes requests between Yahoo Finance and Alpha Vantage based on availability and performance
+# ABOUTME: Routes requests between Twelve Data, Yahoo Finance, and Alpha Vantage based on availability and performance
 
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
@@ -11,6 +11,7 @@ import json
 
 class DataProvider(Enum):
     """Available market data providers"""
+    TWELVE_DATA = "twelvedata"
     YAHOO_FINANCE = "yahoo"
     ALPHA_VANTAGE = "alphavantage"
     CACHE = "cache"
@@ -21,9 +22,9 @@ class MarketDataAggregator:
     Intelligent market data aggregator with fallback logic.
 
     Features:
-    - Automatic fallback: Yahoo Finance → Alpha Vantage → Cache
+    - Automatic fallback: Twelve Data → Yahoo Finance → Alpha Vantage → Cache
     - Circuit breaker pattern to avoid hammering failed providers
-    - Special handling for European ETFs (Alpha Vantage first)
+    - Twelve Data prioritized for European ETFs (best coverage)
     - Provider statistics tracking for monitoring
     """
 
@@ -31,6 +32,7 @@ class MarketDataAggregator:
         self,
         yahoo_service,
         alpha_vantage_service,
+        twelve_data_service=None,
         redis_client=None
     ):
         """
@@ -39,14 +41,17 @@ class MarketDataAggregator:
         Args:
             yahoo_service: YahooFinanceService instance
             alpha_vantage_service: AlphaVantageService instance
+            twelve_data_service: Optional TwelveDataService instance (primary for European stocks)
             redis_client: Optional Redis client for caching
         """
+        self.twelve_data = twelve_data_service
         self.yahoo = yahoo_service
         self.alpha_vantage = alpha_vantage_service
         self.redis = redis_client
 
         # Provider metrics tracking
         self.provider_stats = {
+            DataProvider.TWELVE_DATA: {'success': 0, 'failure': 0},
             DataProvider.YAHOO_FINANCE: {'success': 0, 'failure': 0},
             DataProvider.ALPHA_VANTAGE: {'success': 0, 'failure': 0},
             DataProvider.CACHE: {'success': 0, 'failure': 0}
@@ -54,6 +59,7 @@ class MarketDataAggregator:
 
         # Circuit breaker: Track consecutive failures
         self.circuit_breaker = {
+            DataProvider.TWELVE_DATA: {'failures': 0, 'open_until': None},
             DataProvider.YAHOO_FINANCE: {'failures': 0, 'open_until': None},
             DataProvider.ALPHA_VANTAGE: {'failures': 0, 'open_until': None}
         }
@@ -139,9 +145,8 @@ class MarketDataAggregator:
         """
         Get quote with intelligent fallback logic
 
-        Tries providers in order based on symbol type:
-        - European ETFs: Alpha Vantage → Yahoo → Cache
-        - US stocks: Yahoo → Alpha Vantage → Cache
+        Tries providers in order with Twelve Data prioritized:
+        - All symbols: Twelve Data → Yahoo → Alpha Vantage → Cache
 
         Args:
             symbol: Stock/crypto ticker symbol
@@ -149,11 +154,11 @@ class MarketDataAggregator:
         Returns:
             Tuple of (price_data, provider_used) or (None, None) if all fail
         """
-        # Determine provider priority based on symbol type
-        if self._is_european_etf(symbol):
-            providers = [DataProvider.ALPHA_VANTAGE, DataProvider.YAHOO_FINANCE]
-        else:
-            providers = [DataProvider.YAHOO_FINANCE, DataProvider.ALPHA_VANTAGE]
+        # Build provider list with Twelve Data first (if available)
+        providers = []
+        if self.twelve_data:
+            providers.append(DataProvider.TWELVE_DATA)
+        providers.extend([DataProvider.YAHOO_FINANCE, DataProvider.ALPHA_VANTAGE])
 
         # Try each provider in order
         for provider in providers:
@@ -163,7 +168,9 @@ class MarketDataAggregator:
                 continue
 
             try:
-                if provider == DataProvider.YAHOO_FINANCE:
+                if provider == DataProvider.TWELVE_DATA:
+                    price_data = await self.twelve_data.get_quote(symbol)
+                elif provider == DataProvider.YAHOO_FINANCE:
                     price_data = await self.yahoo.get_quote(symbol)
                 elif provider == DataProvider.ALPHA_VANTAGE:
                     price_data = await self.alpha_vantage.get_quote(symbol)
@@ -211,7 +218,11 @@ class MarketDataAggregator:
         Returns:
             Tuple of (price_dict, provider_used) or ({}, None) if all fail
         """
-        providers = [DataProvider.YAHOO_FINANCE, DataProvider.ALPHA_VANTAGE]
+        # Build provider list with Twelve Data first (if available)
+        providers = []
+        if self.twelve_data:
+            providers.append(DataProvider.TWELVE_DATA)
+        providers.extend([DataProvider.YAHOO_FINANCE, DataProvider.ALPHA_VANTAGE])
 
         for provider in providers:
             # Skip if circuit breaker is open
@@ -220,7 +231,14 @@ class MarketDataAggregator:
                 continue
 
             try:
-                if provider == DataProvider.YAHOO_FINANCE:
+                if provider == DataProvider.TWELVE_DATA:
+                    prices = await self.twelve_data.get_historical_daily(symbol, start_date, end_date)
+                    if prices:
+                        self._record_success(provider)
+                        print(f"[Fallback] {symbol} historical from {provider.value}")
+                        return prices, provider
+
+                elif provider == DataProvider.YAHOO_FINANCE:
                     prices = await self.yahoo.get_historical_prices([symbol], start_date, end_date)
                     if symbol in prices and prices[symbol]:
                         self._record_success(provider)
