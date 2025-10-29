@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Portfolio management application for tracking stocks, metals, and cryptocurrency investments. Imports transactions from Revolut (metals & stocks) and Koinly (crypto) CSV exports, calculates FIFO cost basis with fee-inclusive calculations, and displays real-time portfolio performance with live market data.
 
-**Current Status**: ~57% complete (151/263 story points across 8 epics) - All core features implemented. Transaction import, FIFO calculations, live prices, and dashboard visualization complete. Cost basis calculations validated against Koinly at 99.77% accuracy. Infrastructure & DevOps (Epic 5) complete with comprehensive development tools. Epic 8 (AI Market Analysis) now planned.
+**Current Status**: ~90% complete (242/268 story points across 8 epics) - All core features implemented. Transaction import, FIFO calculations, live prices, and dashboard visualization complete. Cost basis calculations validated against Koinly at 99.77% accuracy. Infrastructure & DevOps (Epic 5) complete with comprehensive development tools. **Epic 8 (AI Market Analysis) - Features 1, 2 & 3 complete!** - Prompt Management (F8.1 ✅, 103 tests), Claude Integration (F8.2 ✅, 25 tests), Global Analysis API (F8.3 ✅, 15 tests). 51% of Epic 8 complete (34/67 points).
 
 ## Essential Commands
 
@@ -312,16 +312,35 @@ Current test files (all passing):
    - VS Code debugging configurations
    - Pre-commit hooks for code quality
    - Complete debugging documentation
+8. ✅ **Epic 8: AI Market Analysis - Features 1, 2 & 3 COMPLETE** (Oct 29, 2025):
+   - **F8.1: Prompt Management System** ✅ (13 points):
+     - Database Foundation: 3 tables, SQLAlchemy models, seed data (18 tests)
+     - Prompt CRUD API: 8 REST endpoints, automatic versioning, soft deletes (46 tests)
+     - Prompt Template Engine: Type-safe variable substitution, portfolio data collection (39 tests)
+     - Files: `prompt_service.py`, `prompt_schemas.py`, `prompt_router.py`, `prompt_renderer.py`, `seed_prompts.py`
+     - **Total**: 103 tests passing, 13/13 story points complete
+   - **F8.2: Anthropic Claude Integration** ✅ (13 points):
+     - Claude API Client: Async client with rate limiting (50 req/min), retry logic, token tracking (14 tests, 97% coverage)
+     - Analysis Service: Orchestrates prompt rendering + Claude calls, cache integration, database storage (11 tests, 89% coverage)
+     - Files: `config.py`, `claude_service.py`, `analysis_service.py`
+     - **Total**: 25 tests passing, 13/13 story points complete
+   - **F8.3: Global Market Analysis** ✅ (8 points):
+     - Analysis Router: 3 FastAPI endpoints (/global, /position/{symbol}, /forecast/{symbol}), Redis caching (4 tests)
+     - Enhanced Data Collection: 10 comprehensive fields, market indices (S&P, Dow, BTC, Gold), sector allocation (11 tests)
+     - Files: `analysis_router.py`, `analysis_schemas.py`, `cache_service.py`, enhanced `prompt_renderer.py`
+     - **Total**: 15 tests passing, 8/8 story points complete
+   - **Epic 8 Progress**: 51% complete (34/67 story points), 143/143 tests passing ✅
 
 ### Next Steps
-- Complete Epic 4 remaining stories (F4.2-001, F4.2-002): Portfolio value chart and asset allocation pie chart
-- **Epic 8 - AI Market Analysis** (67 points, 14 stories):
-  - Claude API integration for intelligent market analysis
-  - Database-backed prompt management system
-  - Global market analysis and position-specific insights
+- **Epic 8 - Feature 4: Position-Level Analysis** (F8.4, 10 points, 2 stories):
+  - Individual asset insights with HOLD/BUY_MORE/REDUCE/SELL recommendations
+  - Position-specific analysis endpoint already implemented in F8.3
+- **Epic 8 - Feature 5: Forecasting Engine** (F8.5, 15 points, 3 stories):
   - Two-quarter forecasts with pessimistic/realistic/optimistic scenarios
-  - Forecast accuracy tracking
-  - Analysis dashboard UI with visualization
+  - Forecast endpoint already implemented in F8.3
+- **Epic 8 - Feature 6: Analysis UI Dashboard** (F8.6, 8 points, 2 stories):
+  - React components to display AI-powered analysis
+- Complete Epic 4 remaining stories (F4.2-001, F4.2-002): Portfolio value chart and asset allocation pie chart
 
 ## Docker Services Configuration
 

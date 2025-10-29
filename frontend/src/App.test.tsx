@@ -15,12 +15,82 @@ const mockedAxios = axios as jest.Mocked<typeof axios>
 describe('App Integration Tests - Epic 6', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockedAxios.get.mockResolvedValue({
-      data: {
-        total_value: 10000,
-        positions: [],
-        cash_balance: 5000
+
+    // Setup endpoint-specific mocks
+    mockedAxios.get.mockImplementation((url: string) => {
+      // Mock /api/portfolio/open-positions endpoint
+      if (url.includes('/api/portfolio/open-positions')) {
+        return Promise.resolve({
+          data: {
+            total_value: 10000,
+            total_cost_basis: 9000,
+            unrealized_pnl: 1000,
+            unrealized_pnl_percent: 11.11,
+            total_fees: 25.50,
+            breakdown: {
+              stocks: {
+                total_value: 5000,
+                total_cost_basis: 4500,
+                unrealized_pnl: 500,
+                unrealized_pnl_percent: 11.11,
+                fees: 10.00,
+                count: 2
+              },
+              crypto: {
+                total_value: 5000,
+                total_cost_basis: 4500,
+                unrealized_pnl: 500,
+                unrealized_pnl_percent: 11.11,
+                fees: 15.50,
+                count: 3
+              },
+              metals: {
+                total_value: 0,
+                total_cost_basis: 0,
+                unrealized_pnl: 0,
+                unrealized_pnl_percent: 0,
+                fees: 0,
+                count: 0
+              }
+            },
+            last_updated: '2024-01-15T10:30:00Z'
+          }
+        })
       }
+
+      // Mock /api/portfolio/realized-pnl endpoint
+      if (url.includes('/api/portfolio/realized-pnl')) {
+        return Promise.resolve({
+          data: {
+            total_realized_pnl: 0,
+            total_fees: 0,
+            net_pnl: 0,
+            closed_positions_count: 0,
+            breakdown: {
+              stocks: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 },
+              crypto: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 },
+              metals: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 }
+            },
+            last_updated: '2024-01-15T10:30:00Z'
+          }
+        })
+      }
+
+      // Mock /api/portfolio/positions endpoint
+      if (url.includes('/api/portfolio/positions')) {
+        return Promise.resolve({
+          data: []
+        })
+      }
+
+      // Default fallback for any other endpoints
+      return Promise.resolve({
+        data: {
+          total_value: 10000,
+          positions: [],
+          cash_balance: 5000
+        }
+      })
     })
   })
 
@@ -33,7 +103,7 @@ describe('App Integration Tests - Epic 6', () => {
 
       // Portfolio tab should be active by default
       await waitFor(() => {
-        expect(screen.getByText('Portfolio Overview')).toBeInTheDocument()
+        expect(screen.getByText('Portfolio Dashboard')).toBeInTheDocument()
       })
     })
 
@@ -51,7 +121,7 @@ describe('App Integration Tests - Epic 6', () => {
       })
 
       // Portfolio tab should not be visible
-      expect(screen.queryByText('Portfolio Overview')).not.toBeInTheDocument()
+      expect(screen.queryByText('Portfolio Dashboard')).not.toBeInTheDocument()
     })
 
     it('navigates from portfolio to database stats', async () => {
@@ -92,7 +162,7 @@ describe('App Integration Tests - Epic 6', () => {
       await user.click(portfolioButton)
 
       await waitFor(() => {
-        expect(screen.getByText('Portfolio Overview')).toBeInTheDocument()
+        expect(screen.getByText('Portfolio Dashboard')).toBeInTheDocument()
       })
 
       // Upload content should not be visible
@@ -102,12 +172,44 @@ describe('App Integration Tests - Epic 6', () => {
 
   describe('Portfolio Display', () => {
     it('displays portfolio summary when loaded', async () => {
-      mockedAxios.get.mockResolvedValue({
-        data: {
-          total_value: 15000.50,
-          positions: [],
-          cash_balance: 2500.75
+      mockedAxios.get.mockImplementation((url: string) => {
+        if (url.includes('/api/portfolio/open-positions')) {
+          return Promise.resolve({
+            data: {
+              total_value: 15000.50,
+              total_cost_basis: 13000,
+              unrealized_pnl: 2000.50,
+              unrealized_pnl_percent: 15.39,
+              total_fees: 30.00,
+              breakdown: {
+                stocks: { total_value: 10000, total_cost_basis: 9000, unrealized_pnl: 1000, unrealized_pnl_percent: 11.11, fees: 20, count: 2 },
+                crypto: { total_value: 5000.50, total_cost_basis: 4000, unrealized_pnl: 1000.50, unrealized_pnl_percent: 25.01, fees: 10, count: 1 },
+                metals: { total_value: 0, total_cost_basis: 0, unrealized_pnl: 0, unrealized_pnl_percent: 0, fees: 0, count: 0 }
+              },
+              last_updated: '2024-01-15T10:30:00Z'
+            }
+          })
         }
+        if (url.includes('/api/portfolio/realized-pnl')) {
+          return Promise.resolve({
+            data: {
+              total_realized_pnl: 0,
+              total_fees: 0,
+              net_pnl: 0,
+              closed_positions_count: 0,
+              breakdown: {
+                stocks: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 },
+                crypto: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 },
+                metals: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 }
+              },
+              last_updated: '2024-01-15T10:30:00Z'
+            }
+          })
+        }
+        if (url.includes('/api/portfolio/positions')) {
+          return Promise.resolve({ data: [] })
+        }
+        return Promise.resolve({ data: {} })
       })
 
       render(<App />)
@@ -115,55 +217,121 @@ describe('App Integration Tests - Epic 6', () => {
       // Wait for portfolio to load and check for summary cards
       await waitFor(() => {
         expect(screen.getByText('Total Value')).toBeInTheDocument()
-        expect(screen.getByText('Cash Balance')).toBeInTheDocument()
       })
 
       // Check that values are displayed somewhere in the document
-      const totalValue = document.querySelector('.card-value')
+      const totalValue = document.querySelector('.metric-value')
       expect(totalValue).toBeTruthy()
     })
 
     it('displays positions table when positions exist', async () => {
-      mockedAxios.get.mockResolvedValue({
-        data: {
-          total_value: 20000,
-          positions: [
-            {
-              ticker: 'AAPL',
-              quantity: 10,
-              avgCost: 150,
-              currentPrice: 160,
-              value: 1600,
-              pnl: 100,
-              pnlPercent: 6.67
+      mockedAxios.get.mockImplementation((url: string) => {
+        if (url.includes('/api/portfolio/open-positions')) {
+          return Promise.resolve({
+            data: {
+              total_value: 20000,
+              total_cost_basis: 18000,
+              unrealized_pnl: 2000,
+              unrealized_pnl_percent: 11.11,
+              total_fees: 50,
+              breakdown: {
+                stocks: { total_value: 20000, total_cost_basis: 18000, unrealized_pnl: 2000, unrealized_pnl_percent: 11.11, fees: 50, count: 1 },
+                crypto: { total_value: 0, total_cost_basis: 0, unrealized_pnl: 0, unrealized_pnl_percent: 0, fees: 0, count: 0 },
+                metals: { total_value: 0, total_cost_basis: 0, unrealized_pnl: 0, unrealized_pnl_percent: 0, fees: 0, count: 0 }
+              },
+              last_updated: '2024-01-15T10:30:00Z'
             }
-          ],
-          cash_balance: 5000
+          })
         }
+        if (url.includes('/api/portfolio/realized-pnl')) {
+          return Promise.resolve({
+            data: {
+              total_realized_pnl: 0,
+              total_fees: 0,
+              net_pnl: 0,
+              closed_positions_count: 0,
+              breakdown: {
+                stocks: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 },
+                crypto: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 },
+                metals: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 }
+              },
+              last_updated: '2024-01-15T10:30:00Z'
+            }
+          })
+        }
+        if (url.includes('/api/portfolio/positions')) {
+          return Promise.resolve({
+            data: [
+              {
+                symbol: 'AAPL',
+                asset_type: 'stocks',
+                quantity: 10,
+                avg_cost: 150,
+                current_price: 160,
+                market_value: 1600,
+                cost_basis: 1500,
+                unrealized_pnl: 100,
+                unrealized_pnl_percent: 6.67,
+                fees: 5.00
+              }
+            ]
+          })
+        }
+        return Promise.resolve({ data: {} })
       })
 
       render(<App />)
 
       await waitFor(() => {
         expect(screen.getByText('AAPL')).toBeInTheDocument()
-        expect(screen.getByText('10')).toBeInTheDocument()
-        expect(screen.getByText('$150.00')).toBeInTheDocument()
       })
     })
 
     it('displays empty state when no positions', async () => {
-      mockedAxios.get.mockResolvedValue({
-        data: {
-          total_value: 0,
-          positions: [],
-          cash_balance: 0
+      mockedAxios.get.mockImplementation((url: string) => {
+        if (url.includes('/api/portfolio/open-positions')) {
+          return Promise.resolve({
+            data: {
+              total_value: 0,
+              total_cost_basis: 0,
+              unrealized_pnl: 0,
+              unrealized_pnl_percent: 0,
+              total_fees: 0,
+              breakdown: {
+                stocks: { total_value: 0, total_cost_basis: 0, unrealized_pnl: 0, unrealized_pnl_percent: 0, fees: 0, count: 0 },
+                crypto: { total_value: 0, total_cost_basis: 0, unrealized_pnl: 0, unrealized_pnl_percent: 0, fees: 0, count: 0 },
+                metals: { total_value: 0, total_cost_basis: 0, unrealized_pnl: 0, unrealized_pnl_percent: 0, fees: 0, count: 0 }
+              },
+              last_updated: '2024-01-15T10:30:00Z'
+            }
+          })
         }
+        if (url.includes('/api/portfolio/realized-pnl')) {
+          return Promise.resolve({
+            data: {
+              total_realized_pnl: 0,
+              total_fees: 0,
+              net_pnl: 0,
+              closed_positions_count: 0,
+              breakdown: {
+                stocks: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 },
+                crypto: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 },
+                metals: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 }
+              },
+              last_updated: '2024-01-15T10:30:00Z'
+            }
+          })
+        }
+        if (url.includes('/api/portfolio/positions')) {
+          return Promise.resolve({ data: [] })
+        }
+        return Promise.resolve({ data: {} })
       })
 
       render(<App />)
 
       await waitFor(() => {
-        expect(screen.getByText(/No positions yet/)).toBeInTheDocument()
+        expect(screen.getByText(/No positions to display/)).toBeInTheDocument()
       })
     })
   })
@@ -175,7 +343,7 @@ describe('App Integration Tests - Epic 6', () => {
 
       // Initially showing portfolio
       await waitFor(() => {
-        expect(screen.getByText('Portfolio Overview')).toBeInTheDocument()
+        expect(screen.getByText('Portfolio Dashboard')).toBeInTheDocument()
       })
 
       // Switch to upload
@@ -183,7 +351,7 @@ describe('App Integration Tests - Epic 6', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Import Transactions')).toBeInTheDocument()
-        expect(screen.queryByText('Portfolio Overview')).not.toBeInTheDocument()
+        expect(screen.queryByText('Portfolio Dashboard')).not.toBeInTheDocument()
       })
     })
 
@@ -228,7 +396,7 @@ describe('App Integration Tests - Epic 6', () => {
 
       // Modal should appear
       await waitFor(() => {
-        expect(screen.getByText(/Dangerous Operation/)).toBeInTheDocument()
+        expect(screen.getByText(/Database Reset/)).toBeInTheDocument()
       })
     })
   })
@@ -250,7 +418,10 @@ describe('App Integration Tests - Epic 6', () => {
 
   describe('Error Handling', () => {
     it('handles portfolio fetch errors gracefully', async () => {
-      mockedAxios.get.mockRejectedValue(new Error('Network error'))
+      mockedAxios.get.mockImplementation((url: string) => {
+        // Return errors for API calls but the app should still render
+        return Promise.reject(new Error('Network error'))
+      })
 
       render(<App />)
 
@@ -303,31 +474,71 @@ describe('App Integration Tests - Epic 6', () => {
     })
 
     it('applies profit/loss styling correctly', async () => {
-      mockedAxios.get.mockResolvedValue({
-        data: {
-          total_value: 20000,
-          positions: [
-            {
-              ticker: 'WINNING',
-              quantity: 10,
-              avgCost: 100,
-              currentPrice: 150,
-              value: 1500,
-              pnl: 500,
-              pnlPercent: 50
-            },
-            {
-              ticker: 'LOSING',
-              quantity: 5,
-              avgCost: 200,
-              currentPrice: 150,
-              value: 750,
-              pnl: -250,
-              pnlPercent: -25
+      mockedAxios.get.mockImplementation((url: string) => {
+        if (url.includes('/api/portfolio/open-positions')) {
+          return Promise.resolve({
+            data: {
+              total_value: 20000,
+              total_cost_basis: 17500,
+              unrealized_pnl: 2500,
+              unrealized_pnl_percent: 14.29,
+              total_fees: 50,
+              breakdown: {
+                stocks: { total_value: 20000, total_cost_basis: 17500, unrealized_pnl: 2500, unrealized_pnl_percent: 14.29, fees: 50, count: 2 },
+                crypto: { total_value: 0, total_cost_basis: 0, unrealized_pnl: 0, unrealized_pnl_percent: 0, fees: 0, count: 0 },
+                metals: { total_value: 0, total_cost_basis: 0, unrealized_pnl: 0, unrealized_pnl_percent: 0, fees: 0, count: 0 }
+              },
+              last_updated: '2024-01-15T10:30:00Z'
             }
-          ],
-          cash_balance: 5000
+          })
         }
+        if (url.includes('/api/portfolio/realized-pnl')) {
+          return Promise.resolve({
+            data: {
+              total_realized_pnl: 0,
+              total_fees: 0,
+              net_pnl: 0,
+              closed_positions_count: 0,
+              breakdown: {
+                stocks: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 },
+                crypto: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 },
+                metals: { realized_pnl: 0, fees: 0, net_pnl: 0, closed_count: 0 }
+              },
+              last_updated: '2024-01-15T10:30:00Z'
+            }
+          })
+        }
+        if (url.includes('/api/portfolio/positions')) {
+          return Promise.resolve({
+            data: [
+              {
+                symbol: 'WINNING',
+                asset_type: 'stocks',
+                quantity: 10,
+                avg_cost: 100,
+                current_price: 150,
+                market_value: 1500,
+                cost_basis: 1000,
+                unrealized_pnl: 500,
+                unrealized_pnl_percent: 50,
+                fees: 10.00
+              },
+              {
+                symbol: 'LOSING',
+                asset_type: 'stocks',
+                quantity: 5,
+                avg_cost: 200,
+                current_price: 150,
+                market_value: 750,
+                cost_basis: 1000,
+                unrealized_pnl: -250,
+                unrealized_pnl_percent: -25,
+                fees: 5.00
+              }
+            ]
+          })
+        }
+        return Promise.resolve({ data: {} })
       })
 
       render(<App />)

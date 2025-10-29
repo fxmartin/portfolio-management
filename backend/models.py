@@ -1,5 +1,5 @@
 # ABOUTME: SQLAlchemy database models for portfolio management
-# ABOUTME: Defines Transaction, Position, PriceHistory, and PortfolioSnapshot tables
+# ABOUTME: Defines Transaction, Position, PriceHistory, PortfolioSnapshot, Prompt, PromptVersion, and AnalysisResult tables
 
 from datetime import datetime
 from decimal import Decimal
@@ -197,6 +197,75 @@ class PortfolioSnapshot(Base):
 
     def __repr__(self):
         return f"<PortfolioSnapshot({self.snapshot_date}, value={self.total_value})>"
+
+
+class Prompt(Base):
+    """Prompt template model for AI analysis prompts"""
+    __tablename__ = 'prompts'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), unique=True, nullable=False, index=True)
+    category = Column(String(50), nullable=False)  # 'global', 'position', 'forecast'
+    prompt_text = Column(String, nullable=False)  # TEXT in PostgreSQL
+    template_variables = Column(JSON)  # {var_name: type}
+    is_active = Column(Integer, default=1)  # Using Integer for SQLite compatibility
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    version = Column(Integer, default=1, nullable=False)
+
+    # Relationships
+    versions = relationship("PromptVersion", back_populates="prompt")
+    analysis_results = relationship("AnalysisResult", back_populates="prompt")
+
+    def __repr__(self):
+        return f"<Prompt({self.name}, v{self.version}, active={bool(self.is_active)})>"
+
+
+class PromptVersion(Base):
+    """Prompt version history model for tracking prompt changes"""
+    __tablename__ = 'prompt_versions'
+
+    id = Column(Integer, primary_key=True)
+    prompt_id = Column(Integer, ForeignKey('prompts.id'), nullable=False, index=True)
+    version = Column(Integer, nullable=False)
+    prompt_text = Column(String, nullable=False)  # TEXT in PostgreSQL
+    changed_by = Column(String(100))
+    changed_at = Column(DateTime, default=func.now(), nullable=False)
+    change_reason = Column(String)  # TEXT in PostgreSQL
+
+    # Relationships
+    prompt = relationship("Prompt", back_populates="versions")
+
+    def __repr__(self):
+        return f"<PromptVersion(prompt_id={self.prompt_id}, v{self.version})>"
+
+
+class AnalysisResult(Base):
+    """Analysis result model for storing AI-generated analysis"""
+    __tablename__ = 'analysis_results'
+
+    id = Column(Integer, primary_key=True)
+    analysis_type = Column(String(50), nullable=False, index=True)  # 'global', 'position', 'forecast'
+    symbol = Column(String(20), index=True)  # NULL for global analysis
+    prompt_id = Column(Integer, ForeignKey('prompts.id'))
+    prompt_version = Column(Integer)
+    raw_response = Column(String, nullable=False)  # TEXT in PostgreSQL
+    parsed_data = Column(JSON)  # Structured analysis data
+    tokens_used = Column(Integer)
+    generation_time_ms = Column(Integer)
+    created_at = Column(DateTime, default=func.now(), nullable=False, index=True)
+    expires_at = Column(DateTime)  # For caching/cleanup
+
+    # Relationships
+    prompt = relationship("Prompt", back_populates="analysis_results")
+
+    __table_args__ = (
+        Index('idx_analysis_type_symbol', 'analysis_type', 'symbol'),
+        Index('idx_analysis_created_at', 'created_at'),
+    )
+
+    def __repr__(self):
+        return f"<AnalysisResult({self.analysis_type}, symbol={self.symbol}, tokens={self.tokens_used})>"
 
 
 # Create indexes for better query performance
