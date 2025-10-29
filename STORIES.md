@@ -7,9 +7,9 @@ This document provides a high-level overview of all user stories for the Portfol
 **Project Goal**: Build a personal portfolio tracker that imports Revolut transactions and displays real-time portfolio performance with live market data.
 
 **Development Metrics**:
-- **Active Development Time**: ~40-50 hours (Oct 21-29, 2025)
+- **Active Development Time**: ~31-38 hours (Oct 21-29, 2025)
 - **Project Completion**: 74% (261/352 story points across 9 epics)
-- **Activity**: 63+ commits, 23 GitHub issues (all closed ✅), 8 active development days
+- **Activity**: 63 commits, 24 GitHub issues (21 closed ✅), 7 active development days
 - **Test Quality**: 100% backend tests passing (676/676 tests) ✅
 - *Epic 8: AI Market Analysis - 64% complete (65/101 story points, F8.4-003, F8.7 & F8.8 pending) 🟡*
 - *Epic 7: Manual Transaction Management complete! (39/39 story points) ✅*
