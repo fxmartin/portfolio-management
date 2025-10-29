@@ -25,35 +25,41 @@ Database-backed system for storing, editing, and versioning analysis prompts.
 ---
 
 ### 🤖 [Feature 8.2: Anthropic Claude Integration](./epic-08-f2-claude-integration.md)
-**Complexity**: 13 points | **Stories**: 2 | **Status**: 🔴 Not Started
+**Complexity**: 13 points | **Stories**: 2 | **Status**: ✅ Complete (Oct 29, 2025)
 
 Core integration with Anthropic Claude API for generating market analysis.
 
 **Stories**:
-- F8.2-001: Claude API Client (8 pts)
-- F8.2-002: Analysis Service Layer (5 pts)
+- F8.2-001: Claude API Client (8 pts) ✅
+- F8.2-002: Analysis Service Layer (5 pts) ✅
+
+**Tests**: 25 passing (14 client + 11 service), 93% coverage
 
 ---
 
 ### 🌍 [Feature 8.3: Global Market Analysis](./epic-08-f3-global-analysis.md)
-**Complexity**: 8 points | **Stories**: 2 | **Status**: 🔴 Not Started
+**Complexity**: 8 points | **Stories**: 2 | **Status**: ✅ Complete (Oct 29, 2025)
 
 Portfolio-wide market analysis providing overall market sentiment and macro insights.
 
 **Stories**:
-- F8.3-001: Global Analysis API (3 pts)
-- F8.3-002: Market Context Data Collection (5 pts)
+- F8.3-001: Enhanced Data Collection (5 pts) ✅
+- F8.3-002: Analysis Router API (3 pts) ✅
+
+**Tests**: 15 passing (11 data collection + 4 router), 100% functional coverage
 
 ---
 
 ### 📊 [Feature 8.4: Position-Level Analysis](./epic-08-f4-position-analysis.md)
-**Complexity**: 10 points | **Stories**: 2 | **Status**: 🔴 Not Started
+**Complexity**: 10 points | **Stories**: 2 | **Status**: ✅ Complete (Oct 29, 2025)
 
 AI analysis for individual positions with specific recommendations (HOLD/BUY/SELL).
 
 **Stories**:
-- F8.4-001: Position Analysis API (5 pts)
-- F8.4-002: Position Context Enhancement (5 pts)
+- F8.4-001: Position Analysis API (5 pts) ✅
+- F8.4-002: Position Context Enhancement (5 pts) ✅
+
+**Tests**: 23 tests (19 position data + 4 API), 100% passing
 
 ---
 

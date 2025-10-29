@@ -151,6 +151,119 @@ class TestAnalysisEndpointErrors:
             router.dependency_overrides = original_dependency
 
 
+class TestBulkAnalysisEndpoint:
+    """Integration tests for /api/analysis/positions/bulk endpoint."""
+
+    def test_bulk_analysis_success(self):
+        """Test successful bulk analysis for multiple positions."""
+        client = TestClient(app)
+
+        from analysis_router import get_analysis_service
+
+        async def mock_generate_position(symbol, force_refresh=False):
+            return {
+                'analysis': f'Analysis for {symbol}',
+                'recommendation': 'HOLD' if symbol == 'BTC' else 'BUY_MORE',
+                'generated_at': datetime.utcnow(),
+                'tokens_used': 100,
+                'cached': False
+            }
+
+        mock_service = MagicMock()
+        mock_service.generate_position_analysis = mock_generate_position
+
+        async def override_service():
+            return mock_service
+
+        original_dependency = app.dependency_overrides.copy()
+        app.dependency_overrides[get_analysis_service] = override_service
+
+        try:
+            response = client.post(
+                "/api/analysis/positions/bulk",
+                json={"symbols": ["BTC", "ETH", "SOL"]}
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+
+            assert 'analyses' in data
+            assert 'total_tokens_used' in data
+            assert len(data['analyses']) == 3
+            assert 'BTC' in data['analyses']
+            assert 'ETH' in data['analyses']
+            assert 'SOL' in data['analyses']
+            assert data['analyses']['BTC']['recommendation'] == 'HOLD'
+            assert data['analyses']['ETH']['recommendation'] == 'BUY_MORE'
+            assert data['total_tokens_used'] == 300  # 3 symbols × 100 tokens
+        finally:
+            app.dependency_overrides = original_dependency
+
+    def test_bulk_analysis_max_limit(self):
+        """Test bulk analysis enforces 10 position maximum."""
+        client = TestClient(app)
+
+        # Try to analyze 11 positions
+        symbols = [f"SYM{i}" for i in range(11)]
+
+        response = client.post(
+            "/api/analysis/positions/bulk",
+            json={"symbols": symbols}
+        )
+
+        # Should return 422 for validation error
+        assert response.status_code == 422
+
+    def test_bulk_analysis_empty_list(self):
+        """Test bulk analysis with empty symbol list."""
+        client = TestClient(app)
+
+        response = client.post(
+            "/api/analysis/positions/bulk",
+            json={"symbols": []}
+        )
+
+        # Should return 422 for validation error
+        assert response.status_code == 422
+
+    def test_bulk_analysis_position_not_found(self):
+        """Test bulk analysis when one position doesn't exist."""
+        client = TestClient(app)
+
+        from analysis_router import get_analysis_service
+
+        async def mock_generate_with_error(symbol, force_refresh=False):
+            if symbol == 'INVALID':
+                raise ValueError(f"Position not found: {symbol}")
+            return {
+                'analysis': f'Analysis for {symbol}',
+                'recommendation': 'HOLD',
+                'generated_at': datetime.utcnow(),
+                'tokens_used': 100,
+                'cached': False
+            }
+
+        mock_service = MagicMock()
+        mock_service.generate_position_analysis = mock_generate_with_error
+
+        async def override_service():
+            return mock_service
+
+        original_dependency = app.dependency_overrides.copy()
+        app.dependency_overrides[get_analysis_service] = override_service
+
+        try:
+            response = client.post(
+                "/api/analysis/positions/bulk",
+                json={"symbols": ["BTC", "INVALID"]}
+            )
+
+            # Bulk endpoint should return 404 if any position fails
+            assert response.status_code == 404
+        finally:
+            app.dependency_overrides = original_dependency
+
+
 @pytest.mark.skip(reason="Requires live Claude API key - run manually")
 class TestAnalysisRouterIntegrationLive:
     """
