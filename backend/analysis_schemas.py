@@ -151,3 +151,52 @@ class ForecastResponse(BaseModel):
                 "cached": False
             }
         }
+
+
+class BulkForecastRequest(BaseModel):
+    """Request schema for bulk forecast generation"""
+    symbols: conlist(str, min_length=1, max_length=5) = Field(
+        ...,
+        description="List of asset symbols (1-5 max for token management)"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "symbols": ["BTC", "ETH", "AAPL"]
+            }
+        }
+
+
+class BulkForecastResponse(BaseModel):
+    """Response schema for bulk forecast generation"""
+    forecasts: Dict[str, ForecastResponse] = Field(
+        ...,
+        description="Map of symbol to forecast response"
+    )
+    total_tokens_used: int = Field(..., ge=0, description="Total tokens across all forecasts")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "forecasts": {
+                    "BTC": {
+                        "q1_forecast": {
+                            "pessimistic": {"price": 45000, "confidence": 25, "reasoning": "Market downturn..."},
+                            "realistic": {"price": 55000, "confidence": 50, "reasoning": "Steady growth..."},
+                            "optimistic": {"price": 70000, "confidence": 25, "reasoning": "Bull market..."}
+                        },
+                        "q2_forecast": {
+                            "pessimistic": {"price": 40000, "confidence": 20, "reasoning": "Extended bear..."},
+                            "realistic": {"price": 60000, "confidence": 60, "reasoning": "Recovery phase..."},
+                            "optimistic": {"price": 85000, "confidence": 20, "reasoning": "Major rally..."}
+                        },
+                        "overall_outlook": "Moderately bullish",
+                        "generated_at": "2025-10-29T10:40:00Z",
+                        "tokens_used": 2156,
+                        "cached": False
+                    }
+                },
+                "total_tokens_used": 2156
+            }
+        }

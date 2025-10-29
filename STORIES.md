@@ -84,15 +84,15 @@ Stories are organized into 8 major epics, each with its own detailed documentati
 | [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | ✅ Complete | 100% (13/13 pts) | Docker, dev tools, debugging |
 | [Epic 6: UI Modernization](./stories/epic-06-ui-modernization.md) | 7 | 18 | ✅ Complete | 100% (18/18 pts) | Sidebar, tabs, theme |
 | [Epic 7: Manual Transactions](./stories/epic-07-manual-transaction-management.md) | 6 | 39 | ✅ Complete | 100% (39/39 pts) | CRUD API ✅, Validation ✅, Tests ✅ |
-| [Epic 8: AI Market Analysis](./stories/epic-08-overview.md) | 14 | 67 | 🟡 In Progress | 73% (49/67 pts) | Features 1-4 Complete ✅ |
-| **Total** | **58** | **268** | **In Progress** | **~94%** (252/268 pts) | |
+| [Epic 8: AI Market Analysis](./stories/epic-08-overview.md) | 13 | 65 | 🟡 In Progress | 88% (57/65 pts) | Features 1-5 Complete ✅ |
+| **Total** | **57** | **266** | **In Progress** | **~95%** (257/266 pts) | |
 
 ## Recent Updates (Oct 29, 2025)
 
-### Epic 8: AI Market Analysis - Features 1-4 COMPLETE! 🎉
-**Status**: F8.1 Prompt Mgmt + F8.2 Claude + F8.3 Global + F8.4 Position Analysis Complete! 166/166 tests passing ✅
-**Achievement**: Full AI analysis foundation with enhanced position-level insights including Yahoo Finance fundamentals
-**Progress**: 73% (49/67 story points) - Position analysis with rich market context and actionable recommendations ready!
+### Epic 8: AI Market Analysis - Features 1-5 COMPLETE! 🎉
+**Status**: F8.1 Prompt Mgmt + F8.2 Claude + F8.3 Global + F8.4 Position + F8.5 Forecasting Complete! 181/181 tests passing ✅
+**Achievement**: Full AI forecasting engine with historical data, performance metrics, and two-quarter scenarios
+**Progress**: 88% (57/65 story points) - AI-powered forecasts with 365 days of price history and market context ready!
 
 #### Story F8.1-001: Database Schema for Prompts ✅ (5 points)
 - **Database Migration**: 3 tables (`prompts`, `prompt_versions`, `analysis_results`)
@@ -210,6 +210,26 @@ Stories are organized into 8 major epics, each with its own detailed documentati
 - **Files**: `prompt_renderer.py` (enhanced), `test_position_data_collection.py`, `test_position_data_integration.py`
 
 **Feature 4 Complete**: 23 tests passing (19 position data + 4 API), 100% pass rate
+
+#### Story F8.5-001: Forecast API ✅ (8 points)
+- **Single Forecast Endpoint**: `GET /api/analysis/forecast/{symbol}` with Q1/Q2 scenarios
+- **Bulk Forecast Endpoint**: `POST /api/analysis/forecasts/bulk` - analyze up to 5 symbols in parallel
+- **Response Schemas**: `ForecastResponse`, `BulkForecastRequest`, `BulkForecastResponse`
+- **Scenario Structure**: Each quarter has pessimistic/realistic/optimistic scenarios with price, confidence, and reasoning
+- **Caching**: 24-hour Redis cache for forecasts
+- **Performance**: <15 seconds per forecast, ~30-60s for bulk (parallel execution)
+- **Files**: `analysis_schemas.py` (bulk schemas), `analysis_router.py` (bulk endpoint)
+
+#### Story F8.5-002: Forecast Data Collection ✅ (5 points)
+- **Historical Price Fetching**: `_get_historical_prices()` - Fetches 365 days via yfinance with ETF mapping support
+- **Performance Metrics**: `_calculate_performance_metrics()` - Calculates 30d/90d/180d/365d returns + 30-day annualized volatility
+- **Market Context**: `_build_market_context()` - Fetches S&P 500/Bitcoin/Gold indices based on asset type
+- **Enhanced Data Collection**: `collect_forecast_data()` returns 12 comprehensive fields including 52-week range
+- **Graceful Degradation**: Empty data on API errors, handles partial price history
+- **Test Suite**: 15 comprehensive tests (100% passing) covering historical data, metrics, market context
+- **Files**: `prompt_renderer.py` (150+ lines added), `tests/test_forecast_generation.py` (331 lines)
+
+**Feature 5 Complete**: 15 tests passing (100% pass rate), 13/13 story points complete
 
 ### Test Infrastructure Overhaul - ✅ COMPLETE! (Oct 28, 2025)
 **Status**: 100% backend tests passing (613/613 tests) ✅

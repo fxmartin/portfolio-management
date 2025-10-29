@@ -29,7 +29,9 @@ from analysis_schemas import (
     PositionAnalysisResponse,
     ForecastResponse,
     BulkAnalysisRequest,
-    BulkAnalysisResponse
+    BulkAnalysisResponse,
+    BulkForecastRequest,
+    BulkForecastResponse
 )
 
 
@@ -240,4 +242,63 @@ async def get_bulk_position_analysis(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate bulk analysis: {str(e)}"
+        )
+
+
+@router.post("/forecasts/bulk", response_model=BulkForecastResponse)
+async def get_bulk_forecasts(
+    request: BulkForecastRequest,
+    force_refresh: bool = Query(False, description="Force new forecast generation"),
+    analysis_service: AnalysisService = Depends(get_analysis_service)
+):
+    """
+    Generate forecasts for multiple positions in parallel.
+
+    Maximum 5 positions per request to manage token consumption.
+    Each forecast takes ~2000-3000 tokens.
+
+    **Performance**:
+    - Fresh forecasts: ~30-60 seconds (parallel execution)
+    - Cached forecasts: <500ms
+
+    **Request body**:
+    ```json
+    {
+        "symbols": ["BTC", "ETH", "AAPL"]
+    }
+    ```
+
+    **Response includes**:
+    - Individual forecasts for each symbol with Q1/Q2 scenarios
+    - Total tokens consumed across all forecasts
+    """
+    try:
+        # Generate all forecasts in parallel
+        results = await asyncio.gather(*[
+            analysis_service.generate_forecast(symbol, force_refresh)
+            for symbol in request.symbols
+        ])
+
+        # Build response
+        forecasts = {
+            symbol: ForecastResponse(**result)
+            for symbol, result in zip(request.symbols, results)
+        }
+
+        total_tokens = sum(r['tokens_used'] for r in results)
+
+        return BulkForecastResponse(
+            forecasts=forecasts,
+            total_tokens_used=total_tokens
+        )
+    except ValueError as e:
+        # Position not found or forecast generation failed
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate bulk forecasts: {str(e)}"
         )
