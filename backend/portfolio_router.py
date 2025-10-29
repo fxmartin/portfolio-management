@@ -129,41 +129,59 @@ async def get_positions(
         # Get positions
         positions = await portfolio_service.get_all_positions(asset_type_filter)
 
-        # Filter out closed positions and format for frontend
-        result = []
-        for position in positions:
-            if position.quantity > 0:
-                # Calculate fee information for this position
-                fee_stmt = select(
-                    func.sum(Transaction.fee),
-                    func.count(Transaction.id)
-                ).where(
-                    and_(
-                        Transaction.symbol == position.symbol,
-                        Transaction.fee > 0
-                    )
-                )
-                fee_result = await session.execute(fee_stmt)
-                total_fees, fee_count = fee_result.one()
+        # Filter out closed positions first
+        open_positions = [p for p in positions if p.quantity > 0]
 
-                result.append({
-                    "symbol": position.symbol,
-                    "asset_name": position.asset_name,
-                    "asset_type": position.asset_type.value,
-                    "quantity": float(position.quantity),
-                    "avg_cost_basis": float(position.avg_cost_basis) if position.avg_cost_basis else 0,
-                    "total_cost_basis": float(position.total_cost_basis) if position.total_cost_basis else 0,
-                    "current_price": float(position.current_price) if position.current_price else 0,
-                    "current_value": float(position.current_value) if position.current_value else 0,
-                    "unrealized_pnl": float(position.unrealized_pnl) if position.unrealized_pnl else 0,
-                    "unrealized_pnl_percent": float(position.unrealized_pnl_percent) if position.unrealized_pnl_percent else 0,
-                    "currency": position.currency,
-                    "first_purchase_date": position.first_purchase_date.isoformat() if position.first_purchase_date else None,
-                    "last_transaction_date": position.last_transaction_date.isoformat() if position.last_transaction_date else None,
-                    "last_price_update": position.last_price_update.isoformat() if position.last_price_update else None,
-                    "total_fees": float(total_fees or 0),
-                    "fee_transaction_count": int(fee_count or 0),
-                })
+        # Calculate total portfolio value for percentage calculation
+        total_portfolio_value = sum(
+            float(p.current_value) if p.current_value else 0
+            for p in open_positions
+        )
+
+        # Format for frontend
+        result = []
+        for position in open_positions:
+            # Calculate fee information for this position
+            fee_stmt = select(
+                func.sum(Transaction.fee),
+                func.count(Transaction.id)
+            ).where(
+                and_(
+                    Transaction.symbol == position.symbol,
+                    Transaction.fee > 0
+                )
+            )
+            fee_result = await session.execute(fee_stmt)
+            total_fees, fee_count = fee_result.one()
+
+            # Calculate portfolio percentage
+            current_value = float(position.current_value) if position.current_value else 0
+            portfolio_percentage = (
+                (current_value / total_portfolio_value * 100) if total_portfolio_value > 0 else 0
+            )
+
+            result.append({
+                "symbol": position.symbol,
+                "asset_name": position.asset_name,
+                "asset_type": position.asset_type.value,
+                "quantity": float(position.quantity),
+                "avg_cost_basis": float(position.avg_cost_basis) if position.avg_cost_basis else 0,
+                "total_cost_basis": float(position.total_cost_basis) if position.total_cost_basis else 0,
+                "current_price": float(position.current_price) if position.current_price else 0,
+                "current_value": current_value,
+                "unrealized_pnl": float(position.unrealized_pnl) if position.unrealized_pnl else 0,
+                "unrealized_pnl_percent": float(position.unrealized_pnl_percent) if position.unrealized_pnl_percent else 0,
+                "portfolio_percentage": portfolio_percentage,
+                "currency": position.currency,
+                "first_purchase_date": position.first_purchase_date.isoformat() if position.first_purchase_date else None,
+                "last_transaction_date": position.last_transaction_date.isoformat() if position.last_transaction_date else None,
+                "last_price_update": position.last_price_update.isoformat() if position.last_price_update else None,
+                "total_fees": float(total_fees or 0),
+                "fee_transaction_count": int(fee_count or 0),
+            })
+
+        # Sort by portfolio percentage in descending order (largest positions first)
+        result.sort(key=lambda x: x['portfolio_percentage'], reverse=True)
 
         return result
 

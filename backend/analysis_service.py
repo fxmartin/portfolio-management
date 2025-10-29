@@ -130,6 +130,8 @@ class AnalysisService:
         # Cache for 1 hour
         analysis_data = {
             'analysis': result['content'],
+            'global_crypto_market': data.get('global_crypto_market'),  # Include global crypto market data
+            'market_indicators': data.get('market_indicators'),  # Include global market indicators
             'generated_at': datetime.utcnow(),
             'tokens_used': result['tokens_used']
         }
@@ -206,9 +208,31 @@ class AnalysisService:
         self.db.add(analysis_record)
         await self.db.commit()
 
+        # Extract crypto fundamentals if available
+        crypto_fundamentals = None
+        if all(key in data for key in ['market_cap', 'market_cap_rank', 'ath', 'atl']):
+            crypto_fundamentals = {
+                'market_cap': data.get('market_cap'),
+                'market_cap_rank': data.get('market_cap_rank'),
+                'total_volume_24h': data.get('total_volume_24h'),
+                'circulating_supply': data.get('circulating_supply'),
+                'max_supply': data.get('max_supply'),
+                'ath': data.get('ath'),
+                'ath_date': data.get('ath_date'),
+                'ath_change_percentage': data.get('ath_change_percentage'),
+                'atl': data.get('atl'),
+                'atl_date': data.get('atl_date'),
+                'atl_change_percentage': data.get('atl_change_percentage'),
+                'price_change_percentage_7d': data.get('price_change_percentage_7d'),
+                'price_change_percentage_30d': data.get('price_change_percentage_30d'),
+                'price_change_percentage_1y': data.get('price_change_percentage_1y'),
+                'all_time_roi': data.get('all_time_roi')
+            }
+
         analysis_data = {
             'analysis': result['content'],
             'recommendation': parsed_data.get('recommendation'),
+            'crypto_fundamentals': crypto_fundamentals,
             'generated_at': datetime.utcnow(),
             'tokens_used': result['tokens_used']
         }

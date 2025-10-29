@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import { RefreshCw, TrendingUp, TrendingDown, Minus, AlertCircle } from 'lucide-react'
 import { getPositionAnalysis } from '../api/analysis'
 import type { PositionAnalysisResponse } from '../api/analysis'
+import CryptoFundamentals from './CryptoFundamentals'
 import './PositionAnalysisCard.css'
 
 interface PositionAnalysisCardProps {
@@ -155,6 +156,11 @@ export const PositionAnalysisCard: React.FC<PositionAnalysisCardProps> = ({ symb
           </span>
         </div>
       </div>
+
+      {/* Crypto Fundamentals (if available) */}
+      {analysis.crypto_fundamentals && (
+        <CryptoFundamentals data={analysis.crypto_fundamentals} />
+      )}
 
       {/* Analysis Content */}
       <div className="card-body">

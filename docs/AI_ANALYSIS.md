@@ -317,9 +317,20 @@ Format response as JSON:
 
 **Data Sources**:
 1. **Portfolio Service** - Current positions, values, P&L
-2. **Yahoo Finance Service** - Market indices (S&P 500, Dow, Bitcoin, Gold)
+2. **Yahoo Finance Service** - Market indices (12 indicators across 4 categories)
+3. **CoinGecko Service** - Global crypto market data, Fear & Greed Index
 
-**Collected Fields** (10 total):
+**Market Indicators** (12 total, added Oct 30, 2025):
+- **Equities** (5): S&P 500 (^GSPC), Dow Jones (^DJI), NASDAQ (^IXIC), Euro Stoxx 50 (^STOXX50E), DAX (^GDAXI)
+- **Risk** (3): VIX (^VIX), 10Y Treasury Yield (^TNX), US Dollar Index (DX-Y.NYB)
+- **Commodities** (3): Gold (GC=F), WTI Oil (CL=F), Copper (HG=F)
+- **Crypto** (1): Bitcoin (BTC-USD)
+
+Market indicators are returned in both:
+- **Formatted text** (`market_context`) - for Claude's prompt
+- **Structured JSON** (`market_indicators`) - for frontend display in `GlobalMarketIndicators` component
+
+**Collected Fields** (11 total + optional crypto context + market indicators):
 ```python
 {
     "portfolio_value": "25847.33",  # EUR, formatted to 2 decimals
@@ -340,8 +351,47 @@ Format response as JSON:
 2. Calculate portfolio value (sum of position values)
 3. Calculate asset allocation percentages
 4. Fetch market indices from Yahoo Finance (with error handling)
-5. Format top 10 holdings by value
-6. Calculate aggregate P&L metrics
+5. **Fetch global crypto market data from CoinGecko** (if portfolio has crypto exposure)
+6. Format top 10 holdings by value
+7. Calculate aggregate P&L metrics
+
+**Global Crypto Market Context** (when crypto positions exist):
+```python
+{
+    "global_crypto_context": """
+Global Crypto Market Overview (CoinGecko):
+- Total Market Cap: €3,327.7B (-0.4% 24h)
+- 24h Trading Volume: €153.8B
+- Bitcoin Dominance: 57.6%
+- Ethereum Dominance: 12.3%
+- Active Cryptocurrencies: 19,381
+- Fear & Greed Index: 51/100 (Neutral)
+""",
+    "global_crypto_market": {
+        "total_market_cap_eur": 3327671325404,
+        "total_volume_24h_eur": 153759568018,
+        "btc_dominance": 57.605164005787675,
+        "eth_dominance": 12.340786842189642,
+        "active_cryptocurrencies": 19381,
+        "markets": 1410,
+        "market_cap_change_24h": -0.4418400695626626,
+        "defi_market_cap_eur": null,
+        "defi_dominance": 0.0,
+        "defi_24h_volume_eur": null,
+        "fear_greed_value": 51,
+        "fear_greed_classification": "Neutral"
+    }
+}
+```
+
+The `global_crypto_context` string is injected into the Claude prompt, while `global_crypto_market` is returned to the frontend for display in the `GlobalCryptoMarket` component.
+
+**Fear & Greed Index** (sourced from Alternative.me):
+- **Scale**: 0-100 (0 = Extreme Fear, 100 = Extreme Greed)
+- **Classifications**: Extreme Fear (0-24), Fear (25-49), Neutral (50), Greed (51-74), Extreme Greed (75-100)
+- **Update Frequency**: 15-minute cache (Redis)
+- **API**: https://api.alternative.me/fng/ (free, no authentication)
+- **Purpose**: Market sentiment indicator for crypto-heavy portfolios
 
 ---
 
@@ -1548,6 +1598,24 @@ Full API documentation available at: `http://localhost:8000/docs` (FastAPI OpenA
 
 ---
 
-**Last Updated**: October 29, 2025
+## Recent Enhancements (Oct 30, 2025)
+
+### Global Market Indicators Dashboard
+- Added comprehensive 12-indicator display to Global Analysis page
+- Blue gradient card positioned above Global Crypto Market section
+- Categories: Equities (5), Risk (3), Commodities (3), Crypto (1)
+- VIX includes automatic interpretation (Low/Normal/Elevated/High panic)
+- Components: `GlobalMarketIndicators.tsx`, `GlobalMarketIndicators.css`
+
+### Portfolio Weight Display & Sorting
+- Positions in AI Analysis page now sorted by portfolio weight (largest first)
+- Blue gradient weight badge showing portfolio percentage (e.g., "29.4%")
+- Weight calculated as: `(position_value / total_portfolio_value) × 100`
+- Backend enhancement: `/api/portfolio/positions` returns `portfolio_percentage` field
+- Component updates: `PositionAnalysisList.tsx` with weight badge styling
+
+---
+
+**Last Updated**: October 30, 2025
 **Epic Status**: ✅ Complete (100%)
-**Documentation Version**: 1.0
+**Documentation Version**: 1.1

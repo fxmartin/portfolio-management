@@ -1,0 +1,180 @@
+.crypto-fundamentals {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 16px 0;
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.fundamentals-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.fundamentals-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.source-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fundamentals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.fundamental-item {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.fundamental-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.fundamental-item.performance,
+.fundamental-item.roi {
+  grid-column: span 1;
+}
+
+.item-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+.item-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.item-value {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.item-detail {
+  font-size: 12px;
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rank-badge {
+  background: rgba(255, 255, 255, 0.25);
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.ath-detail,
+.atl-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ath-detail span,
+.atl-detail span {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.positive {
+  color: #6ee7b7;
+}
+
+.negative {
+  color: #fca5a5;
+}
+
+.performance-grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.perf-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 60px;
+}
+
+.perf-period {
+  font-size: 10px;
+  text-transform: uppercase;
+  opacity: 0.8;
+  letter-spacing: 0.5px;
+}
+
+.perf-value {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.roi-value {
+  color: #6ee7b7;
+  font-size: 24px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .fundamentals-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fundamental-item.performance,
+  .fundamental-item.roi {
+    grid-column: span 1;
+  }
+
+  .item-value {
+    font-size: 16px;
+  }
+
+  .roi-value {
+    font-size: 20px;
+  }
+}

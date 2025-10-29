@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     TWELVE_DATA_RATE_LIMIT_PER_MINUTE: int = 8
     TWELVE_DATA_RATE_LIMIT_PER_DAY: int = 800
 
+    # CoinGecko Configuration (Optional - free tier doesn't need API key)
+    COINGECKO_API_KEY: Optional[str] = None
+    COINGECKO_RATE_LIMIT_PER_MINUTE: int = 30  # Demo tier: 30 calls/min
+
     model_config = ConfigDict(
         env_file="../.env",  # .env is in project root, one level up from backend
         env_file_encoding="utf-8",

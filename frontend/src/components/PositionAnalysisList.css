@@ -158,6 +158,12 @@
   color: #1f2937;
 }
 
+.header-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
 .asset-badge {
   padding: 4px 10px;
   background: #f3f4f6;
@@ -167,6 +173,17 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.weight-badge {
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
 /* Position Value */

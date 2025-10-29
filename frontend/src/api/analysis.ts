@@ -5,17 +5,69 @@ import axios from 'axios'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
+export interface GlobalCryptoMarketData {
+  total_market_cap_eur: number
+  total_volume_24h_eur: number
+  btc_dominance: number
+  eth_dominance: number
+  active_cryptocurrencies: number
+  markets: number
+  market_cap_change_24h: number
+  defi_market_cap_eur?: number
+  defi_dominance?: number
+  defi_24h_volume_eur?: number
+  fear_greed_value?: number
+  fear_greed_classification?: string
+}
+
+export interface MarketIndicator {
+  symbol: string
+  name: string
+  price: number
+  change_percent: number
+  category: 'equities' | 'risk' | 'commodities' | 'crypto'
+  interpretation?: string
+}
+
+export interface GlobalMarketIndicators {
+  equities: MarketIndicator[]
+  risk: MarketIndicator[]
+  commodities: MarketIndicator[]
+  crypto: MarketIndicator[]
+}
+
 export interface GlobalAnalysisResponse {
   analysis: string
+  global_crypto_market?: GlobalCryptoMarketData
+  market_indicators?: GlobalMarketIndicators
   generated_at: string
   tokens_used: number
   cached?: boolean
+}
+
+export interface CryptoFundamentals {
+  market_cap: number
+  market_cap_rank: number
+  total_volume_24h?: number
+  circulating_supply?: number
+  max_supply?: number
+  ath: number
+  ath_date: string
+  ath_change_percentage: number
+  atl: number
+  atl_date: string
+  atl_change_percentage: number
+  price_change_percentage_7d?: number
+  price_change_percentage_30d?: number
+  price_change_percentage_1y?: number
+  all_time_roi?: number
 }
 
 export interface PositionAnalysisResponse {
   symbol: string
   analysis: string
   recommendation: 'HOLD' | 'BUY_MORE' | 'REDUCE' | 'SELL'
+  crypto_fundamentals?: CryptoFundamentals
   generated_at: string
   tokens_used: number
   cached?: boolean

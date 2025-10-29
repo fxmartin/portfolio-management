@@ -23,6 +23,30 @@ class TestPromptRenderer:
         result = renderer.render(template, template_vars, data)
         assert result == "Hello FX!"
 
+    def test_render_template_with_dict_format_variables(self, renderer):
+        """Test rendering template with new dict-based template_variables format (with type and description)."""
+        template = "Portfolio value: €{value}, Position count: {count}"
+        template_vars = {
+            "value": {"type": "decimal", "description": "Total portfolio value in EUR"},
+            "count": {"type": "integer", "description": "Number of positions"}
+        }
+        data = {"value": 15000.50, "count": 10}
+
+        result = renderer.render(template, template_vars, data)
+        assert result == "Portfolio value: €15000.50, Position count: 10"
+
+    def test_render_template_with_mixed_format_variables(self, renderer):
+        """Test rendering template with mixed old (string) and new (dict) format."""
+        template = "Value: €{value}, Name: {name}"
+        template_vars = {
+            "value": {"type": "decimal", "description": "Portfolio value"},  # New format
+            "name": "string"  # Old format
+        }
+        data = {"value": 5000.75, "name": "Test Portfolio"}
+
+        result = renderer.render(template, template_vars, data)
+        assert result == "Value: €5000.75, Name: Test Portfolio"
+
     def test_render_multiple_variables(self, renderer):
         """Test rendering template with multiple variables of different types."""
         template = "Portfolio: {name}, Value: ${value}, Positions: {count}"
