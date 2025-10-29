@@ -57,8 +57,31 @@ async def get_analysis_service(db: AsyncSession = Depends(get_async_db)) -> Anal
     yahoo_service = YahooFinanceService()
     cache_service = CacheService()
 
-    # Initialize data collector with Yahoo Finance for market indices
-    data_collector = PromptDataCollector(db, portfolio_service, yahoo_service)
+    # Initialize market data services with fallback chain
+    # Priority: Twelve Data (paid, best European coverage) -> Yahoo -> Alpha Vantage
+    twelve_data_service = None
+    if settings.TWELVE_DATA_API_KEY:
+        from twelve_data_service import TwelveDataService
+        twelve_data_service = TwelveDataService(
+            settings.TWELVE_DATA_API_KEY,
+            redis_client=cache_service.client
+        )
+        print("[Analysis Router] ✓ Twelve Data service initialized (primary) with Redis caching")
+
+    alpha_vantage_service = None
+    if settings.ALPHA_VANTAGE_API_KEY:
+        from alpha_vantage_service import AlphaVantageService
+        alpha_vantage_service = AlphaVantageService(settings.ALPHA_VANTAGE_API_KEY)
+        print("[Analysis Router] ✓ Alpha Vantage service initialized (fallback)")
+
+    # Initialize data collector with all available market data sources
+    data_collector = PromptDataCollector(
+        db,
+        portfolio_service,
+        yahoo_service,
+        twelve_data_service,
+        alpha_vantage_service
+    )
 
     # Create and return analysis service
     return AnalysisService(

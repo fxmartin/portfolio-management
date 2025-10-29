@@ -117,7 +117,14 @@ class PromptDataCollector:
     market prices to provide context for AI analysis prompts.
     """
 
-    def __init__(self, db, portfolio_service, yahoo_service=None):
+    def __init__(
+        self,
+        db,
+        portfolio_service,
+        yahoo_service=None,
+        twelve_data_service=None,
+        alpha_vantage_service=None
+    ):
         """
         Initialize data collector.
 
@@ -125,10 +132,14 @@ class PromptDataCollector:
             db: SQLAlchemy database session
             portfolio_service: PortfolioService instance for position data
             yahoo_service: Optional YahooFinanceService for market indices
+            twelve_data_service: Optional TwelveDataService for European stocks (primary)
+            alpha_vantage_service: Optional AlphaVantageService for fallback
         """
         self.db = db
         self.portfolio_service = portfolio_service
         self.yahoo_service = yahoo_service
+        self.twelve_data_service = twelve_data_service
+        self.alpha_vantage_service = alpha_vantage_service
 
     async def collect_global_data(self) -> Dict[str, Any]:
         """
@@ -205,9 +216,30 @@ class PromptDataCollector:
             raise ValueError(f"Position not found: {symbol}")
 
         # Get fundamental data (if stock)
+        # Use Twelve Data if available (better for European stocks), fallback to Yahoo Finance
         fundamentals = {}
         if position.asset_type == AssetType.STOCK or position.asset_type == 'STOCK':
-            fundamentals = await self._get_stock_fundamentals(symbol)
+            if self.twelve_data_service:
+                try:
+                    # Try Twelve Data first for accurate European ETF data
+                    price_data = await self.twelve_data_service.get_quote(symbol)
+                    fundamentals = {
+                        'name': price_data.asset_name or symbol,
+                        'sector': None,  # Twelve Data doesn't provide sector in quote
+                        'industry': None,
+                        'fiftyTwoWeekLow': None,  # Not in quote endpoint
+                        'fiftyTwoWeekHigh': None,
+                        'volume': price_data.volume,
+                        'averageVolume': None,
+                        'marketCap': None,
+                        'peRatio': None
+                    }
+                    print(f"[Position Data] Using Twelve Data fundamentals for {symbol}: {price_data.asset_name}")
+                except Exception as e:
+                    print(f"[Position Data] Twelve Data failed for {symbol}, falling back to Yahoo: {e}")
+                    fundamentals = await self._get_stock_fundamentals(symbol)
+            else:
+                fundamentals = await self._get_stock_fundamentals(symbol)
 
         # Get performance metrics
         performance = await self._get_position_performance(symbol)
@@ -251,10 +283,10 @@ class PromptDataCollector:
             "performance_30d": performance.get('30d', 0.0),
 
             # Market context
-            "week_52_low": float(fundamentals.get('fiftyTwoWeekLow', 0)),
-            "week_52_high": float(fundamentals.get('fiftyTwoWeekHigh', 0)),
-            "volume": fundamentals.get('volume', 0),
-            "avg_volume": fundamentals.get('averageVolume', 0),
+            "week_52_low": float(fundamentals.get('fiftyTwoWeekLow') or 0),
+            "week_52_high": float(fundamentals.get('fiftyTwoWeekHigh') or 0),
+            "volume": fundamentals.get('volume') or 0,
+            "avg_volume": fundamentals.get('averageVolume') or 0,
 
             # Classification
             "sector": fundamentals.get('sector', 'N/A'),
@@ -297,16 +329,25 @@ class PromptDataCollector:
         # Build market context based on asset type
         market_context = await self._build_market_context(position.asset_type)
 
-        # Calculate 52-week range
-        week_52_low = min(historical_prices) if historical_prices else 0.0
-        week_52_high = max(historical_prices) if historical_prices else 0.0
+        # Get fundamentals for 52-week range (more reliable than historical prices for some ETFs)
+        fundamentals = await self._get_stock_fundamentals(symbol)
+
+        # Calculate 52-week range with fallback to fundamentals
+        # Yahoo Finance historical data may be incomplete for European ETFs
+        if historical_prices and len(historical_prices) > 1:
+            week_52_low = min(historical_prices)
+            week_52_high = max(historical_prices)
+        else:
+            # Fallback to fundamentals data
+            week_52_low = fundamentals.get('fiftyTwoWeekLow', 0.0)
+            week_52_high = fundamentals.get('fiftyTwoWeekHigh', 0.0)
 
         return {
             "symbol": position.symbol,
             "name": position.symbol,
             "current_price": float(position.current_price),
-            "week_52_low": float(week_52_low),
-            "week_52_high": float(week_52_high),
+            "week_52_low": float(week_52_low) if week_52_low else 0.0,
+            "week_52_high": float(week_52_high) if week_52_high else 0.0,
             "performance_30d": performance['30d'],
             "performance_90d": performance['90d'],
             "performance_180d": performance['180d'],
@@ -412,7 +453,9 @@ class PromptDataCollector:
         try:
             import yfinance as yf
 
-            ticker = yf.Ticker(symbol)
+            # Transform symbol for Yahoo Finance (handles ETF exchange suffixes)
+            transformed_symbol = self._transform_symbol_for_yfinance(symbol)
+            ticker = yf.Ticker(transformed_symbol)
             info = ticker.info
 
             return {
@@ -530,7 +573,10 @@ class PromptDataCollector:
 
     async def _get_historical_prices(self, symbol: str, days: int = 365) -> List[float]:
         """
-        Fetch historical prices from Yahoo Finance.
+        Fetch historical prices with fallback chain:
+        1. Twelve Data (primary - paid, best European coverage)
+        2. Yahoo Finance (secondary - free, fast)
+        3. Alpha Vantage (tertiary - emergency fallback)
 
         Args:
             symbol: Asset symbol
@@ -539,23 +585,60 @@ class PromptDataCollector:
         Returns:
             List of closing prices (oldest to newest)
         """
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+
+        # Try Twelve Data first (primary source)
+        if hasattr(self, 'twelve_data_service') and self.twelve_data_service:
+            try:
+                print(f"[Historical Prices] Trying Twelve Data for {symbol}")
+                prices_dict = await self.twelve_data_service.get_historical_daily(
+                    symbol, start_date, end_date
+                )
+                if prices_dict:
+                    # Convert dict to sorted list
+                    sorted_dates = sorted(prices_dict.keys())
+                    prices_list = [float(prices_dict[date]) for date in sorted_dates]
+                    print(f"[Historical Prices] ✓ Twelve Data: {len(prices_list)} data points")
+                    return prices_list
+            except Exception as e:
+                print(f"[Historical Prices] Twelve Data failed: {e}")
+
+        # Try Yahoo Finance (secondary source)
         try:
+            print(f"[Historical Prices] Trying Yahoo Finance for {symbol}")
             # Transform symbol if needed (for ETFs with exchange suffixes)
             transformed_symbol = self._transform_symbol_for_yfinance(symbol)
 
             ticker = yf.Ticker(transformed_symbol)
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=days)
-
             hist = ticker.history(start=start_date, end=end_date)
 
-            if hist.empty:
-                return []
+            if not hist.empty:
+                prices_list = hist['Close'].tolist()
+                print(f"[Historical Prices] ✓ Yahoo Finance: {len(prices_list)} data points")
+                return prices_list
+        except Exception as e:
+            print(f"[Historical Prices] Yahoo Finance failed: {e}")
 
-            return hist['Close'].tolist()
-        except Exception:
-            # Return empty list on error (graceful degradation)
-            return []
+        # Try Alpha Vantage (tertiary fallback)
+        if hasattr(self, 'alpha_vantage_service') and self.alpha_vantage_service:
+            try:
+                print(f"[Historical Prices] Trying Alpha Vantage for {symbol}")
+                prices_dict = await self.alpha_vantage_service.get_historical_daily(
+                    symbol, start_date, end_date
+                )
+                if prices_dict:
+                    # Convert dict to sorted list
+                    sorted_dates = sorted(prices_dict.keys())
+                    prices_list = [float(prices_dict[date]) for date in sorted_dates]
+                    print(f"[Historical Prices] ✓ Alpha Vantage: {len(prices_list)} data points")
+                    return prices_list
+            except Exception as e:
+                print(f"[Historical Prices] Alpha Vantage failed: {e}")
+
+        # All sources failed - graceful degradation
+        print(f"[Historical Prices] ✗ All sources failed for {symbol}")
+        return []
 
     def _calculate_performance_metrics(self, prices: List[float]) -> Dict[str, float]:
         """

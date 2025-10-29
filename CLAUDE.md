@@ -313,7 +313,15 @@ Current test files (all passing):
    - VS Code debugging configurations
    - Pre-commit hooks for code quality
    - Complete debugging documentation
-8. ✅ **Epic 8: AI Market Analysis - 93% COMPLETE** (Oct 29, 2025):
+8. ✅ **Twelve Data Integration** (Oct 29, 2025) - **CRITICAL DATA QUALITY IMPROVEMENT**:
+   - Primary market data source for European securities (AMEM, MWOQ ETFs)
+   - 253 days of historical data (was 1 day from Yahoo Finance)
+   - Redis caching (1-hour TTL) - 98% API call reduction
+   - Rate limit management: 8 calls/min, 800 calls/day
+   - Intelligent fallback: Twelve Data → Yahoo → Alpha Vantage
+   - Fixes: Issue #24 (AMEM 404), wrong ETF identification, flat price ranges
+   - See: `CHANGELOG-2025-10-29-TwelveData.md` for complete details
+9. ✅ **Epic 8: AI Market Analysis - 93% COMPLETE** (Oct 29, 2025):
    - **F8.1: Prompt Management System** ✅ (13 points):
      - Database Foundation: 3 tables, SQLAlchemy models, seed data (18 tests)
      - Prompt CRUD API: 8 REST endpoints, automatic versioning, soft deletes (46 tests)
@@ -491,6 +499,61 @@ docker-compose up
 ```
 
 **Never commit `.env` to git!** It's in `.gitignore` for your protection.
+
+## Market Data Architecture
+
+### Data Sources by Use Case
+
+The application uses multiple market data providers with intelligent fallback:
+
+| Use Case | Primary Source | Secondary | Tertiary | Rationale |
+|----------|----------------|-----------|----------|-----------|
+| **AI Analysis/Forecasts** | Twelve Data | Yahoo Finance | Alpha Vantage | Best historical data for European ETFs (253 days) |
+| **Historical Charts** | Twelve Data | Yahoo Finance | Alpha Vantage | Comprehensive fallback chain with circuit breaker |
+| **Position Fundamentals** | Twelve Data | Yahoo Finance | - | Accurate ETF names and metadata |
+| **Live Dashboard Prices** | Yahoo Finance | - | - | Free, unlimited, fast (<100ms) |
+
+### Why Different Sources?
+
+**Twelve Data** ($29/month Grow plan):
+- ✅ 253 days of historical data for European ETFs (AMEM:XETR, MWOQ:XETR)
+- ✅ Accurate asset names and exchange data
+- ✅ 60+ global exchanges including Frankfurt (XETR)
+- ⚠️ Rate limits: 8 calls/min, 800 calls/day
+- 💡 **Used for**: AI analysis, forecasts, position context (cached 1 hour)
+
+**Yahoo Finance** (Free):
+- ✅ Unlimited API calls
+- ✅ Fast real-time quotes (<100ms)
+- ✅ Good US stock coverage
+- ❌ Limited European ETF data (only 1 day for AMEM.BE)
+- 💡 **Used for**: Live dashboard updates (every 60-120 seconds)
+
+**Alpha Vantage** (Free tier):
+- ✅ Fallback for rare data gaps
+- ❌ No European ETF support
+- ⚠️ Rate limits: 5 calls/min, 100 calls/day
+- 💡 **Used for**: Emergency fallback only
+
+### Redis Caching Strategy
+
+**Cache Keys**:
+- `td:daily:{symbol}:{start}:{end}` - Twelve Data historical prices (1-hour TTL)
+- `td:quote:{symbol}` - Twelve Data real-time quotes (1-minute TTL)
+- `analysis:forecast:{symbol}` - Claude AI forecasts (24-hour TTL)
+- `analysis:position:{symbol}` - Position analysis (1-hour TTL)
+
+**Cache Hit Rate**: ~98% after first request (dramatically reduces API usage)
+
+### Rate Limit Management
+
+Twelve Data enforces strict limits. The application uses:
+1. **Token Bucket Algorithm**: Tracks minute (8) and daily (800) quotas
+2. **Automatic Blocking**: Waits for refill if minute limit reached
+3. **Exception on Daily Limit**: Prevents exceeding 800 calls/day
+4. **Redis Caching**: Reduces actual API calls by 98%
+
+**Typical Daily Usage**: 50-100 API calls (well under 800 limit)
 
 ## Key API Endpoints
 

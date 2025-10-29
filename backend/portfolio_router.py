@@ -735,14 +735,29 @@ async def get_portfolio_history(
 
         yahoo_service = YahooFinanceService()
 
-        # Initialize Alpha Vantage if API key is available
+        # Initialize Twelve Data if API key is available (primary source)
+        twelve_data_api_key = os.getenv("TWELVE_DATA_API_KEY")
+        twelve_data_service = None
+        if twelve_data_api_key:
+            from twelve_data_service import TwelveDataService
+            # Get Redis client for caching
+            redis_client = redis.from_url(
+                os.getenv("REDIS_URL", "redis://redis:6379"),
+                encoding="utf-8",
+                decode_responses=True
+            )
+            twelve_data_service = TwelveDataService(twelve_data_api_key, redis_client=redis_client)
+            print("[Portfolio Router] ✓ Twelve Data service initialized (primary) with Redis caching")
+
+        # Initialize Alpha Vantage if API key is available (fallback)
         alpha_vantage_api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
         alpha_vantage_service = AlphaVantageService(alpha_vantage_api_key) if alpha_vantage_api_key else None
 
-        # Create aggregator with intelligent fallback
+        # Create aggregator with intelligent fallback: Twelve Data → Yahoo → Alpha Vantage
         aggregator = MarketDataAggregator(
             yahoo_service=yahoo_service,
             alpha_vantage_service=alpha_vantage_service,
+            twelve_data_service=twelve_data_service,
             redis_client=None  # TODO: Pass Redis client if available
         )
 
@@ -755,7 +770,7 @@ async def get_portfolio_history(
 
         for symbol in symbols_list:
             try:
-                # Try to get historical prices using aggregator (Yahoo → Alpha Vantage → Cache)
+                # Try to get historical prices using aggregator (Twelve Data → Yahoo → Alpha Vantage → Cache)
                 prices, provider = await aggregator.get_historical_prices(symbol, start_date, end_date)
 
                 if prices:

@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     ALPHA_VANTAGE_RATE_LIMIT_PER_MINUTE: int = 5
     ALPHA_VANTAGE_RATE_LIMIT_PER_DAY: int = 100
 
+    # Twelve Data Configuration (Optional - for European stock coverage)
+    TWELVE_DATA_API_KEY: Optional[str] = None
+    TWELVE_DATA_RATE_LIMIT_PER_MINUTE: int = 8
+    TWELVE_DATA_RATE_LIMIT_PER_DAY: int = 800
+
     model_config = ConfigDict(
         env_file="../.env",  # .env is in project root, one level up from backend
         env_file_encoding="utf-8",

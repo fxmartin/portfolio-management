@@ -349,6 +349,92 @@ class TestForecastDataCollection:
         with pytest.raises(ValueError, match="Position not found: INVALID"):
             await collector.collect_forecast_data('INVALID')
 
+    @pytest.mark.asyncio
+    async def test_collect_forecast_data_etf_fallback_to_fundamentals(self):
+        """Test that ETFs with insufficient historical data fallback to fundamentals for 52-week range"""
+        db = Mock()
+        portfolio_service = Mock()
+        yahoo_service = Mock()
+
+        # Mock ETF position
+        mock_position = Mock()
+        mock_position.symbol = 'AMEM'
+        mock_position.current_price = Decimal('6.27')
+        mock_position.asset_type = AssetType.STOCK
+        portfolio_service.get_position = AsyncMock(return_value=mock_position)
+
+        # Mock Yahoo service for market context
+        mock_sp500 = Mock()
+        mock_sp500.day_change_percent = 0.5
+        yahoo_service.get_price = AsyncMock(return_value=mock_sp500)
+
+        collector = PromptDataCollector(db, portfolio_service, yahoo_service)
+
+        # Mock historical prices returning only 1 data point (insufficient)
+        insufficient_historical = [6.27]
+
+        # Mock fundamentals with proper 52-week range
+        fundamentals_data = {
+            'fiftyTwoWeekLow': 6.2412,
+            'fiftyTwoWeekHigh': 6.2734,
+            'sector': None,
+            'industry': None
+        }
+
+        with patch.object(collector, '_get_historical_prices', return_value=insufficient_historical), \
+             patch.object(collector, '_get_stock_fundamentals', return_value=fundamentals_data):
+            data = await collector.collect_forecast_data('AMEM')
+
+        # Verify fallback to fundamentals
+        assert data['symbol'] == 'AMEM'
+        assert data['current_price'] == 6.27
+        assert data['week_52_low'] == 6.2412  # From fundamentals, not historical
+        assert data['week_52_high'] == 6.2734  # From fundamentals, not historical
+
+        # Performance should be zero with insufficient data
+        assert data['performance_30d'] == 0.0
+        assert data['performance_90d'] == 0.0
+        assert data['performance_365d'] == 0.0
+        assert data['volatility_30d'] == 0.0
+
+    @pytest.mark.asyncio
+    async def test_collect_forecast_data_with_sufficient_historical(self):
+        """Test that sufficient historical data is used for 52-week range calculation"""
+        db = Mock()
+        portfolio_service = Mock()
+        yahoo_service = Mock()
+
+        # Mock position
+        mock_position = Mock()
+        mock_position.symbol = 'AAPL'
+        mock_position.current_price = Decimal('150.00')
+        mock_position.asset_type = AssetType.STOCK
+        portfolio_service.get_position = AsyncMock(return_value=mock_position)
+
+        # Mock Yahoo service
+        mock_sp500 = Mock()
+        mock_sp500.day_change_percent = 0.5
+        yahoo_service.get_price = AsyncMock(return_value=mock_sp500)
+
+        collector = PromptDataCollector(db, portfolio_service, yahoo_service)
+
+        # Mock sufficient historical prices (30 days)
+        historical_prices = [140 + i * 0.3 for i in range(30)]  # 140 to ~149
+
+        # Mock fundamentals (should NOT be used)
+        fundamentals_data = {
+            'fiftyTwoWeekLow': 100.0,  # Different from historical
+            'fiftyTwoWeekHigh': 200.0   # Different from historical
+        }
+
+        with patch.object(collector, '_get_historical_prices', return_value=historical_prices), \
+             patch.object(collector, '_get_stock_fundamentals', return_value=fundamentals_data):
+            data = await collector.collect_forecast_data('AAPL')
+
+        # Verify historical prices used, not fundamentals
+        assert data['week_52_low'] == 140.0  # From historical, not fundamentals (100.0)
+        assert data['week_52_high'] == pytest.approx(148.7, abs=0.5)  # From historical, not fundamentals (200.0)
+
 
 # =====================================================================
 # Test F8.5-001: Forecast API Endpoints (Integration Tests)
