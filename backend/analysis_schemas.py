@@ -113,7 +113,8 @@ class QuarterScenario(BaseModel):
     """Scenario data for a single quarter"""
     price: float = Field(..., description="Predicted price in this scenario")
     confidence: int = Field(..., ge=0, le=100, description="Confidence level (0-100%)")
-    reasoning: str = Field(..., description="Explanation for this scenario")
+    assumptions: str = Field(..., description="Key assumptions driving this scenario")
+    risks: str = Field(..., description="Main risk factors for this scenario")
 
 
 class QuarterForecast(BaseModel):
@@ -136,14 +137,14 @@ class ForecastResponse(BaseModel):
         json_schema_extra = {
             "example": {
                 "q1_forecast": {
-                    "pessimistic": {"price": 45000, "confidence": 25, "reasoning": "Market downturn..."},
-                    "realistic": {"price": 55000, "confidence": 50, "reasoning": "Steady growth..."},
-                    "optimistic": {"price": 70000, "confidence": 25, "reasoning": "Bull market..."}
+                    "pessimistic": {"price": 45000, "confidence": 25, "assumptions": "Market downturn scenario", "risks": "Regulatory pressure"},
+                    "realistic": {"price": 55000, "confidence": 50, "assumptions": "Steady growth continues", "risks": "Market volatility"},
+                    "optimistic": {"price": 70000, "confidence": 25, "assumptions": "Bull market catalyst", "risks": "Overextension"}
                 },
                 "q2_forecast": {
-                    "pessimistic": {"price": 40000, "confidence": 20, "reasoning": "Extended bear..."},
-                    "realistic": {"price": 60000, "confidence": 60, "reasoning": "Recovery phase..."},
-                    "optimistic": {"price": 85000, "confidence": 20, "reasoning": "Major rally..."}
+                    "pessimistic": {"price": 40000, "confidence": 20, "assumptions": "Extended bear market", "risks": "Economic recession"},
+                    "realistic": {"price": 60000, "confidence": 60, "assumptions": "Recovery phase begins", "risks": "Rate uncertainty"},
+                    "optimistic": {"price": 85000, "confidence": 20, "assumptions": "Major rally continues", "risks": "Correction risk"}
                 },
                 "overall_outlook": "Moderately bullish with volatility expected",
                 "generated_at": "2025-10-29T10:40:00Z",
@@ -182,14 +183,14 @@ class BulkForecastResponse(BaseModel):
                 "forecasts": {
                     "BTC": {
                         "q1_forecast": {
-                            "pessimistic": {"price": 45000, "confidence": 25, "reasoning": "Market downturn..."},
-                            "realistic": {"price": 55000, "confidence": 50, "reasoning": "Steady growth..."},
-                            "optimistic": {"price": 70000, "confidence": 25, "reasoning": "Bull market..."}
+                            "pessimistic": {"price": 45000, "confidence": 25, "assumptions": "Market downturn scenario", "risks": "Regulatory pressure"},
+                            "realistic": {"price": 55000, "confidence": 50, "assumptions": "Steady growth continues", "risks": "Market volatility"},
+                            "optimistic": {"price": 70000, "confidence": 25, "assumptions": "Bull market catalyst", "risks": "Overextension"}
                         },
                         "q2_forecast": {
-                            "pessimistic": {"price": 40000, "confidence": 20, "reasoning": "Extended bear..."},
-                            "realistic": {"price": 60000, "confidence": 60, "reasoning": "Recovery phase..."},
-                            "optimistic": {"price": 85000, "confidence": 20, "reasoning": "Major rally..."}
+                            "pessimistic": {"price": 40000, "confidence": 20, "assumptions": "Extended bear market", "risks": "Economic recession"},
+                            "realistic": {"price": 60000, "confidence": 60, "assumptions": "Recovery phase begins", "risks": "Rate uncertainty"},
+                            "optimistic": {"price": 85000, "confidence": 20, "assumptions": "Major rally continues", "risks": "Correction risk"}
                         },
                         "overall_outlook": "Moderately bullish",
                         "generated_at": "2025-10-29T10:40:00Z",

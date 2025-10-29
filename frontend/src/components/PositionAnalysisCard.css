@@ -1,0 +1,294 @@
+/* Position Analysis Card - Individual position AI analysis display */
+
+.position-analysis-card {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+}
+
+.position-analysis-card.loading,
+.position-analysis-card.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+/* Header - Reuse styles from GlobalAnalysisCard */
+.position-analysis-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.position-analysis-card .header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.position-analysis-card .card-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.position-analysis-card .cache-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: #f3f4f6;
+  color: #6b7280;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.position-analysis-card .header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.position-analysis-card .timestamp {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.position-analysis-card .refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.position-analysis-card .refresh-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+}
+
+.position-analysis-card .refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.position-analysis-card .refresh-btn.refreshing svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Recommendation Badge */
+.recommendation-badge {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.recommendation-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recommendation-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.recommendation-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* Body - Markdown Content */
+.position-analysis-card .card-body {
+  line-height: 1.7;
+  color: #374151;
+  margin-bottom: 20px;
+}
+
+.position-analysis-card .card-body h1,
+.position-analysis-card .card-body h2,
+.position-analysis-card .card-body h3 {
+  margin-top: 24px;
+  margin-bottom: 12px;
+  color: #1f2937;
+}
+
+.position-analysis-card .card-body h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.position-analysis-card .card-body h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.position-analysis-card .card-body h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.position-analysis-card .card-body p {
+  margin-bottom: 16px;
+}
+
+.position-analysis-card .card-body ul,
+.position-analysis-card .card-body ol {
+  margin-bottom: 16px;
+  padding-left: 24px;
+}
+
+.position-analysis-card .card-body li {
+  margin-bottom: 8px;
+}
+
+.position-analysis-card .card-body strong {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.position-analysis-card .card-body code {
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  font-size: 0.875em;
+}
+
+/* Footer */
+.position-analysis-card .card-footer {
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.position-analysis-card .token-count {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Loading State */
+.position-analysis-card.loading .loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.position-analysis-card.loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.position-analysis-card.loading p {
+  font-size: 1rem;
+  color: #4b5563;
+  font-weight: 500;
+  margin: 0;
+}
+
+.position-analysis-card.loading .loading-hint {
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+/* Error State */
+.position-analysis-card.error .error-content {
+  text-align: center;
+}
+
+.position-analysis-card.error h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #dc2626;
+  margin-bottom: 12px;
+}
+
+.position-analysis-card.error p {
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+
+.position-analysis-card.error .retry-button {
+  padding: 10px 20px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.position-analysis-card.error .retry-button:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .position-analysis-card {
+    padding: 16px;
+  }
+
+  .position-analysis-card .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .position-analysis-card .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .position-analysis-card .refresh-btn span {
+    display: none;
+  }
+
+  .recommendation-badge {
+    padding: 14px 16px;
+  }
+}

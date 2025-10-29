@@ -12,14 +12,14 @@ class Settings(BaseSettings):
     # Database Configuration
     POSTGRES_DB: str = "portfolio"
     POSTGRES_USER: str = "trader"
-    POSTGRES_PASSWORD: str
+    POSTGRES_PASSWORD: Optional[str] = None
     DATABASE_URL: str
 
     # Redis Configuration
     REDIS_URL: str = "redis://redis:6379"
 
     # Anthropic Claude Configuration
-    ANTHROPIC_API_KEY: str
+    ANTHROPIC_API_KEY: Optional[str] = None
     ANTHROPIC_MODEL: str = "claude-sonnet-4-5-20250929"  # Latest Sonnet
     ANTHROPIC_MAX_TOKENS: int = 4096
     ANTHROPIC_TEMPERATURE: float = 0.3  # Lower for more factual analysis
