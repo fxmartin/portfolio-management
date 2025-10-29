@@ -16,6 +16,7 @@ interface Position {
   total_cost_basis: number
   unrealized_pnl: number
   unrealized_pnl_percent: number
+  portfolio_percentage: number
 }
 
 interface PositionAnalysisListProps {
@@ -98,7 +99,12 @@ export const PositionAnalysisList: React.FC<PositionAnalysisListProps> = ({
           >
             <div className="position-header">
               <div className="position-symbol">{position.symbol}</div>
-              <div className="asset-badge">{position.asset_type}</div>
+              <div className="header-badges">
+                <div className="asset-badge">{position.asset_type}</div>
+                <div className="weight-badge">
+                  {position.portfolio_percentage?.toFixed(1) ?? '0.0'}%
+                </div>
+              </div>
             </div>
 
             <div className="position-value">

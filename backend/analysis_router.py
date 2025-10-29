@@ -74,13 +74,28 @@ async def get_analysis_service(db: AsyncSession = Depends(get_async_db)) -> Anal
         alpha_vantage_service = AlphaVantageService(settings.ALPHA_VANTAGE_API_KEY)
         print("[Analysis Router] ✓ Alpha Vantage service initialized (fallback)")
 
+    # Initialize CoinGecko service for crypto fundamentals
+    coingecko_service = None
+    try:
+        from coingecko_service import CoinGeckoService
+        coingecko_service = CoinGeckoService(
+            api_key=settings.COINGECKO_API_KEY,
+            redis_client=cache_service.client,
+            calls_per_minute=settings.COINGECKO_RATE_LIMIT_PER_MINUTE
+        )
+        tier = 'Demo tier' if settings.COINGECKO_API_KEY else 'free tier'
+        print(f"[Analysis Router] ✓ CoinGecko service initialized ({tier}, {settings.COINGECKO_RATE_LIMIT_PER_MINUTE} calls/min)")
+    except Exception as e:
+        print(f"[Analysis Router] ⚠ CoinGecko service failed to initialize: {e}")
+
     # Initialize data collector with all available market data sources
     data_collector = PromptDataCollector(
         db,
         portfolio_service,
         yahoo_service,
         twelve_data_service,
-        alpha_vantage_service
+        alpha_vantage_service,
+        coingecko_service
     )
 
     # Create and return analysis service

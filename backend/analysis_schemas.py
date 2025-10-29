@@ -24,9 +24,51 @@ class Recommendation(str, Enum):
     SELL = "SELL"
 
 
+class GlobalCryptoMarketData(BaseModel):
+    """Global cryptocurrency market data from CoinGecko"""
+    total_market_cap_eur: int = Field(..., description="Total crypto market cap in EUR")
+    total_volume_24h_eur: int = Field(..., description="24h trading volume across all cryptos in EUR")
+    btc_dominance: float = Field(..., description="Bitcoin dominance as percentage")
+    eth_dominance: float = Field(..., description="Ethereum dominance as percentage")
+    active_cryptocurrencies: int = Field(..., description="Number of active cryptocurrencies")
+    markets: int = Field(..., description="Number of exchanges/markets")
+    market_cap_change_24h: float = Field(..., description="24h market cap change percentage")
+    defi_market_cap_eur: Optional[int] = Field(None, description="DeFi total value locked in EUR")
+    defi_dominance: Optional[float] = Field(None, description="DeFi as % of total market cap")
+    defi_24h_volume_eur: Optional[int] = Field(None, description="DeFi 24h trading volume in EUR")
+    fear_greed_value: Optional[int] = Field(None, description="Fear & Greed Index value (0-100)")
+    fear_greed_classification: Optional[str] = Field(None, description="Fear & Greed classification (Extreme Fear, Fear, Neutral, Greed, Extreme Greed)")
+
+
+class MarketIndicator(BaseModel):
+    """Individual market indicator data"""
+    symbol: str = Field(..., description="Market symbol (e.g., ^GSPC, ^VIX)")
+    name: str = Field(..., description="Display name (e.g., S&P 500, VIX)")
+    price: float = Field(..., description="Current price/value")
+    change_percent: float = Field(..., description="24h change percentage")
+    category: str = Field(..., description="Category: equities, risk, commodities, crypto")
+    interpretation: Optional[str] = Field(None, description="Human-readable interpretation (e.g., VIX levels)")
+
+
+class GlobalMarketIndicators(BaseModel):
+    """Global market indicators grouped by category"""
+    equities: List[MarketIndicator] = Field(default_factory=list, description="Equity index indicators")
+    risk: List[MarketIndicator] = Field(default_factory=list, description="Risk indicators (VIX, yields, dollar)")
+    commodities: List[MarketIndicator] = Field(default_factory=list, description="Commodity indicators")
+    crypto: List[MarketIndicator] = Field(default_factory=list, description="Crypto indicators")
+
+
 class GlobalAnalysisResponse(BaseModel):
     """Response schema for global market analysis"""
     analysis: str = Field(..., description="Markdown-formatted analysis text")
+    global_crypto_market: Optional[GlobalCryptoMarketData] = Field(
+        None,
+        description="Global cryptocurrency market metrics (only when portfolio has crypto exposure)"
+    )
+    market_indicators: Optional[GlobalMarketIndicators] = Field(
+        None,
+        description="Global market indicators (equities, risk, commodities, crypto)"
+    )
     generated_at: datetime = Field(..., description="Timestamp when analysis was generated")
     tokens_used: int = Field(..., ge=0, description="Total tokens consumed by Claude API")
     cached: bool = Field(..., description="Whether this was served from cache")
@@ -35,11 +77,42 @@ class GlobalAnalysisResponse(BaseModel):
         json_schema_extra = {
             "example": {
                 "analysis": "## Market Sentiment\n\nCurrent markets showing...",
+                "global_crypto_market": {
+                    "total_market_cap_eur": 2567000000000,
+                    "total_volume_24h_eur": 98000000000,
+                    "btc_dominance": 54.2,
+                    "eth_dominance": 17.1,
+                    "active_cryptocurrencies": 12543,
+                    "markets": 1127,
+                    "market_cap_change_24h": 1.8,
+                    "defi_market_cap_eur": 87000000000,
+                    "defi_dominance": 3.4,
+                    "defi_24h_volume_eur": 4200000000
+                },
                 "generated_at": "2025-10-29T10:30:00Z",
                 "tokens_used": 1523,
                 "cached": False
             }
         }
+
+
+class CryptoFundamentals(BaseModel):
+    """Cryptocurrency fundamental data from CoinGecko"""
+    market_cap: float = Field(..., description="Market capitalization in EUR")
+    market_cap_rank: int = Field(..., description="Global market cap ranking")
+    total_volume_24h: Optional[float] = Field(None, description="24-hour trading volume in EUR")
+    circulating_supply: Optional[float] = Field(None, description="Circulating supply")
+    max_supply: Optional[float] = Field(None, description="Maximum supply (if applicable)")
+    ath: float = Field(..., description="All-time high price in EUR")
+    ath_date: str = Field(..., description="Date when ATH was reached")
+    ath_change_percentage: float = Field(..., description="% change from ATH")
+    atl: float = Field(..., description="All-time low price in EUR")
+    atl_date: str = Field(..., description="Date when ATL was reached")
+    atl_change_percentage: float = Field(..., description="% change from ATL")
+    price_change_percentage_7d: Optional[float] = Field(None, description="7-day price change %")
+    price_change_percentage_30d: Optional[float] = Field(None, description="30-day price change %")
+    price_change_percentage_1y: Optional[float] = Field(None, description="1-year price change %")
+    all_time_roi: Optional[float] = Field(None, description="All-time ROI from ATL to ATH")
 
 
 class PositionAnalysisResponse(BaseModel):
@@ -48,6 +121,10 @@ class PositionAnalysisResponse(BaseModel):
     recommendation: Optional[Recommendation] = Field(
         None,
         description="Investment recommendation: HOLD, BUY_MORE, REDUCE, or SELL"
+    )
+    crypto_fundamentals: Optional[CryptoFundamentals] = Field(
+        None,
+        description="Cryptocurrency fundamentals (only for crypto positions)"
     )
     generated_at: datetime
     tokens_used: int = Field(..., ge=0)
@@ -58,6 +135,13 @@ class PositionAnalysisResponse(BaseModel):
             "example": {
                 "analysis": "## Bitcoin Analysis\n\nCurrent price action suggests...",
                 "recommendation": "HOLD",
+                "crypto_fundamentals": {
+                    "market_cap": 1904377621119,
+                    "market_cap_rank": 1,
+                    "ath": 107662.0,
+                    "ath_date": "2025-10-06",
+                    "ath_change_percentage": -11.3
+                },
                 "generated_at": "2025-10-29T10:35:00Z",
                 "tokens_used": 892,
                 "cached": False

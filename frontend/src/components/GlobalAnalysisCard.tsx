@@ -6,6 +6,8 @@ import ReactMarkdown from 'react-markdown'
 import { RefreshCw } from 'lucide-react'
 import { getGlobalAnalysis } from '../api/analysis'
 import type { GlobalAnalysisResponse } from '../api/analysis'
+import { GlobalCryptoMarket } from './GlobalCryptoMarket'
+import { GlobalMarketIndicators } from './GlobalMarketIndicators'
 import './GlobalAnalysisCard.css'
 
 export const GlobalAnalysisCard: React.FC = () => {
@@ -104,6 +106,16 @@ export const GlobalAnalysisCard: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Global Market Indicators (if available) */}
+      {analysis.market_indicators && (
+        <GlobalMarketIndicators data={analysis.market_indicators} />
+      )}
+
+      {/* Global Crypto Market Data (if available) */}
+      {analysis.global_crypto_market && (
+        <GlobalCryptoMarket data={analysis.global_crypto_market} />
+      )}
 
       <div className="card-body">
         <ReactMarkdown>{analysis.analysis}</ReactMarkdown>

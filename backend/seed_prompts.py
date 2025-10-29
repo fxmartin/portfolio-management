@@ -31,23 +31,29 @@ DEFAULT_PROMPTS = [
         "prompt_text": """You are a professional financial analyst providing market insights for a portfolio management application.
 
 Current Portfolio Context:
-- Total Value: {portfolio_value}
+- Total Value: €{portfolio_value}
 - Asset Allocation: {asset_allocation}
 - Open Positions: {position_count}
 - Top Holdings: {top_holdings}
 
-Provide a succinct market analysis (200-300 words) covering:
-1. Current market sentiment and key trends
-2. Macro-economic factors affecting this portfolio
-3. Sector-specific insights relevant to holdings
-4. Risk factors to monitor
+{market_context}
 
-Be direct, data-driven, and actionable. Focus on what matters for this specific portfolio mix.""",
+{global_crypto_context}
+
+Provide a succinct market analysis (250-350 words) covering:
+1. **Market Environment**: Reference key indicators (VIX, yields, dollar strength) and their implications for this portfolio
+2. **Asset Class Outlook**: How are equities (especially EU markets for AMEM/MWOQ), commodities, and crypto positioned?
+3. **Portfolio-Specific Risks**: Given current market conditions and allocation, what are the key risks?
+4. **Actionable Insights**: Any immediate portfolio adjustments suggested by market conditions?
+
+Be direct, data-driven, and actionable. Reference specific market indicators when relevant.""",
         "template_variables": {
             "portfolio_value": "decimal",
             "asset_allocation": "object",
             "position_count": "integer",
-            "top_holdings": "array"
+            "top_holdings": "array",
+            "market_context": "string",
+            "global_crypto_context": "string"
         }
     },
     {
@@ -56,36 +62,52 @@ Be direct, data-driven, and actionable. Focus on what matters for this specific 
         "prompt_text": """Analyze the following investment position for a personal portfolio:
 
 Asset: {symbol} ({name})
-Current Holdings: {quantity} shares/units
-Current Price: {current_price}
-Cost Basis: {cost_basis}
-Unrealized P&L: {unrealized_pnl} ({pnl_percentage}%)
-Position Size: {position_percentage}% of portfolio
+Sector: {sector} | Type: {asset_type}
+
+Position Overview:
+- Holdings: {quantity} units
+- Current Market Value: €{current_value}
+- Total Cost Basis: €{cost_basis}
+- Average Cost per Unit: €{avg_cost_per_unit}
+- Current Price per Unit: €{current_price}
+
+Performance:
+- Unrealized P&L: €{unrealized_pnl} ({pnl_percentage}%)
+- Position Weight: {position_percentage}% of portfolio
+- 24h Price Change: {day_change}%
 
 Market Context:
-- 24h Change: {day_change}%
-- Sector: {sector}
-- Asset Type: {asset_type}
+- 24h Trading Volume: {volume}
+{fear_greed_context}
+
+{crypto_context}
 
 Provide analysis (150-200 words) covering:
 1. Current market position and recent performance
-2. Key factors driving price movement
+2. Key factors driving price movement (consider market sentiment if crypto asset)
 3. Risk assessment for this holding
 4. Recommended action: HOLD, BUY_MORE, REDUCE, or SELL (with brief rationale)
+
+IMPORTANT: Use the provided P&L percentage ({pnl_percentage}%) as the definitive performance metric. Do not recalculate P&L from price values.
 
 Be concise and actionable.""",
         "template_variables": {
             "symbol": "string",
             "name": "string",
             "quantity": "decimal",
+            "current_value": "decimal",
             "current_price": "decimal",
             "cost_basis": "decimal",
+            "avg_cost_per_unit": "decimal",
             "unrealized_pnl": "decimal",
             "pnl_percentage": "decimal",
             "position_percentage": "decimal",
             "day_change": "decimal",
             "sector": "string",
-            "asset_type": "string"
+            "asset_type": "string",
+            "volume": "integer",
+            "fear_greed_context": "string",
+            "crypto_context": "string"
         }
     },
     {

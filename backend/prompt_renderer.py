@@ -3,7 +3,7 @@
 
 from typing import Any, Dict, Optional, List
 from decimal import Decimal
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from models import AssetType
 import yfinance as yf
 
@@ -54,7 +54,13 @@ class PromptRenderer:
 
         # Format each value according to its type
         formatted_data = {}
-        for var_name, var_type in template_vars.items():
+        for var_name, var_type_or_obj in template_vars.items():
+            # Handle both old format (string) and new format (dict with "type" key)
+            if isinstance(var_type_or_obj, dict):
+                var_type = var_type_or_obj.get("type", "string")
+            else:
+                var_type = var_type_or_obj
+
             formatter = self.formatters.get(var_type)
             if not formatter:
                 raise ValueError(f"Unknown type: {var_type}")
@@ -123,7 +129,8 @@ class PromptDataCollector:
         portfolio_service,
         yahoo_service=None,
         twelve_data_service=None,
-        alpha_vantage_service=None
+        alpha_vantage_service=None,
+        coingecko_service=None
     ):
         """
         Initialize data collector.
@@ -134,12 +141,14 @@ class PromptDataCollector:
             yahoo_service: Optional YahooFinanceService for market indices
             twelve_data_service: Optional TwelveDataService for European stocks (primary)
             alpha_vantage_service: Optional AlphaVantageService for fallback
+            coingecko_service: Optional CoinGeckoService for crypto fundamentals
         """
         self.db = db
         self.portfolio_service = portfolio_service
         self.yahoo_service = yahoo_service
         self.twelve_data_service = twelve_data_service
         self.alpha_vantage_service = alpha_vantage_service
+        self.coingecko_service = coingecko_service
 
     async def collect_global_data(self) -> Dict[str, Any]:
         """
@@ -160,6 +169,8 @@ class PromptDataCollector:
 
         # Fetch market indices for context
         indices = await self._get_market_indices()
+        market_context = self._format_market_indices(indices)
+        market_indicators_data = self._build_market_indicators_response(indices)
 
         # Prepare top holdings (top 10) - filter out positions with None values
         valid_positions = [p for p in positions if p.current_value is not None]
@@ -180,6 +191,56 @@ class PromptDataCollector:
         # Calculate portfolio value and asset allocation from positions
         total_value = sum(p.current_value for p in positions if p.current_value)
 
+        # Fetch global crypto market data (if coingecko_service available)
+        global_crypto_context = ""
+        global_crypto_data = None
+        if self.coingecko_service:
+            try:
+                crypto_data = await self.coingecko_service.get_global_market_data()
+                global_crypto_data = {
+                    "total_market_cap_eur": crypto_data.total_market_cap_eur,
+                    "total_volume_24h_eur": crypto_data.total_volume_24h_eur,
+                    "btc_dominance": float(crypto_data.btc_dominance),
+                    "eth_dominance": float(crypto_data.eth_dominance),
+                    "active_cryptocurrencies": crypto_data.active_cryptocurrencies,
+                    "markets": crypto_data.markets,
+                    "market_cap_change_24h": float(crypto_data.market_cap_change_24h),
+                    "defi_market_cap_eur": crypto_data.defi_market_cap_eur,
+                    "defi_dominance": float(crypto_data.defi_dominance) if crypto_data.defi_dominance else 0,
+                    "defi_24h_volume_eur": crypto_data.defi_24h_volume_eur,
+                    "fear_greed_value": crypto_data.fear_greed_value,
+                    "fear_greed_classification": crypto_data.fear_greed_classification
+                }
+
+                # Build context string for Claude prompt
+                market_cap_b = crypto_data.total_market_cap_eur / 1_000_000_000
+                volume_b = crypto_data.total_volume_24h_eur / 1_000_000_000
+
+                # Build base context
+                context_lines = [
+                    "Global Crypto Market Overview (CoinGecko):",
+                    f"- Total Market Cap: €{market_cap_b:.1f}B ({crypto_data.market_cap_change_24h:+.1f}% 24h)",
+                    f"- 24h Trading Volume: €{volume_b:.1f}B",
+                    f"- Bitcoin Dominance: {crypto_data.btc_dominance:.1f}%",
+                    f"- Ethereum Dominance: {crypto_data.eth_dominance:.1f}%",
+                    f"- Active Cryptocurrencies: {crypto_data.active_cryptocurrencies:,}"
+                ]
+
+                # Add Fear & Greed Index if available
+                if crypto_data.fear_greed_value and crypto_data.fear_greed_classification:
+                    context_lines.append(f"- Fear & Greed Index: {crypto_data.fear_greed_value}/100 ({crypto_data.fear_greed_classification})")
+
+                # Add DeFi data if available
+                if crypto_data.defi_market_cap_eur and crypto_data.defi_dominance:
+                    defi_cap_b = crypto_data.defi_market_cap_eur / 1_000_000_000
+                    context_lines.append(f"- DeFi Market Cap: €{defi_cap_b:.1f}B ({crypto_data.defi_dominance:.1f}% of total)")
+
+                global_crypto_context = "\n".join(context_lines)
+
+                print(f"[Global Data] Fetched global crypto market data: Market Cap €{market_cap_b:.1f}B, BTC Dom {crypto_data.btc_dominance:.1f}%")
+            except Exception as e:
+                print(f"[Global Data] Failed to fetch global crypto market data: {e}")
+
         return {
             "portfolio_value": float(total_value) if total_value else 0.0,
             "asset_allocation": sector_allocation,  # sector_allocation already has the breakdown
@@ -187,8 +248,12 @@ class PromptDataCollector:
             "top_holdings": self._format_holdings_list(top_holdings),
             "performance": performance,
             "market_indices": indices,
+            "market_context": market_context,  # Formatted string for Claude
             "total_unrealized_pnl": summary.get("total_unrealized_pnl", 0.0),
-            "total_unrealized_pnl_pct": summary.get("total_unrealized_pnl_percentage", 0.0)
+            "total_unrealized_pnl_pct": summary.get("total_unrealized_pnl_percentage", 0.0),
+            "global_crypto_context": global_crypto_context,
+            "global_crypto_market": global_crypto_data,  # Raw data for frontend display
+            "market_indicators": market_indicators_data  # Structured market indicators for frontend display
         }
 
     async def collect_position_data(self, symbol: str) -> Dict[str, Any]:
@@ -215,10 +280,32 @@ class PromptDataCollector:
         if not position:
             raise ValueError(f"Position not found: {symbol}")
 
-        # Get fundamental data (if stock)
-        # Use Twelve Data if available (better for European stocks), fallback to Yahoo Finance
+        # Get fundamental data based on asset type
         fundamentals = {}
-        if position.asset_type == AssetType.STOCK or position.asset_type == 'STOCK':
+        crypto_fundamentals = None
+
+        # For crypto: fetch CoinGecko fundamentals
+        if (position.asset_type == AssetType.CRYPTO or position.asset_type == 'CRYPTO') and self.coingecko_service:
+            try:
+                crypto_fundamentals = await self.coingecko_service.get_fundamentals(symbol)
+                fundamentals = {
+                    'name': crypto_fundamentals.name,
+                    'sector': 'Cryptocurrency',
+                    'industry': 'Digital Assets',
+                    'volume': crypto_fundamentals.total_volume_24h,
+                    'averageVolume': None,
+                    'marketCap': crypto_fundamentals.market_cap,
+                    'fiftyTwoWeekLow': None,  # Will use ATL instead
+                    'fiftyTwoWeekHigh': None,  # Will use ATH instead
+                    'peRatio': None
+                }
+                print(f"[Position Data] CoinGecko fundamentals for {symbol}: Rank #{crypto_fundamentals.market_cap_rank}, MCap €{crypto_fundamentals.market_cap:,.0f}")
+            except Exception as e:
+                print(f"[Position Data] CoinGecko failed for {symbol}: {e}")
+                # Graceful fallback - continue without crypto fundamentals
+
+        # For stocks: Use Twelve Data if available (better for European stocks), fallback to Yahoo Finance
+        elif position.asset_type == AssetType.STOCK or position.asset_type == 'STOCK':
             if self.twelve_data_service:
                 try:
                     # Try Twelve Data first for accurate European ETF data
@@ -260,11 +347,13 @@ class PromptDataCollector:
         if total_portfolio_value > 0 and position.current_value:
             position_pct = (float(position.current_value) / total_portfolio_value) * 100
 
-        return {
+        # Build response with crypto-specific fields if available
+        response = {
             # Position basics
             "symbol": position.symbol,
             "name": fundamentals.get('name') or position.asset_name or position.symbol,
             "quantity": position.quantity,
+            "current_value": position.current_value,
             "current_price": position.current_price,
             "cost_basis": position.total_cost_basis,
             "avg_cost_per_unit": position.avg_cost_basis,
@@ -298,6 +387,73 @@ class PromptDataCollector:
             "first_purchase_date": first_purchase,
             "holding_period_days": holding_period
         }
+
+        # Add Fear & Greed Index context for crypto positions
+        fear_greed_context = ""
+        if (position.asset_type == AssetType.CRYPTO or position.asset_type == 'CRYPTO') and self.coingecko_service:
+            try:
+                global_crypto_data = await self.coingecko_service.get_global_market_data()
+                if global_crypto_data.fear_greed_value and global_crypto_data.fear_greed_classification:
+                    fear_greed_context = f"\n- Fear & Greed Index: {global_crypto_data.fear_greed_value}/100 ({global_crypto_data.fear_greed_classification})"
+            except Exception as e:
+                print(f"[Position Data] Failed to fetch Fear & Greed for {symbol}: {e}")
+
+        # Add crypto-specific CoinGecko fields if available
+        crypto_context = ""
+        if crypto_fundamentals:
+            # Build rich crypto context string
+            # Use timezone-aware datetime to match CoinGecko's timezone-aware dates
+            now_utc = datetime.now(timezone.utc)
+            days_since_ath = (now_utc - crypto_fundamentals.ath_date).days
+            supply_text = f"{crypto_fundamentals.circulating_supply:,.0f}"
+            if crypto_fundamentals.max_supply:
+                supply_pct = (crypto_fundamentals.circulating_supply / crypto_fundamentals.max_supply * 100)
+                supply_text += f" / {crypto_fundamentals.max_supply:,.0f} ({supply_pct:.1f}% of max)"
+            else:
+                supply_text += " (no max supply)"
+
+            crypto_context = f"""
+Cryptocurrency Fundamentals (CoinGecko):
+- Market Cap: €{crypto_fundamentals.market_cap:,.0f} (Rank #{crypto_fundamentals.market_cap_rank})
+- Supply: {supply_text}
+- ATH: €{crypto_fundamentals.ath:.2f} on {crypto_fundamentals.ath_date.strftime('%Y-%m-%d')} ({days_since_ath} days ago)
+  Currently {crypto_fundamentals.ath_change_percentage:+.1f}% from ATH
+- ATL: €{crypto_fundamentals.atl:.2f} on {crypto_fundamentals.atl_date.strftime('%Y-%m-%d')}
+  Currently {crypto_fundamentals.atl_change_percentage:+.1f}% from ATL
+- Performance: 7d {crypto_fundamentals.price_change_percentage_7d or 0:+.1f}%, 30d {crypto_fundamentals.price_change_percentage_30d or 0:+.1f}%, 1y {crypto_fundamentals.price_change_percentage_1y or 0:+.1f}%
+- All-Time ROI (ATL→ATH): {crypto_fundamentals.all_time_high_roi or 0:+,.0f}%
+""".strip()
+
+            response.update({
+                # CoinGecko crypto fundamentals
+                "market_cap": float(crypto_fundamentals.market_cap),
+                "market_cap_rank": crypto_fundamentals.market_cap_rank or 0,
+                "total_volume_24h": float(crypto_fundamentals.total_volume_24h),
+                "circulating_supply": float(crypto_fundamentals.circulating_supply) if crypto_fundamentals.circulating_supply else 0,
+                "max_supply": float(crypto_fundamentals.max_supply) if crypto_fundamentals.max_supply else 0,
+                "ath": float(crypto_fundamentals.ath),
+                "ath_date": crypto_fundamentals.ath_date.strftime('%Y-%m-%d'),
+                "ath_change_percentage": float(crypto_fundamentals.ath_change_percentage),
+                "atl": float(crypto_fundamentals.atl),
+                "atl_date": crypto_fundamentals.atl_date.strftime('%Y-%m-%d'),
+                "atl_change_percentage": float(crypto_fundamentals.atl_change_percentage),
+                "price_change_percentage_7d": float(crypto_fundamentals.price_change_percentage_7d) if crypto_fundamentals.price_change_percentage_7d else 0,
+                "price_change_percentage_30d": float(crypto_fundamentals.price_change_percentage_30d) if crypto_fundamentals.price_change_percentage_30d else 0,
+                "price_change_percentage_1y": float(crypto_fundamentals.price_change_percentage_1y) if crypto_fundamentals.price_change_percentage_1y else 0,
+                "all_time_roi": float(crypto_fundamentals.all_time_high_roi) if crypto_fundamentals.all_time_high_roi else 0,
+                # Override 52-week range with ATL/ATH for crypto
+                "week_52_low": float(crypto_fundamentals.atl),
+                "week_52_high": float(crypto_fundamentals.ath),
+                "crypto_context": crypto_context
+            })
+        else:
+            # Add empty crypto_context for non-crypto or when CoinGecko unavailable
+            response["crypto_context"] = ""
+
+        # Add fear_greed_context to response
+        response["fear_greed_context"] = fear_greed_context
+
+        return response
 
     async def collect_forecast_data(self, symbol: str) -> Dict[str, Any]:
         """
@@ -411,34 +567,177 @@ class PromptDataCollector:
 
     async def _get_market_indices(self) -> Dict[str, Any]:
         """
-        Fetch major market indices for context.
+        Fetch major market indices for comprehensive global context.
 
         Returns:
-            Dictionary with price and change data for major indices
+            Dictionary with price and change data organized by category:
+            - equities: Major stock indices (US & EU)
+            - risk: Volatility, yields, dollar strength
+            - commodities: Gold, oil, copper
+            - crypto: Bitcoin
         """
         if not self.yahoo_service:
             return {}
 
-        indices_symbols = [
-            '^GSPC',    # S&P 500
-            '^DJI',     # Dow Jones
-            'BTC-USD',  # Bitcoin
-            'GC=F'      # Gold Futures
-        ]
+        # Phase 1: Critical global market indicators
+        indices_config = {
+            # Equities
+            '^GSPC': {'name': 'S&P 500', 'category': 'equities'},
+            '^DJI': {'name': 'Dow Jones', 'category': 'equities'},
+            '^IXIC': {'name': 'NASDAQ', 'category': 'equities'},
+            '^STOXX50E': {'name': 'Euro Stoxx 50', 'category': 'equities'},
+            '^GDAXI': {'name': 'DAX', 'category': 'equities'},
+
+            # Risk Indicators (CRITICAL)
+            '^VIX': {'name': 'VIX (Volatility)', 'category': 'risk'},
+            '^TNX': {'name': '10Y Treasury Yield', 'category': 'risk'},
+            'DX-Y.NYB': {'name': 'US Dollar Index', 'category': 'risk'},
+
+            # Commodities
+            'GC=F': {'name': 'Gold', 'category': 'commodities'},
+            'CL=F': {'name': 'WTI Oil', 'category': 'commodities'},
+            'HG=F': {'name': 'Copper', 'category': 'commodities'},
+
+            # Crypto
+            'BTC-USD': {'name': 'Bitcoin', 'category': 'crypto'},
+        }
+
         indices_data = {}
 
-        for symbol in indices_symbols:
+        for symbol, config in indices_config.items():
             try:
-                price_data = await self.yahoo_service.get_price(symbol)
+                price_data = await self.yahoo_service.get_quote(symbol)
                 indices_data[symbol] = {
+                    'name': config['name'],
+                    'category': config['category'],
                     'price': float(price_data.current_price),
                     'change': float(price_data.day_change_percent)
                 }
-            except Exception:
-                # Skip indices that fail to fetch
+            except Exception as e:
+                # Skip indices that fail to fetch, but log for debugging
+                print(f"[Market Indices] Failed to fetch {config['name']} ({symbol}): {e}")
                 pass
 
         return indices_data
+
+    def _format_market_indices(self, indices: Dict[str, Any]) -> str:
+        """
+        Format market indices data into readable context string for Claude.
+
+        Args:
+            indices: Dictionary of market data from _get_market_indices()
+
+        Returns:
+            Formatted string with categorized market data
+        """
+        if not indices:
+            return "Market data unavailable"
+
+        # Group by category
+        categories = {
+            'equities': [],
+            'risk': [],
+            'commodities': [],
+            'crypto': []
+        }
+
+        for symbol, data in indices.items():
+            category = data.get('category', 'other')
+            if category in categories:
+                name = data['name']
+                price = data['price']
+                change = data['change']
+                sign = '+' if change >= 0 else ''
+                categories[category].append(f"{name}: {price:.2f} ({sign}{change:.2f}%)")
+
+        # Build formatted string
+        lines = ["Global Market Snapshot:"]
+
+        if categories['equities']:
+            lines.append("\nEquities:")
+            for line in categories['equities']:
+                lines.append(f"  - {line}")
+
+        if categories['risk']:
+            lines.append("\nRisk Indicators:")
+            for line in categories['risk']:
+                lines.append(f"  - {line}")
+            # Add VIX interpretation
+            vix_data = indices.get('^VIX')
+            if vix_data:
+                vix = vix_data['price']
+                if vix < 15:
+                    lines.append("    → Low volatility (complacent market)")
+                elif vix < 20:
+                    lines.append("    → Normal volatility")
+                elif vix < 30:
+                    lines.append("    → Elevated fear")
+                else:
+                    lines.append("    → High panic/crisis levels")
+
+        if categories['commodities']:
+            lines.append("\nCommodities:")
+            for line in categories['commodities']:
+                lines.append(f"  - {line}")
+
+        if categories['crypto']:
+            lines.append("\nCrypto:")
+            for line in categories['crypto']:
+                lines.append(f"  - {line}")
+
+        return "\n".join(lines)
+
+    def _build_market_indicators_response(self, indices: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Convert raw market indices to structured GlobalMarketIndicators format.
+
+        Args:
+            indices: Dictionary of market data from _get_market_indices()
+
+        Returns:
+            Dictionary with categorized market indicators or None if no data
+        """
+        if not indices:
+            return None
+
+        # Group indicators by category
+        categorized = {
+            'equities': [],
+            'risk': [],
+            'commodities': [],
+            'crypto': []
+        }
+
+        for symbol, data in indices.items():
+            category = data.get('category', 'other')
+            if category not in categorized:
+                continue
+
+            # Get VIX interpretation if this is the VIX indicator
+            interpretation = None
+            if symbol == '^VIX':
+                vix = data['price']
+                if vix < 15:
+                    interpretation = "Low volatility (complacent market)"
+                elif vix < 20:
+                    interpretation = "Normal volatility"
+                elif vix < 30:
+                    interpretation = "Elevated fear"
+                else:
+                    interpretation = "High panic/crisis levels"
+
+            indicator = {
+                'symbol': symbol,
+                'name': data['name'],
+                'price': data['price'],
+                'change_percent': data['change'],
+                'category': category,
+                'interpretation': interpretation
+            }
+
+            categorized[category].append(indicator)
+
+        return categorized
 
     async def _get_stock_fundamentals(self, symbol: str) -> Dict[str, Any]:
         """

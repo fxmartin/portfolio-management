@@ -1,0 +1,149 @@
+.global-market-indicators {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 16px 0;
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.indicators-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.indicator-section {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  border-radius: 10px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.indicator-section:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateY(-2px);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+}
+
+.section-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.indicator-item {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
+  transition: background 0.15s ease;
+}
+
+.indicator-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.indicator-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.indicator-label {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.indicator-values {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.indicator-price {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.indicator-change {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.indicator-change.positive {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+}
+
+.indicator-change.negative {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.indicator-interpretation {
+  font-size: 11px;
+  opacity: 0.75;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* Special styling for risk section */
+.risk-section {
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.risk-section .section-header {
+  color: #ffd700;
+}
+
+/* Source badge */
+.source-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  opacity: 0.9;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .indicators-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .indicators-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .indicator-price {
+    font-size: 14px;
+  }
+
+  .indicator-change {
+    font-size: 12px;
+  }
+}

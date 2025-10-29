@@ -128,7 +128,32 @@ User → React (3003) → FastAPI (8000) → PostgreSQL (5432)
 - **Live Prices**: Yahoo Finance integration with auto-refresh (60s crypto, 120s stocks)
 - **Dashboard**: Modern UI with OpenPositionsCard and HoldingsTable
 
-### Recent Critical Bug Fixes (Oct 24, 2025)
+### Recent Enhancements & Bug Fixes
+
+**Oct 30, 2025 - Global Market Indicators & Portfolio Weight Display**
+
+**Global Market Indicators Dashboard**
+- Feature: Added comprehensive market indicators display to Global Analysis page
+- Implementation: 12 live indicators organized into 4 categories (Equities, Risk, Commodities, Crypto)
+- Indicators: S&P 500, Dow, NASDAQ, Euro Stoxx 50, DAX, VIX, 10Y Treasury, Dollar Index, Gold, Oil, Copper, Bitcoin
+- Display: Blue gradient card positioned above Global Crypto Market section
+- VIX Interpretation: Automatic volatility level classification (Low/Normal/Elevated/High panic)
+- Backend: `MarketIndicator` and `GlobalMarketIndicators` schemas in `analysis_schemas.py`
+- Frontend: New `GlobalMarketIndicators.tsx` component with responsive grid layout
+- Files Modified: `analysis_schemas.py`, `prompt_renderer.py`, `analysis_service.py`, `GlobalAnalysisCard.tsx`
+- Files Created: `GlobalMarketIndicators.tsx`, `GlobalMarketIndicators.css`
+
+**Portfolio Weight Sorting & Display**
+- Feature: Positions in AI Analysis page now sorted by portfolio weight (largest first)
+- Feature: Added blue gradient weight badge showing portfolio percentage for each position
+- Implementation: Backend calculates portfolio_percentage for each position
+- Display: Weight badge positioned next to asset type badge (e.g., "CRYPTO 29.4%")
+- Sorting: Automatic descending sort by portfolio weight (AMEM 29.4% → LINK 3.5%)
+- Backend: Enhanced `/api/portfolio/positions` endpoint in `portfolio_router.py`
+- Frontend: Updated `PositionAnalysisList.tsx` with weight badge and styling
+- Files Modified: `portfolio_router.py:130-186`, `PositionAnalysisList.tsx`, `PositionAnalysisList.css`
+
+### Previous Updates (Oct 24-29, 2025)
 
 **Issue #3: Missing Staking Rewards**
 - Problem: Position calculation missing recent staking rewards
@@ -222,6 +247,18 @@ User → React (3003) → FastAPI (8000) → PostgreSQL (5432)
 - **Test Coverage**: 9/9 open-positions tests passing, 13/13 portfolio service tests passing
 - **Files Modified**: `portfolio_service.py`, `portfolio_router.py`, `yahoo_finance_service.py`, `tests/test_yahoo_finance_service.py`
 - Commit: `acb0b78`
+
+**Fear & Greed Index Integration (Oct 29, 2025)**
+- Feature: Real-time crypto market sentiment indicator integrated into Global Crypto Market display
+- Source: Alternative.me API (free, no authentication required)
+- Display: Highlighted card showing 0-100 sentiment score with classification (Extreme Fear/Fear/Neutral/Greed/Extreme Greed)
+- Update Frequency: 15-minute cache (Redis)
+- AI Integration: Fear & Greed value included in Claude prompt context for sentiment-aware analysis
+- Root Cause: Backend was fetching data, but Pydantic schema was filtering out the fields
+- Fix: Added `fear_greed_value` and `fear_greed_classification` fields to `GlobalCryptoMarketData` schema in `analysis_schemas.py:39-40`
+- Files Modified: `backend/analysis_schemas.py`
+- Documentation: `CHANGELOG-2025-10-29-FearGreed.md`, `docs/AI_ANALYSIS.md`
+- See: [CHANGELOG-2025-10-29-FearGreed.md](CHANGELOG-2025-10-29-FearGreed.md) for complete details
 
 ### Test Suite Improvements (Oct 24, 2025)
 

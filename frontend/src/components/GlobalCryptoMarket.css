@@ -1,0 +1,138 @@
+.global-crypto-market {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 16px 0;
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.market-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.market-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.market-item {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.market-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.market-item.highlight {
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.item-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+.item-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.item-value {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.item-detail {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.item-detail.positive {
+  color: #d1fae5;
+  font-weight: 600;
+}
+
+.item-detail.negative {
+  color: #fecaca;
+  font-weight: 600;
+}
+
+.market-item.btc .item-value,
+.market-item.eth .item-value {
+  font-size: 24px;
+}
+
+.market-item.defi {
+  grid-column: span 2;
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.market-item.fear-greed {
+  background: rgba(255, 215, 0, 0.2);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+}
+
+.market-item.fear-greed .fear-greed-value {
+  color: #ffd700;
+  font-weight: 800;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .market-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .market-item.defi {
+    grid-column: span 1;
+  }
+
+  .item-value {
+    font-size: 16px;
+  }
+
+  .market-item.btc .item-value,
+  .market-item.eth .item-value {
+    font-size: 20px;
+  }
+}
