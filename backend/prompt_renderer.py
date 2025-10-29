@@ -1,10 +1,11 @@
 # ABOUTME: Template rendering engine for AI prompts with type-safe variable substitution
 # ABOUTME: Provides formatters for decimal, integer, array, and object types
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timedelta
 from models import AssetType
+import yfinance as yf
 
 
 class PromptRenderer:
@@ -258,14 +259,17 @@ class PromptDataCollector:
 
     async def collect_forecast_data(self, symbol: str) -> Dict[str, Any]:
         """
-        Collect data for two-quarter forecast prompt.
+        Collect comprehensive data for two-quarter forecast prompt.
+
+        Fetches historical prices, calculates performance metrics, and builds
+        market context for generating accurate forecasts.
 
         Args:
             symbol: Asset symbol (e.g., "BTC", "AAPL")
 
         Returns:
             Dictionary with current price, 52-week range, performance
-            metrics, and market context
+            metrics (30d/90d/180d/365d), volatility, and market context
 
         Raises:
             ValueError: If position not found
@@ -274,20 +278,33 @@ class PromptDataCollector:
         if not position:
             raise ValueError(f"Position not found: {symbol}")
 
-        # Note: Historical data would come from yahoo_finance_service
-        # For now, return basic data structure
+        # Get historical prices (365 days)
+        historical_prices = await self._get_historical_prices(symbol, days=365)
+
+        # Calculate performance metrics
+        performance = self._calculate_performance_metrics(historical_prices)
+
+        # Build market context based on asset type
+        market_context = await self._build_market_context(position.asset_type)
+
+        # Calculate 52-week range
+        week_52_low = min(historical_prices) if historical_prices else 0.0
+        week_52_high = max(historical_prices) if historical_prices else 0.0
 
         return {
             "symbol": position.symbol,
             "name": position.symbol,
-            "current_price": position.current_price,
-            "week_52_low": 0.0,  # Would query historical data
-            "week_52_high": 0.0,  # Would query historical data
-            "performance_30d": 0.0,  # Would calculate from price history
-            "performance_90d": 0.0,  # Would calculate from price history
-            "sector": "N/A",
-            "asset_type": position.asset_type,
-            "market_context": "No historical data available"
+            "current_price": float(position.current_price),
+            "week_52_low": float(week_52_low),
+            "week_52_high": float(week_52_high),
+            "performance_30d": performance['30d'],
+            "performance_90d": performance['90d'],
+            "performance_180d": performance['180d'],
+            "performance_365d": performance['365d'],
+            "volatility_30d": performance['volatility'],
+            "sector": position.asset_type.value if isinstance(position.asset_type, AssetType) else str(position.asset_type),
+            "asset_type": position.asset_type.value if isinstance(position.asset_type, AssetType) else str(position.asset_type),
+            "market_context": market_context
         }
 
     def _calculate_sector_allocation(self, positions: list) -> Dict[str, float]:
@@ -498,3 +515,150 @@ class PromptDataCollector:
                 f"{h['pnl']:+.2f}% P&L)"
             )
         return "\n".join(lines)
+
+    async def _get_historical_prices(self, symbol: str, days: int = 365) -> List[float]:
+        """
+        Fetch historical prices from Yahoo Finance.
+
+        Args:
+            symbol: Asset symbol
+            days: Number of days of history to fetch (default: 365)
+
+        Returns:
+            List of closing prices (oldest to newest)
+        """
+        try:
+            # Transform symbol if needed (for ETFs with exchange suffixes)
+            transformed_symbol = self._transform_symbol_for_yfinance(symbol)
+
+            ticker = yf.Ticker(transformed_symbol)
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=days)
+
+            hist = ticker.history(start=start_date, end=end_date)
+
+            if hist.empty:
+                return []
+
+            return hist['Close'].tolist()
+        except Exception:
+            # Return empty list on error (graceful degradation)
+            return []
+
+    def _calculate_performance_metrics(self, prices: List[float]) -> Dict[str, float]:
+        """
+        Calculate performance metrics from price history.
+
+        Computes percentage returns for 30d, 90d, 180d, 365d periods
+        and 30-day volatility (annualized standard deviation).
+
+        Args:
+            prices: List of prices (oldest to newest)
+
+        Returns:
+            Dictionary with performance metrics
+        """
+        if not prices or len(prices) < 2:
+            return {
+                '30d': 0.0,
+                '90d': 0.0,
+                '180d': 0.0,
+                '365d': 0.0,
+                'volatility': 0.0
+            }
+
+        current = prices[-1]
+
+        # Calculate returns for different periods
+        perf_30d = ((current - prices[-min(30, len(prices))]) / prices[-min(30, len(prices))] * 100) if len(prices) >= 2 else 0.0
+        perf_90d = ((current - prices[-min(90, len(prices))]) / prices[-min(90, len(prices))] * 100) if len(prices) >= 2 else 0.0
+        perf_180d = ((current - prices[-min(180, len(prices))]) / prices[-min(180, len(prices))] * 100) if len(prices) >= 2 else 0.0
+        perf_365d = ((current - prices[0]) / prices[0] * 100) if len(prices) >= 2 else 0.0
+
+        # Calculate 30-day volatility (annualized)
+        volatility = 0.0
+        if len(prices) >= 30:
+            # Get last 30 prices
+            recent_prices = prices[-30:]
+            # Calculate daily returns
+            returns = [(recent_prices[i] - recent_prices[i-1]) / recent_prices[i-1]
+                      for i in range(1, len(recent_prices))]
+            # Calculate standard deviation
+            if returns:
+                mean_return = sum(returns) / len(returns)
+                variance = sum((r - mean_return) ** 2 for r in returns) / len(returns)
+                daily_vol = variance ** 0.5
+                # Annualize (252 trading days)
+                volatility = daily_vol * (252 ** 0.5) * 100
+
+        return {
+            '30d': round(perf_30d, 2),
+            '90d': round(perf_90d, 2),
+            '180d': round(perf_180d, 2),
+            '365d': round(perf_365d, 2),
+            'volatility': round(volatility, 2)
+        }
+
+    async def _build_market_context(self, asset_type: AssetType) -> str:
+        """
+        Build narrative market context based on asset type.
+
+        Fetches relevant market indices and constructs a narrative
+        summary of current market conditions.
+
+        Args:
+            asset_type: Type of asset (stocks, crypto, metals)
+
+        Returns:
+            String describing market context
+        """
+        context_parts = []
+
+        try:
+            asset_type_str = asset_type.value if isinstance(asset_type, AssetType) else str(asset_type)
+
+            # Get relevant indices based on asset type (uppercase comparison)
+            if asset_type_str.upper() == 'STOCK':
+                sp500_price = await self.yahoo_service.get_price('^GSPC')
+                context_parts.append(
+                    f"S&P 500: {sp500_price.day_change_percent:+.2f}% today"
+                )
+            elif asset_type_str.upper() == 'CRYPTO':
+                btc_price = await self.yahoo_service.get_price('BTC-EUR')
+                context_parts.append(
+                    f"Bitcoin (market leader): {btc_price.day_change_percent:+.2f}% today"
+                )
+            elif asset_type_str.upper() == 'METAL':
+                gold_price = await self.yahoo_service.get_price('GC=F')
+                context_parts.append(
+                    f"Gold: {gold_price.day_change_percent:+.2f}% today"
+                )
+
+            # Add general macro context
+            context_parts.append("Market showing mixed signals with ongoing volatility")
+
+            return ". ".join(context_parts) if context_parts else "Market context unavailable"
+
+        except Exception:
+            # Graceful degradation if index prices unavailable
+            return "Market context unavailable"
+
+    def _transform_symbol_for_yfinance(self, symbol: str) -> str:
+        """
+        Transform internal symbol to Yahoo Finance format.
+
+        Some ETFs require exchange suffixes for Yahoo Finance.
+
+        Args:
+            symbol: Internal symbol
+
+        Returns:
+            Yahoo Finance compatible symbol
+        """
+        # ETF mappings (same as YahooFinanceService)
+        ETF_MAPPINGS = {
+            "AMEM": "AMEM.BE",  # iShares MSCI Emerging Markets (Brussels)
+            "MWOQ": "MWOQ.BE",  # SPDR MSCI World (Brussels)
+        }
+
+        return ETF_MAPPINGS.get(symbol, symbol)

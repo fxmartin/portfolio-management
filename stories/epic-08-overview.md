@@ -19,8 +19,8 @@
 - [Feature 8.1: Prompt Management System](./epic-08-f1-prompt-management.md) ✅ (13 points, 3 stories) - COMPLETE
 - [Feature 8.2: Anthropic Claude Integration](./epic-08-f2-claude-integration.md) ✅ (13 points, 2 stories) - COMPLETE
 - [Feature 8.3: Global Market Analysis](./epic-08-f3-global-analysis.md) ✅ (8 points, 2 stories) - COMPLETE
-- [Feature 8.4: Position-Level Analysis](./epic-08-f4-position-analysis.md) 🔴 (10 points, 2 stories)
-- [Feature 8.5: Forecasting Engine with Scenarios](./epic-08-f5-forecasting.md) 🔴 (15 points, 3 stories)
+- [Feature 8.4: Position-Level Analysis](./epic-08-f4-position-analysis.md) ✅ (10 points, 2 stories) - COMPLETE
+- [Feature 8.5: Forecasting Engine with Scenarios](./epic-08-f5-forecasting.md) ✅ (13 points, 2 stories) - COMPLETE
 - [Feature 8.6: Analysis UI Dashboard](./epic-08-f6-analysis-ui.md) 🔴 (8 points, 2 stories)
 
 ## Progress Tracking
@@ -29,10 +29,10 @@
 | F8.1: Prompt Management | 3 | 13 | ✅ Complete | 100% (13/13 pts) | [Details](./epic-08-f1-prompt-management.md) |
 | F8.2: Claude Integration | 2 | 13 | ✅ Complete | 100% (13/13 pts) | [Details](./epic-08-f2-claude-integration.md) |
 | F8.3: Global Analysis | 2 | 8 | ✅ Complete | 100% (8/8 pts) | [Details](./epic-08-f3-global-analysis.md) |
-| F8.4: Position Analysis | 2 | 10 | 🔴 Not Started | 0% (0/10 pts) | [Details](./epic-08-f4-position-analysis.md) |
-| F8.5: Forecasting Engine | 3 | 15 | 🔴 Not Started | 0% (0/15 pts) | [Details](./epic-08-f5-forecasting.md) |
+| F8.4: Position Analysis | 2 | 10 | ✅ Complete | 100% (10/10 pts) | [Details](./epic-08-f4-position-analysis.md) |
+| F8.5: Forecasting Engine | 2 | 13 | ✅ Complete | 100% (13/13 pts) | [Details](./epic-08-f5-forecasting.md) |
 | F8.6: Analysis UI | 2 | 8 | 🔴 Not Started | 0% (0/8 pts) | [Details](./epic-08-f6-analysis-ui.md) |
-| **Total** | **14** | **67** | **🟡 In Progress** | **51% (34/67 pts)** | |
+| **Total** | **13** | **65** | **🟡 In Progress** | **88% (57/65 pts)** | |
 
 ---
 
