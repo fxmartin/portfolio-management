@@ -11,8 +11,17 @@ Provides response models for:
 """
 
 from datetime import datetime
-from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field
+from typing import Optional, Dict, Any, List
+from enum import Enum
+from pydantic import BaseModel, Field, conlist
+
+
+class Recommendation(str, Enum):
+    """Position recommendation extracted from AI analysis"""
+    HOLD = "HOLD"
+    BUY_MORE = "BUY_MORE"
+    REDUCE = "REDUCE"
+    SELL = "SELL"
 
 
 class GlobalAnalysisResponse(BaseModel):
@@ -36,7 +45,10 @@ class GlobalAnalysisResponse(BaseModel):
 class PositionAnalysisResponse(BaseModel):
     """Response schema for position-level analysis"""
     analysis: str = Field(..., description="Markdown-formatted analysis text")
-    recommendation: Optional[str] = Field(None, description="HOLD, BUY_MORE, REDUCE, or SELL")
+    recommendation: Optional[Recommendation] = Field(
+        None,
+        description="Investment recommendation: HOLD, BUY_MORE, REDUCE, or SELL"
+    )
     generated_at: datetime
     tokens_used: int = Field(..., ge=0)
     cached: bool
@@ -49,6 +61,50 @@ class PositionAnalysisResponse(BaseModel):
                 "generated_at": "2025-10-29T10:35:00Z",
                 "tokens_used": 892,
                 "cached": False
+            }
+        }
+
+
+class BulkAnalysisRequest(BaseModel):
+    """Request schema for bulk position analysis"""
+    symbols: conlist(str, min_length=1, max_length=10) = Field(..., description="List of asset symbols (1-10)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "symbols": ["BTC", "ETH", "SOL", "AAPL", "MSTR"]
+            }
+        }
+
+
+class BulkAnalysisResponse(BaseModel):
+    """Response schema for bulk position analysis"""
+    analyses: Dict[str, PositionAnalysisResponse] = Field(
+        ...,
+        description="Map of symbol to analysis response"
+    )
+    total_tokens_used: int = Field(..., ge=0, description="Total tokens across all analyses")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "analyses": {
+                    "BTC": {
+                        "analysis": "## Bitcoin Analysis\n\nStrong momentum...",
+                        "recommendation": "HOLD",
+                        "generated_at": "2025-10-29T10:35:00Z",
+                        "tokens_used": 892,
+                        "cached": False
+                    },
+                    "ETH": {
+                        "analysis": "## Ethereum Analysis\n\nConsolidating...",
+                        "recommendation": "BUY_MORE",
+                        "generated_at": "2025-10-29T10:35:15Z",
+                        "tokens_used": 847,
+                        "cached": False
+                    }
+                },
+                "total_tokens_used": 1739
             }
         }
 

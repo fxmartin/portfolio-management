@@ -10,8 +10,10 @@ Endpoints:
 - GET /api/analysis/forecast/{symbol} - Generate two-quarter forecast
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, Body, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List
+import asyncio
 
 from database import get_async_db
 from analysis_service import AnalysisService
@@ -25,7 +27,9 @@ from config import get_settings
 from analysis_schemas import (
     GlobalAnalysisResponse,
     PositionAnalysisResponse,
-    ForecastResponse
+    ForecastResponse,
+    BulkAnalysisRequest,
+    BulkAnalysisResponse
 )
 
 
@@ -176,4 +180,64 @@ async def get_forecast(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate forecast: {str(e)}"
+        )
+
+
+@router.post("/positions/bulk", response_model=BulkAnalysisResponse)
+async def get_bulk_position_analysis(
+    request: BulkAnalysisRequest,
+    force_refresh: bool = Query(False, description="Force new analysis generation"),
+    analysis_service: AnalysisService = Depends(get_analysis_service)
+):
+    """
+    Generate analysis for multiple positions in parallel.
+
+    Useful for analyzing entire portfolio in one request.
+    Maximum 10 positions per request.
+
+    **Performance**:
+    - Fresh analysis: ~15-30 seconds (parallel execution)
+    - Cached analysis: <500ms
+
+    **Request body**:
+    ```json
+    {
+        "symbols": ["BTC", "ETH", "SOL", "AAPL", "MSTR"]
+    }
+    ```
+
+    **Response includes**:
+    - Individual analysis for each symbol
+    - Recommendations per position
+    - Total tokens consumed across all analyses
+    """
+    try:
+        # Generate all analyses in parallel
+        results = await asyncio.gather(*[
+            analysis_service.generate_position_analysis(symbol, force_refresh)
+            for symbol in request.symbols
+        ])
+
+        # Build response
+        analyses = {
+            symbol: PositionAnalysisResponse(**result)
+            for symbol, result in zip(request.symbols, results)
+        }
+
+        total_tokens = sum(r['tokens_used'] for r in results)
+
+        return BulkAnalysisResponse(
+            analyses=analyses,
+            total_tokens_used=total_tokens
+        )
+    except ValueError as e:
+        # Position not found
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate bulk analysis: {str(e)}"
         )

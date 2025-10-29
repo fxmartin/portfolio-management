@@ -1,8 +1,10 @@
 # ABOUTME: Template rendering engine for AI prompts with type-safe variable substitution
 # ABOUTME: Provides formatters for decimal, integer, array, and object types
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from decimal import Decimal
+from datetime import datetime
+from models import AssetType
 
 
 class PromptRenderer:
@@ -180,14 +182,20 @@ class PromptDataCollector:
 
     async def collect_position_data(self, symbol: str) -> Dict[str, Any]:
         """
-        Collect data for position-specific analysis.
+        Collect enhanced data for position-specific analysis.
+
+        Includes Yahoo Finance fundamentals, transaction context,
+        performance metrics, and sector classification.
 
         Args:
             symbol: Asset symbol (e.g., "BTC", "AAPL")
 
         Returns:
-            Dictionary with position details including quantity, prices,
-            P&L metrics, and market context
+            Dictionary with position details including:
+            - Basic position data (quantity, prices, P&L)
+            - Market fundamentals (sector, industry, 52-week range)
+            - Transaction context (count, first purchase, holding period)
+            - Performance metrics (volume, market cap)
 
         Raises:
             ValueError: If position not found
@@ -196,21 +204,56 @@ class PromptDataCollector:
         if not position:
             raise ValueError(f"Position not found: {symbol}")
 
-        # Note: price_data would come from yahoo_finance_service in real implementation
-        # For now, we'll use data already in the position object
+        # Get fundamental data (if stock)
+        fundamentals = {}
+        if position.asset_type == AssetType.STOCK or position.asset_type == 'STOCK':
+            fundamentals = await self._get_stock_fundamentals(symbol)
+
+        # Get performance metrics
+        performance = await self._get_position_performance(symbol)
+
+        # Get transaction context
+        transaction_count = await self._get_transaction_count(symbol)
+        first_purchase = await self._get_first_purchase_date(symbol)
+        holding_period = await self._get_holding_period(symbol)
 
         return {
+            # Position basics
             "symbol": position.symbol,
-            "name": position.symbol,  # Could be enhanced with full name lookup
+            "name": fundamentals.get('name') or position.asset_name or position.symbol,
             "quantity": position.quantity,
             "current_price": position.current_price,
             "cost_basis": position.total_cost_basis,
+            "avg_cost_per_unit": position.avg_cost_basis,
+
+            # P&L
             "unrealized_pnl": position.unrealized_pnl,
-            "pnl_percentage": position.unrealized_pnl_percentage,
-            "position_percentage": 0.0,  # Would calculate vs total portfolio
+            "pnl_percentage": position.unrealized_pnl_percent,
+            "position_percentage": 0.0,  # Would calculate vs total portfolio in real scenario
+
+            # Market data
             "day_change": 0.0,  # Would come from price service
-            "sector": "N/A",  # Would come from price service
-            "asset_type": position.asset_type
+
+            # Performance metrics
+            "performance_24h": performance.get('24h', 0.0),
+            "performance_7d": performance.get('7d', 0.0),
+            "performance_30d": performance.get('30d', 0.0),
+
+            # Market context
+            "week_52_low": float(fundamentals.get('fiftyTwoWeekLow', 0)),
+            "week_52_high": float(fundamentals.get('fiftyTwoWeekHigh', 0)),
+            "volume": fundamentals.get('volume', 0),
+            "avg_volume": fundamentals.get('averageVolume', 0),
+
+            # Classification
+            "sector": fundamentals.get('sector', 'N/A'),
+            "industry": fundamentals.get('industry', 'N/A'),
+            "asset_type": position.asset_type,
+
+            # Transaction context
+            "transaction_count": transaction_count,
+            "first_purchase_date": first_purchase,
+            "holding_period_days": holding_period
         }
 
     async def collect_forecast_data(self, symbol: str) -> Dict[str, Any]:
@@ -326,6 +369,114 @@ class PromptDataCollector:
                 pass
 
         return indices_data
+
+    async def _get_stock_fundamentals(self, symbol: str) -> Dict[str, Any]:
+        """
+        Fetch stock fundamentals from Yahoo Finance.
+
+        Args:
+            symbol: Stock ticker symbol
+
+        Returns:
+            Dictionary with fundamental data or empty dict on error
+        """
+        try:
+            import yfinance as yf
+
+            ticker = yf.Ticker(symbol)
+            info = ticker.info
+
+            return {
+                'name': info.get('longName', symbol),
+                'sector': info.get('sector'),
+                'industry': info.get('industry'),
+                'fiftyTwoWeekLow': info.get('fiftyTwoWeekLow'),
+                'fiftyTwoWeekHigh': info.get('fiftyTwoWeekHigh'),
+                'volume': info.get('volume'),
+                'averageVolume': info.get('averageVolume'),
+                'marketCap': info.get('marketCap'),
+                'peRatio': info.get('trailingPE')
+            }
+        except Exception:
+            # Return empty dict if fundamentals fetch fails
+            return {}
+
+    async def _get_transaction_count(self, symbol: str) -> int:
+        """
+        Get count of transactions for a symbol.
+
+        Args:
+            symbol: Asset symbol
+
+        Returns:
+            Number of transactions for this symbol
+        """
+        from sqlalchemy import select, func
+        from models import Transaction
+
+        result = await self.db.execute(
+            select(func.count()).select_from(Transaction).where(Transaction.symbol == symbol)
+        )
+        return result.scalar() or 0
+
+    async def _get_first_purchase_date(self, symbol: str) -> Optional[datetime]:
+        """
+        Get the date of first purchase for a symbol.
+
+        Args:
+            symbol: Asset symbol
+
+        Returns:
+            DateTime of first purchase or None if no purchases
+        """
+        from sqlalchemy import select
+        from models import Transaction
+
+        result = await self.db.execute(
+            select(Transaction.transaction_date)
+            .where(Transaction.symbol == symbol)
+            .where(Transaction.transaction_type.in_(['BUY', 'DEPOSIT', 'STAKING', 'AIRDROP']))
+            .order_by(Transaction.transaction_date.asc())
+            .limit(1)
+        )
+        return result.scalar()
+
+    async def _get_holding_period(self, symbol: str) -> int:
+        """
+        Calculate holding period in days for a symbol.
+
+        Args:
+            symbol: Asset symbol
+
+        Returns:
+            Number of days since first purchase, or 0 if no purchases
+        """
+        first_date = await self._get_first_purchase_date(symbol)
+        if not first_date:
+            return 0
+
+        return (datetime.utcnow() - first_date).days
+
+    async def _get_position_performance(self, symbol: str) -> Dict[str, float]:
+        """
+        Get position performance metrics.
+
+        For MVP, returns placeholder values. In future, would calculate
+        from price_history table.
+
+        Args:
+            symbol: Asset symbol
+
+        Returns:
+            Dictionary with performance metrics for 24h, 7d, 30d periods
+        """
+        # MVP: Return placeholder values
+        # Future: Query price_history table and calculate actual performance
+        return {
+            '24h': 0.0,
+            '7d': 0.0,
+            '30d': 0.0
+        }
 
     def _format_holdings_list(self, holdings: list) -> str:
         """

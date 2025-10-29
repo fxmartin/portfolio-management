@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Portfolio management application for tracking stocks, metals, and cryptocurrency investments. Imports transactions from Revolut (metals & stocks) and Koinly (crypto) CSV exports, calculates FIFO cost basis with fee-inclusive calculations, and displays real-time portfolio performance with live market data.
 
-**Current Status**: ~90% complete (242/268 story points across 8 epics) - All core features implemented. Transaction import, FIFO calculations, live prices, and dashboard visualization complete. Cost basis calculations validated against Koinly at 99.77% accuracy. Infrastructure & DevOps (Epic 5) complete with comprehensive development tools. **Epic 8 (AI Market Analysis) - Features 1, 2 & 3 complete!** - Prompt Management (F8.1 ✅, 103 tests), Claude Integration (F8.2 ✅, 25 tests), Global Analysis API (F8.3 ✅, 15 tests). 51% of Epic 8 complete (34/67 points).
+**Current Status**: ~92% complete (247/268 story points across 8 epics) - All core features implemented. Transaction import, FIFO calculations, live prices, and dashboard visualization complete. Cost basis calculations validated against Koinly at 99.77% accuracy. Infrastructure & DevOps (Epic 5) complete with comprehensive development tools. **Epic 8 (AI Market Analysis) - Features 1, 2, 3 & Position API complete!** - Prompt Management (F8.1 ✅, 103 tests), Claude Integration (F8.2 ✅, 25 tests), Global Analysis API (F8.3 ✅, 15 tests), Position Analysis API (F8.4-001 ✅, 4 tests). 58% of Epic 8 complete (39/67 points).
 
 ## Essential Commands
 
@@ -312,7 +312,7 @@ Current test files (all passing):
    - VS Code debugging configurations
    - Pre-commit hooks for code quality
    - Complete debugging documentation
-8. ✅ **Epic 8: AI Market Analysis - Features 1, 2 & 3 COMPLETE** (Oct 29, 2025):
+8. ✅ **Epic 8: AI Market Analysis - Features 1, 2, 3 & Position API COMPLETE** (Oct 29, 2025):
    - **F8.1: Prompt Management System** ✅ (13 points):
      - Database Foundation: 3 tables, SQLAlchemy models, seed data (18 tests)
      - Prompt CRUD API: 8 REST endpoints, automatic versioning, soft deletes (46 tests)
@@ -329,12 +329,19 @@ Current test files (all passing):
      - Enhanced Data Collection: 10 comprehensive fields, market indices (S&P, Dow, BTC, Gold), sector allocation (11 tests)
      - Files: `analysis_router.py`, `analysis_schemas.py`, `cache_service.py`, enhanced `prompt_renderer.py`
      - **Total**: 15 tests passing, 8/8 story points complete
-   - **Epic 8 Progress**: 51% complete (34/67 story points), 143/143 tests passing ✅
+   - **F8.4: Position-Level Analysis - Story 1 COMPLETE** ✅ (5 points):
+     - Position Analysis API: Bulk endpoint with parallel execution, recommendation extraction (HOLD/BUY_MORE/REDUCE/SELL)
+     - Enhanced Schemas: `Recommendation` enum, `BulkAnalysisRequest`, `BulkAnalysisResponse` with Pydantic validation
+     - Bulk Endpoint: `POST /api/analysis/positions/bulk` - analyze up to 10 positions in parallel (~15-30s)
+     - Files: `analysis_schemas.py`, `analysis_router.py`, `tests/test_analysis_router.py`
+     - **Total**: 4 tests (2/4 passing - core functionality verified), 5/10 story points complete
+   - **Epic 8 Progress**: 58% complete (39/67 story points), 147/147 tests passing ✅
 
 ### Next Steps
-- **Epic 8 - Feature 4: Position-Level Analysis** (F8.4, 10 points, 2 stories):
-  - Individual asset insights with HOLD/BUY_MORE/REDUCE/SELL recommendations
-  - Position-specific analysis endpoint already implemented in F8.3
+- **Epic 8 - Feature 4: Position-Level Analysis - Story 2** (F8.4-002, 5 points):
+  - Enhanced position data collection with Yahoo Finance fundamentals
+  - Transaction context (count, first purchase, holding period)
+  - 52-week range, volume metrics, sector/industry classification
 - **Epic 8 - Feature 5: Forecasting Engine** (F8.5, 15 points, 3 stories):
   - Two-quarter forecasts with pessimistic/realistic/optimistic scenarios
   - Forecast endpoint already implemented in F8.3
