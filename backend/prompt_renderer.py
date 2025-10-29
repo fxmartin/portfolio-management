@@ -217,6 +217,17 @@ class PromptDataCollector:
         first_purchase = await self._get_first_purchase_date(symbol)
         holding_period = await self._get_holding_period(symbol)
 
+        # Calculate portfolio percentage
+        all_positions = await self.portfolio_service.get_all_positions()
+        total_portfolio_value = sum(
+            float(p.current_value)
+            for p in all_positions
+            if p.current_value is not None
+        )
+        position_pct = 0.0
+        if total_portfolio_value > 0 and position.current_value:
+            position_pct = (float(position.current_value) / total_portfolio_value) * 100
+
         return {
             # Position basics
             "symbol": position.symbol,
@@ -229,7 +240,7 @@ class PromptDataCollector:
             # P&L
             "unrealized_pnl": position.unrealized_pnl,
             "pnl_percentage": position.unrealized_pnl_percent,
-            "position_percentage": 0.0,  # Would calculate vs total portfolio in real scenario
+            "position_percentage": round(position_pct, 2),
 
             # Market data
             "day_change": 0.0,  # Would come from price service
