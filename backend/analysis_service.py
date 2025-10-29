@@ -345,10 +345,22 @@ class AnalysisService:
         Returns:
             Dictionary with 'recommendation' key or empty dict
         """
-        recommendations = ['HOLD', 'BUY_MORE', 'REDUCE', 'SELL']
-        for rec in recommendations:
-            if rec in analysis_text.upper():
+        # First try: Look for recommendation in proper context (e.g., "### Recommendation: **SELL**")
+        # This handles markdown formatting with ## or ### headers and **bold** text
+        pattern = r'###?\s*Recommendation:\s*\*{0,2}(HOLD|BUY_MORE|REDUCE|SELL)\*{0,2}'
+        match = re.search(pattern, analysis_text, re.IGNORECASE)
+        if match:
+            rec = match.group(1).upper().replace(' ', '_')
+            return {'recommendation': rec}
+
+        # Second try: Check in reverse order (most specific first) to avoid false positives
+        # This ensures "BUY_MORE" is found before "BUY", and prevents matching "HOLD" in "holdings"
+        for rec in ['BUY_MORE', 'REDUCE', 'SELL', 'HOLD']:
+            # Use word boundaries to avoid matching substrings
+            pattern = r'\b' + rec.replace('_', r'[\s_]') + r'\b'
+            if re.search(pattern, analysis_text, re.IGNORECASE):
                 return {'recommendation': rec}
+
         return {}
 
     def _extract_json_from_response(self, response: str) -> Dict[str, Any]:
