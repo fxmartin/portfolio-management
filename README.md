@@ -12,15 +12,65 @@ docker-compose up
 # Frontend will be available at http://localhost:3003
 ```
 
+## Documentation
+
+Comprehensive documentation is available in the [`docs/`](./docs/) directory:
+
+### Core Documentation
+- **[AI Analysis](./docs/AI_ANALYSIS.md)** - Complete guide to AI-powered market analysis system
+  - Prompt templates and data collection
+  - Claude API integration with rate limiting and retries
+  - Response processing and caching strategies
+  - Cost tracking and optimization
+  - 181 tests, 65/70 story points complete
+
+- **[Architecture](./docs/ARCHITECTURE.md)** - System design and technical architecture
+  - Service communication flows
+  - Database schema and relationships
+  - Component design patterns
+  - Technology stack details
+
+- **[Security](./docs/SECURITY.md)** - Security best practices and credential management
+  - Environment variable management
+  - API key storage and rotation
+  - Database credential security
+  - Secret handling guidelines
+
+- **[Testing](./docs/TESTING.md)** - Testing strategy and requirements
+  - 85% code coverage threshold (mandatory)
+  - TDD approach and test types
+  - Running tests and interpreting results
+  - Current test suite status
+
+- **[Debugging](./docs/DEBUGGING.md)** - Comprehensive debugging guide
+  - VS Code debugging configurations
+  - Docker troubleshooting
+  - Database debugging
+  - Common issues and solutions
+
+### Additional Resources
+- **[STORIES.md](./STORIES.md)** - Complete story breakdown and epic definitions (9 epics, 69 stories)
+- **[PRD.md](./PRD.md)** - Product requirements and technical specifications
+- **[CLAUDE.md](./CLAUDE.md)** - Development guidance for AI assistants
+
 ## Project Structure
 
 ```
 portfolio-management/
-├── backend/           # Python/FastAPI backend
-├── frontend/          # React frontend
-├── docker-compose.yml # Docker orchestration
-├── PRD.md            # Product requirements
-└── README.md         # This file
+├── backend/              # Python/FastAPI backend
+├── frontend/             # React frontend
+├── docs/                 # Comprehensive documentation
+│   ├── AI_ANALYSIS.md    # AI analysis system guide
+│   ├── ARCHITECTURE.md   # System architecture
+│   ├── DEBUGGING.md      # Debugging guide
+│   ├── SECURITY.md       # Security best practices
+│   └── TESTING.md        # Testing requirements
+├── stories/              # Epic and story definitions
+├── docker-compose.yml    # Docker orchestration
+├── CLAUDE.md             # AI assistant guidance
+├── PRD.md                # Product requirements
+├── STORIES.md            # Story overview
+└── README.md             # This file
 ```
 
 ## Features
@@ -89,8 +139,15 @@ portfolio-management/
 
 ## Development
 
-Check the [PRD.md](./PRD.md) for detailed requirements and technical specifications.
-See [STORIES.md](./STORIES.md) for the complete story breakdown and epic definitions.
+### Getting Started
+- **[Quick Start Guide](./docs/DEBUGGING.md#development-environment)** - Set up your development environment
+- **[Testing Guide](./docs/TESTING.md)** - Run tests and meet coverage requirements
+- **[Architecture Overview](./docs/ARCHITECTURE.md)** - Understand system design
+
+### Requirements & Planning
+- **[PRD.md](./PRD.md)** - Detailed requirements and technical specifications
+- **[STORIES.md](./STORIES.md)** - Complete story breakdown and epic definitions (9 epics, 69 stories)
+- **[Epic Details](./stories/)** - Individual epic files with acceptance criteria
 
 ## License
 

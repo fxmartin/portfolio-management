@@ -8,10 +8,10 @@ This document provides a high-level overview of all user stories for the Portfol
 
 **Development Metrics**:
 - **Active Development Time**: ~40-50 hours (Oct 21-29, 2025)
-- **Project Completion**: 83% (261/316 story points across 9 epics)
+- **Project Completion**: 74% (261/352 story points across 9 epics)
 - **Activity**: 63+ commits, 23 GitHub issues (all closed ✅), 8 active development days
 - **Test Quality**: 100% backend tests passing (676/676 tests) ✅
-- *Epic 8: AI Market Analysis - COMPLETE! (65/65 story points - 100%) 🎉🎉🎉*
+- *Epic 8: AI Market Analysis - 64% complete (65/101 story points, F8.4-003, F8.7 & F8.8 pending) 🟡*
 - *Epic 7: Manual Transaction Management complete! (39/39 story points) ✅*
 - *Epic 5: Infrastructure & DevOps complete! (13/13 story points) ✅*
 - *Epic 4: Realized P&L feature complete! (13/13 story points) ✅*
@@ -85,16 +85,55 @@ Stories are organized into 9 major epics, each with its own detailed documentati
 | [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | ✅ Complete | 100% (13/13 pts) | Docker, dev tools, debugging |
 | [Epic 6: UI Modernization](./stories/epic-06-ui-modernization.md) | 7 | 18 | ✅ Complete | 100% (18/18 pts) | Sidebar, tabs, theme |
 | [Epic 7: Manual Transactions](./stories/epic-07-manual-transaction-management.md) | 6 | 39 | ✅ Complete | 100% (39/39 pts) | CRUD API ✅, Validation ✅, Tests ✅ |
-| [Epic 8: AI Market Analysis](./stories/epic-08-overview.md) | 13 | 65 | ✅ Complete | 100% (65/65 pts) | All 6 features complete! 🎉 |
+| [Epic 8: AI Market Analysis](./stories/epic-08-overview.md) | 20 | 101 | 🟡 In Progress | 64% (65/101 pts) | F8.4-003, F8.7 & F8.8 pending |
 | [Epic 9: Settings Management](./stories/epic-09-settings-management.md) | 12 | 50 | 🔴 Not Started | 0% (0/50 pts) | Future enhancement |
-| **Total** | **69** | **316** | **In Progress** | **83%** (261/316 pts) | |
+| **Total** | **76** | **352** | **In Progress** | **74%** (261/352 pts) | |
 
 ## Recent Updates (Oct 29, 2025)
 
-### 🎉🎉 Epic 8: AI Market Analysis - 100% COMPLETE! 🎉🎉
-**Status**: ALL 6 Features Complete! F8.1 Prompt Mgmt ✅ + F8.2 Claude ✅ + F8.3 Global ✅ + F8.4 Position ✅ + F8.5 Forecasting ✅ + F8.6 Analysis UI ✅
-**Achievement**: Full AI-powered analysis dashboard with Claude integration, forecasting engine, and interactive React UI
-**Progress**: 100% (65/65 story points) - Analysis UI Dashboard complete with 4 critical bug fixes (#20, #21, #22, #23)!
+### 🟡 Epic 8: AI Market Analysis - 64% Complete (F8.4-003, F8.7 & F8.8 Added)
+**Status**: 5/8 Features Complete! F8.1 ✅ + F8.2 ✅ + F8.3 ✅ + F8.4 🟡 (2/3) + F8.5 ✅ + F8.6 ✅ + F8.7 🔴 + F8.8 🔴
+**Progress**: 64% (65/101 story points)
+
+**New Features Added**:
+- **F8.4-003: Portfolio Context Integration** (5 pts) - Portfolio composition in position analysis
+  - Asset allocation, sector breakdown, top holdings, concentration metrics
+  - Strategic recommendations based on diversification and concentration risk
+  - Transforms analysis from tactical to strategic
+
+- **F8.7: AI-Powered Portfolio Rebalancing** (18 pts) - NEW FEATURE! 🆕
+  - **F8.7-001**: Rebalancing Analysis Engine (8 pts)
+    - Calculate current vs target allocation (moderate/aggressive/conservative/custom)
+    - Identify overweight/underweight positions with ±5% trigger threshold
+    - Estimate transaction costs and rebalancing delta
+  - **F8.7-002**: Claude-Powered Rebalancing Recommendations (5 pts)
+    - Specific buy/sell recommendations with quantities and EUR amounts
+    - Rationale for each action considering market conditions
+    - Prioritized by deviation severity with timing suggestions
+  - **F8.7-003**: Rebalancing UI Dashboard (5 pts)
+    - Visual allocation comparison (current vs target)
+    - Prioritized recommendations list with expand/collapse
+    - Model selector (moderate/aggressive/conservative/custom)
+    - ⚖️ Scale icon in sidebar navigation
+
+- **F8.8: Strategy-Driven Portfolio Allocation** (13 pts) - **NEWEST FEATURE!** 🆕🆕
+  - **F8.8-001**: Investment Strategy Storage & API (5 pts)
+    - Database table for user-defined investment strategies
+    - CRUD API (GET/POST/PUT/DELETE) with version tracking
+    - Supports free-form strategy text + optional structured fields
+    - Example: "Take profit at +20%, reinvest in growing sectors, target 15-20% YoY growth"
+  - **F8.8-002**: Claude Strategy-Driven Recommendations (5 pts)
+    - Claude analyzes portfolio alignment with personal strategy
+    - Identifies profit-taking opportunities based on strategy rules
+    - Position assessments (fits strategy? recommended action?)
+    - Suggests new positions aligned with investment philosophy
+    - Action plan: Immediate/Redeployment/Gradual adjustments
+  - **F8.8-003**: Strategy Management UI (3 pts)
+    - Strategy editor with textarea (5000 chars, min 20 words)
+    - Optional structured fields (target return, risk, max positions, profit-taking threshold)
+    - Strategy template library (Conservative/Balanced/Aggressive/Income/Value)
+    - Recommendations display with alignment score gauge (0-10)
+    - 🎯 Target icon in sidebar navigation
 
 **Feature 8.6 Highlights** (Completed Oct 29, 2025):
 - Created 5 new React components (GlobalAnalysisCard, PositionAnalysisList, PositionAnalysisCard, ForecastPanel, Analysis page)
