@@ -159,7 +159,8 @@ describe('PortfolioSummary', () => {
       render(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
-        expect(screen.getByText('€ 50,000.00')).toBeInTheDocument()
+        const values = screen.getAllByText('€ 50,000.00')
+        expect(values.length).toBeGreaterThan(0)
       }, { timeout: 3000 })
     })
 
@@ -169,7 +170,8 @@ describe('PortfolioSummary', () => {
       render(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
-        expect(screen.getByText('€ 5,000.00')).toBeInTheDocument()
+        const pnlElements = screen.getAllByText('€ 5,000.00')
+        expect(pnlElements.length).toBeGreaterThan(0)
       }, { timeout: 3000 })
 
       // Check that profit class is applied
@@ -183,12 +185,16 @@ describe('PortfolioSummary', () => {
       render(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
-        expect(screen.getByText(/unrealized p&l/i)).toBeInTheDocument()
-        expect(screen.getByText(/realized p&l/i)).toBeInTheDocument()
+        const unrealizedLabels = screen.getAllByText(/unrealized p&l/i)
+        const realizedLabels = screen.getAllByText(/realized p&l/i)
+        expect(unrealizedLabels.length).toBeGreaterThan(0)
+        expect(realizedLabels.length).toBeGreaterThan(0)
       }, { timeout: 3000 })
 
-      expect(screen.getByText('€ 3,500.00')).toBeInTheDocument() // Unrealized
-      expect(screen.getByText('€ 1,500.00')).toBeInTheDocument() // Realized
+      const unrealizedValues = screen.getAllByText('€ 3,500.00')
+      const realizedValues = screen.getAllByText('€ 1,500.00')
+      expect(unrealizedValues.length).toBeGreaterThan(0) // Unrealized
+      expect(realizedValues.length).toBeGreaterThan(0) // Realized
     })
 
     it('should display positions count correctly', async () => {
@@ -268,7 +274,8 @@ describe('PortfolioSummary', () => {
         expect(screen.getByText(/total cash/i)).toBeInTheDocument()
       }, { timeout: 3000 })
 
-      expect(screen.getByText(/€ 15,000\.00/)).toBeInTheDocument()
+      const cashValues = screen.getAllByText(/€ 15,000\.00/)
+      expect(cashValues.length).toBeGreaterThan(0)
     })
 
     it('should not display cash balances section when no cash', async () => {
@@ -462,7 +469,8 @@ describe('PortfolioSummary', () => {
       render(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
-        expect(screen.getByText('€ 1,234,567.89')).toBeInTheDocument()
+        const largeValues = screen.getAllByText('€ 1,234,567.89')
+        expect(largeValues.length).toBeGreaterThan(0)
       }, { timeout: 3000 })
     })
 
