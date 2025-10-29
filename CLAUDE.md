@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Portfolio management application for tracking stocks, metals, and cryptocurrency investments. Imports transactions from Revolut (metals & stocks) and Koinly (crypto) CSV exports, calculates FIFO cost basis with fee-inclusive calculations, and displays real-time portfolio performance with live market data.
 
-**Current Status**: ~92% complete (247/268 story points across 8 epics) - All core features implemented. Transaction import, FIFO calculations, live prices, and dashboard visualization complete. Cost basis calculations validated against Koinly at 99.77% accuracy. Infrastructure & DevOps (Epic 5) complete with comprehensive development tools. **Epic 8 (AI Market Analysis) - Features 1, 2, 3 & Position API complete!** - Prompt Management (F8.1 ✅, 103 tests), Claude Integration (F8.2 ✅, 25 tests), Global Analysis API (F8.3 ✅, 15 tests), Position Analysis API (F8.4-001 ✅, 4 tests). 58% of Epic 8 complete (39/67 points).
+**Current Status**: ~81% complete (257/316 story points across 9 epics) - All core features implemented. Transaction import, FIFO calculations, live prices, and dashboard visualization complete. Cost basis calculations validated against Koinly at 99.77% accuracy. Infrastructure & DevOps (Epic 5) complete with comprehensive development tools. **Epic 8 (AI Market Analysis) - Features 1-5 complete!** - Prompt Management (F8.1 ✅, 103 tests), Claude Integration (F8.2 ✅, 25 tests), Global Analysis API (F8.3 ✅, 15 tests), Position Analysis (F8.4 ✅, 23 tests), Forecasting Engine (F8.5 ✅, 15 tests). 88% of Epic 8 complete (57/65 points). **Epic 9 (Settings Management)** planned for centralized configuration UI.
 
 ## Essential Commands
 

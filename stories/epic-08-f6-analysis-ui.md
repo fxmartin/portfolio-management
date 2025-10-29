@@ -4,9 +4,19 @@
 **Priority**: High
 **Complexity**: 8 story points
 
-### Story F8.6-001: Analysis Dashboard Tab
-**Status**: 🔴 Not Started
+### Story F8.6-001: Analysis Dashboard Tab ✅
+**Status**: ✅ COMPLETE (Oct 29, 2025)
 **User Story**: As FX, I want a dedicated Analysis tab so that I can easily access all AI insights
+
+**Implementation Summary**:
+- Created 5 new React components with TypeScript
+- Added Brain icon to sidebar navigation
+- Implemented responsive two-column layout
+- Full integration with Epic 8 backend APIs
+- Loading states and error handling
+- Cache indicators and refresh functionality
+- Markdown rendering with ReactMarkdown
+- Fixed 4 critical bugs post-launch (#20, #21, #22, #23)
 
 **Acceptance Criteria**:
 - **Given** I navigate to the Analysis tab
@@ -232,9 +242,17 @@ export const PositionAnalysisList: React.FC<PositionAnalysisListProps> = ({
 
 ---
 
-### Story F8.6-002: Forecast Visualization
-**Status**: 🔴 Not Started
+### Story F8.6-002: Forecast Visualization ✅
+**Status**: ✅ COMPLETE (Oct 29, 2025)
 **User Story**: As FX, I want to visualize forecasts with charts so that I can easily understand the scenarios
+
+**Implementation Summary**:
+- Created ForecastPanel component with Recharts integration
+- Q1/Q2 quarter toggle functionality
+- Bar chart visualization with color-coded scenarios
+- Expandable scenario cards showing assumptions and risks
+- Overall outlook summary display
+- Fixed forecast schema mismatch bug (#20)
 
 **Acceptance Criteria**:
 - **Given** I view a forecast

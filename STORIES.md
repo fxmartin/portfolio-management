@@ -8,10 +8,10 @@ This document provides a high-level overview of all user stories for the Portfol
 
 **Development Metrics**:
 - **Active Development Time**: ~40-50 hours (Oct 21-29, 2025)
-- **Project Completion**: 94% (252/268 story points across 8 epics)
-- **Activity**: 57+ commits, 19 GitHub issues (17 closed), 8 active development days
+- **Project Completion**: 83% (261/316 story points across 9 epics)
+- **Activity**: 63+ commits, 23 GitHub issues (all closed ✅), 8 active development days
 - **Test Quality**: 100% backend tests passing (676/676 tests) ✅
-- *Epic 8: AI Market Analysis - Features 1-4 COMPLETE! (49/67 story points - 73%) 🎉*
+- *Epic 8: AI Market Analysis - COMPLETE! (65/65 story points - 100%) 🎉🎉🎉*
 - *Epic 7: Manual Transaction Management complete! (39/39 story points) ✅*
 - *Epic 5: Infrastructure & DevOps complete! (13/13 story points) ✅*
 - *Epic 4: Realized P&L feature complete! (13/13 story points) ✅*
@@ -61,7 +61,7 @@ This document provides a high-level overview of all user stories for the Portfol
 
 ## Story Organization
 
-Stories are organized into 8 major epics, each with its own detailed documentation:
+Stories are organized into 9 major epics, each with its own detailed documentation:
 
 1. **[Epic 1: Transaction Import & Management](./stories/epic-01-transaction-import.md)** - CSV upload and parsing
 2. **[Epic 2: Portfolio Calculation Engine](./stories/epic-02-portfolio-calculation.md)** - FIFO calculations and P&L
@@ -71,6 +71,7 @@ Stories are organized into 8 major epics, each with its own detailed documentati
 6. **[Epic 6: UI Modernization & Navigation](./stories/epic-06-ui-modernization.md)** - Modern sidebar and theme
 7. **[Epic 7: Manual Transaction Management](./stories/epic-07-manual-transaction-management.md)** - Create, edit, delete transactions
 8. **[Epic 8: AI-Powered Market Analysis](./stories/epic-08-ai-market-analysis.md)** - Claude-powered insights and forecasts
+9. **[Epic 9: Settings Management](./stories/epic-09-settings-management.md)** - User-configurable settings and preferences
 
 ## Overall Progress Tracking
 
@@ -84,15 +85,25 @@ Stories are organized into 8 major epics, each with its own detailed documentati
 | [Epic 5: Infrastructure](./stories/epic-05-infrastructure.md) | 3 | 13 | ✅ Complete | 100% (13/13 pts) | Docker, dev tools, debugging |
 | [Epic 6: UI Modernization](./stories/epic-06-ui-modernization.md) | 7 | 18 | ✅ Complete | 100% (18/18 pts) | Sidebar, tabs, theme |
 | [Epic 7: Manual Transactions](./stories/epic-07-manual-transaction-management.md) | 6 | 39 | ✅ Complete | 100% (39/39 pts) | CRUD API ✅, Validation ✅, Tests ✅ |
-| [Epic 8: AI Market Analysis](./stories/epic-08-overview.md) | 13 | 65 | 🟡 In Progress | 88% (57/65 pts) | Features 1-5 Complete ✅ |
-| **Total** | **57** | **266** | **In Progress** | **~95%** (257/266 pts) | |
+| [Epic 8: AI Market Analysis](./stories/epic-08-overview.md) | 13 | 65 | ✅ Complete | 100% (65/65 pts) | All 6 features complete! 🎉 |
+| [Epic 9: Settings Management](./stories/epic-09-settings-management.md) | 12 | 50 | 🔴 Not Started | 0% (0/50 pts) | Future enhancement |
+| **Total** | **69** | **316** | **In Progress** | **83%** (261/316 pts) | |
 
 ## Recent Updates (Oct 29, 2025)
 
-### Epic 8: AI Market Analysis - Features 1-5 COMPLETE! 🎉
-**Status**: F8.1 Prompt Mgmt + F8.2 Claude + F8.3 Global + F8.4 Position + F8.5 Forecasting Complete! 181/181 tests passing ✅
-**Achievement**: Full AI forecasting engine with historical data, performance metrics, and two-quarter scenarios
-**Progress**: 88% (57/65 story points) - AI-powered forecasts with 365 days of price history and market context ready!
+### 🎉🎉 Epic 8: AI Market Analysis - 100% COMPLETE! 🎉🎉
+**Status**: ALL 6 Features Complete! F8.1 Prompt Mgmt ✅ + F8.2 Claude ✅ + F8.3 Global ✅ + F8.4 Position ✅ + F8.5 Forecasting ✅ + F8.6 Analysis UI ✅
+**Achievement**: Full AI-powered analysis dashboard with Claude integration, forecasting engine, and interactive React UI
+**Progress**: 100% (65/65 story points) - Analysis UI Dashboard complete with 4 critical bug fixes (#20, #21, #22, #23)!
+
+**Feature 8.6 Highlights** (Completed Oct 29, 2025):
+- Created 5 new React components (GlobalAnalysisCard, PositionAnalysisList, PositionAnalysisCard, ForecastPanel, Analysis page)
+- Added Brain icon to sidebar navigation
+- Implemented Recharts for forecast visualization with Q1/Q2 toggle
+- Fixed forecast schema mismatch (issue #20)
+- Fixed P&L percentage field name mismatch (issue #21)
+- Fixed recommendation extraction bug (issue #22)
+- Fixed portfolio weight hardcoded to 0.0% (issue #23)
 
 #### Story F8.1-001: Database Schema for Prompts ✅ (5 points)
 - **Database Migration**: 3 tables (`prompts`, `prompt_versions`, `analysis_results`)
@@ -748,7 +759,13 @@ All issues resolved and Epic 7 is fully operational in production.
 - **Goal**: Integrate Claude AI for intelligent market analysis, forecasts, and actionable insights
 - **Features**: Prompt management system, Claude API integration, global & position-level analysis, two-quarter forecasts with scenarios, forecast accuracy tracking, analysis dashboard UI
 - **Key Stories**: 14 stories, 67 points
-- **Status**: 🔴 Not Started (0% complete - Advanced feature providing AI-powered investment insights)
+- **Status**: 🟡 In Progress (88% complete - Features 1-5 complete, UI dashboard remaining)
+
+### [Epic 9: Settings Management](./stories/epic-09-settings-management.md)
+- **Goal**: User-configurable settings interface for managing application configuration, API keys, and preferences
+- **Features**: Settings database & API, Settings UI with category tabs, secure API key management, prompt integration, display & system preferences
+- **Key Stories**: 12 stories, 50 points
+- **Status**: 🔴 Not Started (0% complete - Future enhancement for centralized configuration management)
 
 ## MVP Implementation Plan
 
@@ -806,6 +823,10 @@ All issues resolved and Epic 7 is fully operational in production.
 - 📈 [Live Market Data Stories](./stories/epic-03-live-market-data.md)
 - 📉 [Visualization Stories](./stories/epic-04-portfolio-visualization.md)
 - 🐳 [Infrastructure Stories](./stories/epic-05-infrastructure.md)
+- 🎨 [UI Modernization Stories](./stories/epic-06-ui-modernization.md)
+- ✏️ [Manual Transaction Stories](./stories/epic-07-manual-transaction-management.md)
+- 🤖 [AI Market Analysis Stories](./stories/epic-08-overview.md)
+- ⚙️ [Settings Management Stories](./stories/epic-09-settings-management.md)
 
 ## Story Status Legend
 - 🔴 **Not Started**: Story has not been begun
