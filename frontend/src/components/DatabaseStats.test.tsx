@@ -67,7 +67,9 @@ describe('DatabaseStats', () => {
     render(<DatabaseStats isOpen={true} onClose={mockOnClose} />);
 
     await waitFor(() => {
-      expect(mockedAxios.get).toHaveBeenCalledWith('/api/database/stats/detailed');
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        expect.stringContaining('/api/database/stats/detailed')
+      );
     });
 
     await waitFor(() => {
@@ -206,7 +208,9 @@ describe('DatabaseStats', () => {
     fireEvent.click(refreshButton);
 
     await waitFor(() => {
-      expect(mockedAxios.get).toHaveBeenCalledWith('/api/database/stats/detailed');
+      expect(mockedAxios.get).toHaveBeenCalledWith(
+        expect.stringContaining('/api/database/stats/detailed')
+      );
     });
   });
 

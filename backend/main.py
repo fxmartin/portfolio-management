@@ -14,6 +14,8 @@ try:
     from .portfolio_router import router as portfolio_router
     from .monitoring_router import router as monitoring_router
     from .transaction_router import router as transaction_router
+    from .prompt_router import router as prompt_router
+    from .analysis_router import router as analysis_router
 except ImportError:
     from database import init_db_async, test_connection
     from import_router import router as import_router
@@ -21,6 +23,8 @@ except ImportError:
     from portfolio_router import router as portfolio_router
     from monitoring_router import router as monitoring_router
     from transaction_router import router as transaction_router
+    from prompt_router import router as prompt_router
+    from analysis_router import router as analysis_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -82,6 +86,8 @@ app.include_router(database_router)
 app.include_router(monitoring_router)
 app.include_router(portfolio_router)
 app.include_router(transaction_router)
+app.include_router(prompt_router)
+app.include_router(analysis_router)
 
 @app.get("/")
 async def root():
