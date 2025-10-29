@@ -15,7 +15,7 @@ interface Position {
   current_value: number
   total_cost_basis: number
   unrealized_pnl: number
-  unrealized_pnl_percentage: number
+  unrealized_pnl_percent: number
 }
 
 interface PositionAnalysisListProps {
@@ -127,7 +127,7 @@ export const PositionAnalysisList: React.FC<PositionAnalysisListProps> = ({
               </span>
               <span className="pnl-percentage">
                 ({(position.unrealized_pnl ?? 0) >= 0 ? '+' : ''}
-                {position.unrealized_pnl_percentage?.toFixed(2) ?? '0.00'}%)
+                {position.unrealized_pnl_percent?.toFixed(2) ?? '0.00'}%)
               </span>
             </div>
           </div>
