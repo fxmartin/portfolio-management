@@ -299,3 +299,214 @@ async def _get_holding_period(self, symbol: str) -> int:
 - Files modified: `prompt_renderer.py`, test files
 
 **Completed By**: Claude Code
+
+---
+
+### Story F8.4-003: Portfolio Context Integration
+**Status**: 🔴 Not Started
+**User Story**: As FX, I want position analysis to consider my entire portfolio composition so that I receive strategic recommendations aligned with my overall risk profile and diversification
+
+**Acceptance Criteria**:
+- **Given** I request analysis for a specific position
+- **When** Claude analyzes the position
+- **Then** it receives full portfolio context including all positions
+- **And** context includes total portfolio value and breakdown by asset type
+- **And** context includes sector/industry allocation percentages
+- **And** context identifies concentration risks (e.g., 60% in tech stocks)
+- **And** recommendations consider portfolio-level diversification
+- **And** analysis addresses whether position should be increased, held, or reduced based on overall allocation
+- **And** context includes top 10 holdings for relative comparison
+
+**Business Value**:
+Position analysis transforms from tactical ("this stock looks good") to strategic ("given your 60% tech exposure, reducing this position would improve diversification").
+
+**Example Context Enhancement**:
+
+**Before (Current)**:
+```python
+# Only individual position data
+{
+    "symbol": "NVDA",
+    "quantity": 50,
+    "value": €5000,
+    "portfolio_weight": 10,  # Just a percentage number
+    "pnl_percentage": 15.5
+}
+```
+
+**After (With Portfolio Context)**:
+```python
+{
+    # Individual position data (as before)
+    "symbol": "NVDA",
+    "quantity": 50,
+    "value": €5000,
+    "portfolio_weight": 10,
+    "pnl_percentage": 15.5,
+
+    # NEW: Full portfolio context
+    "portfolio_context": {
+        "total_value": "€50,000",
+        "position_count": 15,
+
+        # Asset type breakdown
+        "asset_allocation": {
+            "stocks": {"value": "€30,000", "percentage": 60, "count": 8},
+            "crypto": {"value": "€15,000", "percentage": 30, "count": 5},
+            "metals": {"value": "€5,000", "percentage": 10, "count": 2}
+        },
+
+        # Sector allocation (for stocks)
+        "sector_allocation": {
+            "Technology": {"value": "€22,500", "percentage": 75, "count": 5},  # Concentration!
+            "Finance": {"value": "€6,000", "percentage": 20, "count": 2},
+            "Consumer": {"value": "€1,500", "percentage": 5, "count": 1}
+        },
+
+        # Top holdings for context
+        "top_10_holdings": [
+            {"symbol": "BTC", "value": "€10,000", "weight": 20, "asset_type": "crypto"},
+            {"symbol": "MSTR", "value": "€8,000", "weight": 16, "asset_type": "stock", "sector": "Technology"},
+            {"symbol": "NVDA", "value": "€5,000", "weight": 10, "asset_type": "stock", "sector": "Technology"},
+            # ... 7 more
+        ],
+
+        # Concentration metrics
+        "concentration": {
+            "top_3_weight": 46,  # BTC + MSTR + NVDA = 46%
+            "single_sector_max": 75,  # Tech is 75% of stocks
+            "single_asset_max": 20  # BTC is 20% of total
+        }
+    }
+}
+```
+
+**Enhanced Prompt Template Variables**:
+```python
+# New variables for position analysis prompt
+{
+    # Existing variables
+    "{symbol}", "{quantity}", "{current_price}", "{cost_basis}", "{pnl}", ...
+
+    # NEW portfolio context variables
+    "{portfolio_total_value}",
+    "{portfolio_position_count}",
+    "{asset_allocation}",  # Formatted string: "Stocks: 60% (€30k), Crypto: 30% (€15k), Metals: 10% (€5k)"
+    "{sector_allocation}",  # "Technology: 75%, Finance: 20%, Consumer: 5%"
+    "{top_holdings}",  # Formatted list with weights
+    "{concentration_metrics}",  # "Top 3 positions: 46%, Max sector: 75%, Max single asset: 20%"
+    "{position_relative_rank}"  # "3rd largest position (10% of portfolio)"
+}
+```
+
+**Example Claude Analysis Output**:
+
+**Before**:
+> "NVDA shows strong fundamentals with 15.5% gains. The semiconductor sector continues to perform well. **Recommendation: BUY_MORE**"
+
+**After (with portfolio context)**:
+> "NVDA shows strong fundamentals with 15.5% gains. However, **your portfolio is already heavily concentrated in technology (75% of stock holdings)**, and NVDA represents your 3rd largest position at 10% of total portfolio. Adding more NVDA would increase sector concentration risk beyond prudent levels. **Recommendation: HOLD** - Consider taking profits or reallocating to underweighted sectors like finance or consumer to improve diversification."
+
+**Implementation Tasks**:
+1. **Enhanced Data Collection** (`prompt_renderer.py`):
+   - Add `_collect_portfolio_context()` method to gather:
+     - Asset allocation across all positions
+     - Sector allocation for stock positions
+     - Top 10 holdings by portfolio weight
+     - Concentration metrics (top 3 weight, max sector, max single asset)
+   - Add `_calculate_concentration_metrics()` helper
+   - Add `_format_portfolio_context()` for human-readable output
+
+2. **Prompt Template Updates** (database seed):
+   - Update position analysis prompt template with new variables
+   - Add guidance for Claude to consider portfolio context in recommendations
+   - Example addition to prompt:
+     ```
+     ## Portfolio Context
+
+     Total Portfolio Value: {portfolio_total_value}
+     Number of Positions: {portfolio_position_count}
+
+     Asset Allocation:
+     {asset_allocation}
+
+     Sector Allocation (Stocks):
+     {sector_allocation}
+
+     Top 10 Holdings:
+     {top_holdings}
+
+     Concentration Metrics:
+     {concentration_metrics}
+
+     Position Rank: This is the {position_relative_rank}
+
+     **When providing recommendations, consider:**
+     1. Is this position's sector overweight or underweight in the portfolio?
+     2. Would increasing this position create concentration risk?
+     3. How does this position's weight compare to other holdings?
+     4. Should portfolio rebalancing be considered?
+     ```
+
+3. **Database Migration** (if needed):
+   - Update position analysis prompt seed data with new template
+
+4. **Response Validation**:
+   - Ensure recommendations consider portfolio-level factors
+   - Add logging for context variables passed to Claude
+
+**Definition of Done**:
+- [ ] Enhanced data collection includes full portfolio context
+- [ ] Asset allocation calculated across all positions
+- [ ] Sector allocation calculated for stock positions
+- [ ] Top 10 holdings included with weights
+- [ ] Concentration metrics calculated (top 3, max sector, max single asset)
+- [ ] Position analysis prompt template updated with new variables
+- [ ] Prompt seed data updated in database
+- [ ] Unit tests for portfolio context collection (≥85% coverage)
+- [ ] Integration tests verify context is passed to Claude
+- [ ] Manual testing confirms improved recommendations
+- [ ] Performance: Context collection adds <500ms overhead
+- [ ] Documentation updated with new prompt variables
+
+**Test Coverage Requirements**:
+1. **Unit Tests** (15 tests minimum):
+   - `test_collect_portfolio_context()` - Full context collection
+   - `test_calculate_asset_allocation()` - Asset type breakdown
+   - `test_calculate_sector_allocation()` - Sector distribution for stocks
+   - `test_get_top_holdings()` - Top 10 positions by weight
+   - `test_calculate_concentration_metrics()` - All 3 metrics
+   - `test_format_portfolio_context()` - Human-readable formatting
+   - `test_portfolio_context_with_empty_portfolio()` - Edge case
+   - `test_portfolio_context_with_single_position()` - Edge case
+   - `test_portfolio_context_with_no_stocks()` - No sector allocation
+   - `test_portfolio_context_with_all_same_sector()` - 100% concentration
+   - `test_position_relative_rank()` - Ranking logic
+   - `test_portfolio_context_caching()` - Performance optimization
+   - `test_portfolio_context_error_handling()` - Graceful degradation
+   - `test_portfolio_context_currency_consistency()` - All EUR
+   - `test_portfolio_context_zero_values()` - Handle zero-value positions
+
+2. **Integration Tests** (5 tests minimum):
+   - `test_position_analysis_includes_portfolio_context()` - End-to-end
+   - `test_portfolio_context_in_rendered_prompt()` - Template rendering
+   - `test_claude_receives_full_context()` - API integration
+   - `test_recommendation_considers_concentration()` - Validation
+   - `test_portfolio_context_performance()` - <500ms overhead
+
+**Story Points**: 5
+**Priority**: High
+**Dependencies**:
+- F8.4-002 (Position Context Enhancement) ✅ Complete
+- F2.2-001 (Portfolio Service) ✅ Complete
+**Risk Level**: Low
+**Estimated Effort**: 4-6 hours
+**Assigned To**: Unassigned
+
+**Technical Notes**:
+- Reuse existing portfolio service methods where possible
+- Consider caching portfolio context (changes infrequently)
+- Use Redis to cache portfolio context for 5 minutes (most analyses happen in bursts)
+- Format monetary values consistently in EUR with proper separators
+- Consider performance impact of additional database queries (use joins)
+- Sector allocation only applies to stocks - skip for crypto/metals

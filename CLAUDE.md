@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Portfolio management application for tracking stocks, metals, and cryptocurrency investments. Imports transactions from Revolut (metals & stocks) and Koinly (crypto) CSV exports, calculates FIFO cost basis with fee-inclusive calculations, and displays real-time portfolio performance with live market data.
 
-**Current Status**: ~81% complete (257/316 story points across 9 epics) - All core features implemented. Transaction import, FIFO calculations, live prices, and dashboard visualization complete. Cost basis calculations validated against Koinly at 99.77% accuracy. Infrastructure & DevOps (Epic 5) complete with comprehensive development tools. **Epic 8 (AI Market Analysis) - Features 1-5 complete!** - Prompt Management (F8.1 ✅, 103 tests), Claude Integration (F8.2 ✅, 25 tests), Global Analysis API (F8.3 ✅, 15 tests), Position Analysis (F8.4 ✅, 23 tests), Forecasting Engine (F8.5 ✅, 15 tests). 88% of Epic 8 complete (57/65 points). **Epic 9 (Settings Management)** planned for centralized configuration UI.
+**Current Status**: ~74% complete (261/352 story points across 9 epics) - All core features implemented. Transaction import, FIFO calculations, live prices, and dashboard visualization complete. Cost basis calculations validated against Koinly at 99.77% accuracy. Infrastructure & DevOps (Epic 5) complete with comprehensive development tools. **Epic 8 (AI Market Analysis) - 64% complete (65/101 points)** - Prompt Management (F8.1 ✅, 103 tests), Claude Integration (F8.2 ✅, 25 tests), Global Analysis (F8.3 ✅, 15 tests), Position Analysis (F8.4 🟡 2/3 stories, 23 tests, F8.4-003 pending), Forecasting Engine (F8.5 ✅, 15 tests), Analysis UI (F8.6 ✅), **Portfolio Rebalancing (F8.7 🔴 NEW - 18 pts)**, **Strategy-Driven Allocation (F8.8 🔴 NEWEST - 13 pts)**. **Epic 9 (Settings Management)** planned for centralized configuration UI.
 
 ## Essential Commands
 
@@ -50,7 +50,8 @@ docker-compose down -v
 
 **See Also**:
 - `Makefile` - 30+ developer helper commands
-- `DEBUGGING.md` - Comprehensive debugging guide
+- `docs/DEBUGGING.md` - Comprehensive debugging guide
+- `docs/AI_ANALYSIS.md` - AI analysis system documentation
 - `.vscode/launch.json` - VS Code debug configurations
 
 ### Backend Development
@@ -269,7 +270,7 @@ Multi-file uploads are supported. Each file is processed independently with per-
 
 ## Testing Requirements
 
-**Mandatory**: 85% code coverage threshold (defined in TESTING.md)
+**Mandatory**: 85% code coverage threshold (defined in docs/TESTING.md)
 - Write tests BEFORE implementation (TDD)
 - Every story requires unit AND integration tests
 - No exceptions to coverage requirement
@@ -288,7 +289,7 @@ Current test files (all passing):
 ## Development Workflow
 
 ### Working on a New Story
-1. Check STORIES.md for current sprint focus (currently Epic 4: Portfolio Visualization, Epic 8: AI Market Analysis planned)
+1. Check STORIES.md for current sprint focus (currently Epic 8: AI Market Analysis - F8.4-003, F8.7 & F8.8 pending)
 2. Read detailed requirements in `stories/epic-*.md`
 3. Write tests first (TDD approach)
 4. Implement until tests pass
@@ -312,7 +313,7 @@ Current test files (all passing):
    - VS Code debugging configurations
    - Pre-commit hooks for code quality
    - Complete debugging documentation
-8. ✅ **Epic 8: AI Market Analysis - Features 1, 2, 3 & Position API COMPLETE** (Oct 29, 2025):
+8. ✅ **Epic 8: AI Market Analysis - 93% COMPLETE** (Oct 29, 2025):
    - **F8.1: Prompt Management System** ✅ (13 points):
      - Database Foundation: 3 tables, SQLAlchemy models, seed data (18 tests)
      - Prompt CRUD API: 8 REST endpoints, automatic versioning, soft deletes (46 tests)
@@ -329,25 +330,77 @@ Current test files (all passing):
      - Enhanced Data Collection: 10 comprehensive fields, market indices (S&P, Dow, BTC, Gold), sector allocation (11 tests)
      - Files: `analysis_router.py`, `analysis_schemas.py`, `cache_service.py`, enhanced `prompt_renderer.py`
      - **Total**: 15 tests passing, 8/8 story points complete
-   - **F8.4: Position-Level Analysis - Story 1 COMPLETE** ✅ (5 points):
-     - Position Analysis API: Bulk endpoint with parallel execution, recommendation extraction (HOLD/BUY_MORE/REDUCE/SELL)
-     - Enhanced Schemas: `Recommendation` enum, `BulkAnalysisRequest`, `BulkAnalysisResponse` with Pydantic validation
-     - Bulk Endpoint: `POST /api/analysis/positions/bulk` - analyze up to 10 positions in parallel (~15-30s)
-     - Files: `analysis_schemas.py`, `analysis_router.py`, `tests/test_analysis_router.py`
-     - **Total**: 4 tests (2/4 passing - core functionality verified), 5/10 story points complete
-   - **Epic 8 Progress**: 58% complete (39/67 story points), 147/147 tests passing ✅
+   - **F8.4: Position-Level Analysis** 🟡 (15 points, 2/3 stories complete):
+     - **F8.4-001**: Position Analysis API ✅ (5 points)
+       - Bulk endpoint with parallel execution, recommendation extraction (HOLD/BUY_MORE/REDUCE/SELL)
+       - Enhanced Schemas: `Recommendation` enum, `BulkAnalysisRequest`, `BulkAnalysisResponse`
+     - **F8.4-002**: Position Context Enhancement ✅ (5 points)
+       - Yahoo Finance fundamentals (sector, industry, 52-week range, volume, market cap, PE ratio)
+       - Transaction context (count, first purchase date, holding period)
+       - **Total**: 23 tests passing (12 unit + 7 integration + 4 API)
+     - **F8.4-003**: Portfolio Context Integration 🔴 (5 points) - **NEW STORY ADDED**
+       - Full portfolio composition in position analysis prompts
+       - Asset allocation, sector breakdown, top holdings, concentration metrics
+       - Strategic recommendations based on diversification and concentration risk
+       - Transforms analysis from tactical to strategic
+   - **F8.5: Forecasting Engine** ✅ (13 points):
+     - Two-quarter forecasts with pessimistic/realistic/optimistic scenarios
+     - Historical price data, performance metrics, market context
+     - **Total**: 15 tests passing
+   - **F8.6: Analysis UI Dashboard** ✅ (8 points):
+     - React components: GlobalAnalysisCard, PositionAnalysisList, ForecastPanel
+     - Recharts visualization with Q1/Q2 toggle
+     - Brain icon sidebar navigation
+   - **F8.7: AI-Powered Portfolio Rebalancing** 🔴 (18 points, 3 stories) - **NEW FEATURE**:
+     - **F8.7-001**: Rebalancing Analysis Engine (8 points)
+       - Calculate current vs target allocation (moderate/aggressive/conservative/custom models)
+       - Identify overweight/underweight positions with ±5% trigger threshold
+       - Estimate transaction costs and rebalancing delta in EUR
+     - **F8.7-002**: Claude-Powered Rebalancing Recommendations (5 points)
+       - Specific buy/sell recommendations with exact quantities and EUR amounts
+       - Rationale for each action considering market conditions and portfolio context
+       - Prioritized by deviation severity with timing suggestions
+       - JSON response with expected outcome and risk assessment
+     - **F8.7-003**: Rebalancing UI Dashboard (5 points)
+       - Visual allocation comparison chart (current vs target)
+       - Prioritized recommendations list with expand/collapse details
+       - Model selector dropdown with 4 options
+       - ⚖️ Scale icon in sidebar navigation
+   - **F8.8: Strategy-Driven Portfolio Allocation** 🔴 (13 points, 3 stories) - **NEWEST FEATURE**:
+     - **F8.8-001**: Investment Strategy Storage & API (5 points)
+       - Database table for user-defined investment strategies with version tracking
+       - CRUD API (GET/POST/PUT/DELETE) with validation
+       - Supports free-form text + optional structured fields (target return, risk, max positions, profit threshold)
+       - Example: "Take profit at +20%, reinvest in EU/emerging market growing sectors, target 15-20% YoY"
+     - **F8.8-002**: Claude Strategy-Driven Recommendations (5 points)
+       - Analyzes portfolio alignment with personal investment philosophy
+       - Identifies profit-taking opportunities per strategy rules
+       - Position assessments (fits strategy? recommended action?)
+       - New position suggestions aligned with strategy
+       - Action plan: Immediate/Redeployment/Gradual adjustments
+       - Alignment score (0-10) and next review date
+     - **F8.8-003**: Strategy Management UI (3 points)
+       - Strategy editor with rich textarea (5000 chars, min 20 words)
+       - Strategy template library (Conservative/Balanced/Aggressive/Income/Value)
+       - Recommendations display with alignment score gauge
+       - 🎯 Target icon in sidebar navigation
+   - **Epic 8 Progress**: 64% complete (65/101 story points), 181/181 tests passing ✅
 
 ### Next Steps
-- **Epic 8 - Feature 4: Position-Level Analysis - Story 2** (F8.4-002, 5 points):
-  - Enhanced position data collection with Yahoo Finance fundamentals
-  - Transaction context (count, first purchase, holding period)
-  - 52-week range, volume metrics, sector/industry classification
-- **Epic 8 - Feature 5: Forecasting Engine** (F8.5, 15 points, 3 stories):
-  - Two-quarter forecasts with pessimistic/realistic/optimistic scenarios
-  - Forecast endpoint already implemented in F8.3
-- **Epic 8 - Feature 6: Analysis UI Dashboard** (F8.6, 8 points, 2 stories):
-  - React components to display AI-powered analysis
-- Complete Epic 4 remaining stories (F4.2-001, F4.2-002): Portfolio value chart and asset allocation pie chart
+- **Epic 8 - Feature 4: Position-Level Analysis - Story 3** (F8.4-003, 5 points):
+  - Integrate full portfolio context into position analysis
+  - Add asset allocation, sector breakdown, concentration metrics to prompts
+  - Enable strategic recommendations considering portfolio-level diversification
+- **Epic 8 - Feature 7: AI-Powered Portfolio Rebalancing** (F8.7, 18 points):
+  - Rebalancing analysis engine with 4 allocation models
+  - Claude-powered buy/sell recommendations with specific quantities
+  - Visual dashboard with allocation comparison and recommendations list
+- **Epic 8 - Feature 8: Strategy-Driven Portfolio Allocation** (F8.8, 13 points) - **NEWEST**:
+  - User-defined investment strategy storage with CRUD API
+  - Claude analyzes portfolio alignment with personal strategy
+  - Profit-taking opportunities, position assessments, action plan
+  - Strategy editor UI with templates and alignment score gauge
+- Complete Epic 4 remaining stories (F4.2-001, F4.2-002): Portfolio value chart
 
 ## Docker Services Configuration
 
@@ -398,12 +451,12 @@ make clean-all          # Nuclear option
 
 ## Environment Variables
 
-**SECURITY**: All credentials are stored in `.env` file (never committed to git). See `SECURITY.md` for details.
+**SECURITY**: All credentials are stored in `.env` file (never committed to git). See `docs/SECURITY.md` for details.
 
 ### Configuration Files
 - `.env` - Actual credentials (gitignored, contains secrets)
 - `.env.example` - Template with placeholders (safe to commit)
-- `SECURITY.md` - Complete security guide
+- `docs/SECURITY.md` - Complete security guide
 
 ### Key Variables
 
