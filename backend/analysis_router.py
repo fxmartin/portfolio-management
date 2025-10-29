@@ -53,8 +53,8 @@ async def get_analysis_service(db: AsyncSession = Depends(get_async_db)) -> Anal
     # Initialize services
     claude_service = ClaudeService(settings)
     prompt_service = PromptService(db)
-    portfolio_service = PortfolioService()
-    yahoo_service = YahooFinanceService(settings)
+    portfolio_service = PortfolioService(db)
+    yahoo_service = YahooFinanceService()
     cache_service = CacheService()
 
     # Initialize data collector with Yahoo Finance for market indices

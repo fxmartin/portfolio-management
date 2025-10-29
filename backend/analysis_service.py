@@ -390,7 +390,9 @@ class AnalysisService:
                     raise ValueError(f"{quarter} missing {scenario} scenario")
 
                 scenario_data = scenarios[scenario]
-                if 'price' not in scenario_data or 'confidence' not in scenario_data:
+                required_fields = ['price', 'confidence', 'assumptions', 'risks']
+                missing_fields = [f for f in required_fields if f not in scenario_data]
+                if missing_fields:
                     raise ValueError(
-                        f"{quarter}.{scenario} missing price or confidence"
+                        f"{quarter}.{scenario} missing required fields: {missing_fields}"
                     )

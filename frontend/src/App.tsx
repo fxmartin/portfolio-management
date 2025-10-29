@@ -9,6 +9,7 @@ import TransactionList from './components/TransactionList'
 import OpenPositionsCard from './components/OpenPositionsCard'
 import HoldingsTable from './components/HoldingsTable'
 import RealizedPnLCard from './components/RealizedPnLCard'
+import AnalysisPage from './pages/Analysis'
 import { DatabaseResetModal, useDatabaseReset } from './components/DatabaseResetModal'
 import DatabaseStats from './components/DatabaseStats'
 import './App.css'
@@ -54,6 +55,11 @@ function App() {
           {/* Transactions Tab */}
           <div data-tab="transactions" className="transactions-tab">
             <TransactionList />
+          </div>
+
+          {/* Analysis Tab */}
+          <div data-tab="analysis" className="analysis-tab">
+            <AnalysisPage />
           </div>
 
           {/* Database Stats Tab */}

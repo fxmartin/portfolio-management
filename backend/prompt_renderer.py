@@ -138,8 +138,8 @@ class PromptDataCollector:
             Dictionary with portfolio_value, asset_allocation, sector_allocation,
             position_count, top_holdings, performance metrics, and market indices
         """
-        summary = await self.portfolio_service.get_open_positions_summary(self.db)
-        positions = await self.portfolio_service.get_all_positions(self.db)
+        summary = await self.portfolio_service.get_portfolio_pnl_summary()
+        positions = await self.portfolio_service.get_all_positions()
 
         # Calculate sector allocation
         sector_allocation = self._calculate_sector_allocation(positions)
@@ -150,35 +150,34 @@ class PromptDataCollector:
         # Fetch market indices for context
         indices = await self._get_market_indices()
 
-        # Prepare top holdings (top 10)
-        sorted_positions = sorted(positions, key=lambda x: x.current_value, reverse=True)
-        top_holdings = [
-            {
+        # Prepare top holdings (top 10) - filter out positions with None values
+        valid_positions = [p for p in positions if p.current_value is not None]
+        sorted_positions = sorted(valid_positions, key=lambda x: x.current_value, reverse=True)
+
+        # Calculate portfolio percentages manually
+        total_portfolio_value = sum(p.current_value for p in valid_positions)
+        top_holdings = []
+        for p in sorted_positions[:10]:
+            pct = (p.current_value / total_portfolio_value * 100) if total_portfolio_value > 0 else 0
+            top_holdings.append({
                 'symbol': p.symbol,
                 'value': float(p.current_value),
-                'allocation': float(p.portfolio_percentage),
-                'pnl': float(p.unrealized_pnl_percentage)
-            }
-            for p in sorted_positions[:10]
-        ]
+                'allocation': round(pct, 2),
+                'pnl': float(p.unrealized_pnl_percent) if p.unrealized_pnl_percent else 0.0
+            })
+
+        # Calculate portfolio value and asset allocation from positions
+        total_value = sum(p.current_value for p in positions if p.current_value)
 
         return {
-            "portfolio_value": float(summary.total_value),
-            "asset_allocation": {
-                "stocks": float(summary.stocks_value),
-                "stocks_pct": float(summary.stocks_percentage),
-                "crypto": float(summary.crypto_value),
-                "crypto_pct": float(summary.crypto_percentage),
-                "metals": float(summary.metals_value),
-                "metals_pct": float(summary.metals_percentage)
-            },
-            "sector_allocation": sector_allocation,
+            "portfolio_value": float(total_value) if total_value else 0.0,
+            "asset_allocation": sector_allocation,  # sector_allocation already has the breakdown
             "position_count": len(positions),
             "top_holdings": self._format_holdings_list(top_holdings),
             "performance": performance,
             "market_indices": indices,
-            "total_unrealized_pnl": float(summary.total_unrealized_pnl),
-            "total_unrealized_pnl_pct": float(summary.total_unrealized_pnl_percentage)
+            "total_unrealized_pnl": summary.get("total_unrealized_pnl", 0.0),
+            "total_unrealized_pnl_pct": summary.get("total_unrealized_pnl_percentage", 0.0)
         }
 
     async def collect_position_data(self, symbol: str) -> Dict[str, Any]:
@@ -201,7 +200,7 @@ class PromptDataCollector:
         Raises:
             ValueError: If position not found
         """
-        position = await self.portfolio_service.get_position(self.db, symbol)
+        position = await self.portfolio_service.get_position(symbol)
         if not position:
             raise ValueError(f"Position not found: {symbol}")
 
@@ -274,7 +273,7 @@ class PromptDataCollector:
         Raises:
             ValueError: If position not found
         """
-        position = await self.portfolio_service.get_position(self.db, symbol)
+        position = await self.portfolio_service.get_position(symbol)
         if not position:
             raise ValueError(f"Position not found: {symbol}")
 
@@ -320,7 +319,7 @@ class PromptDataCollector:
         if not positions:
             return {}
 
-        total_value = sum(float(p.current_value) for p in positions)
+        total_value = sum(float(p.current_value) for p in positions if p.current_value is not None)
         if total_value == 0:
             return {}
 
@@ -329,6 +328,8 @@ class PromptDataCollector:
         for p in positions:
             # Use asset_type as sector proxy
             # In future, could fetch sector data from Yahoo Finance
+            if p.current_value is None:
+                continue
             sector = p.asset_type or "Unknown"
             if sector not in sectors:
                 sectors[sector] = 0.0
@@ -351,8 +352,8 @@ class PromptDataCollector:
             Dictionary with current P&L metrics
         """
         return {
-            "current_pnl": float(summary.total_unrealized_pnl),
-            "current_pnl_pct": float(summary.total_unrealized_pnl_percentage),
+            "current_pnl": summary.get("total_unrealized_pnl", 0.0),
+            "current_pnl_pct": summary.get("total_unrealized_pnl_percentage", 0.0),
             # Future: 24h, 7d, 30d historical changes from price_history table
         }
 
