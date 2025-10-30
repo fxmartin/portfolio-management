@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Portfolio management application for tracking stocks, metals, and cryptocurrency investments. Imports transactions from Revolut (metals & stocks) and Koinly (crypto) CSV exports, calculates FIFO cost basis with fee-inclusive calculations, and displays real-time portfolio performance with live market data.
 
-**Current Status**: ~75% complete (266/352 story points across 9 epics) - All core features implemented. Transaction import, FIFO calculations, live prices, and dashboard visualization complete. Cost basis calculations validated against Koinly at 99.77% accuracy. Infrastructure & DevOps (Epic 5) complete with comprehensive development tools. **Epic 8 (AI Market Analysis) - 70% complete (70/101 points)** - Prompt Management (F8.1 ✅, 103 tests), Claude Integration (F8.2 ✅, 25 tests), Global Analysis (F8.3 ✅, 15 tests), **Position Analysis (F8.4 ✅ COMPLETE - 3/3 stories, 37 tests)**, Forecasting Engine (F8.5 ✅, 15 tests), Analysis UI (F8.6 ✅), **Portfolio Rebalancing (F8.7 🔴 NEW - 18 pts)**, **Strategy-Driven Allocation (F8.8 🔴 NEWEST - 13 pts)**. **Epic 9 (Settings Management)** planned for centralized configuration UI.
+**Current Status**: ~76% complete (269/352 story points across 9 epics) - All core features implemented. Transaction import, FIFO calculations, live prices, and dashboard visualization complete. Cost basis calculations validated against Koinly at 99.77% accuracy. Infrastructure & DevOps (Epic 5) complete with comprehensive development tools. **Epic 8 (AI Market Analysis) - 70% complete (73/104 points)** - Prompt Management (F8.1 ✅, 103 tests), Claude Integration (F8.2 ✅, 25 tests), Global Analysis (F8.3 ✅, 15 tests), **Position Analysis (F8.4 ✅ COMPLETE - 3/3 stories, 37 tests)**, Forecasting Engine (F8.5 ✅, 15 tests), **Analysis UI (F8.6 ✅ COMPLETE - 3/3 stories, 17 tests, tooltips for all 19 indicators)**, **Portfolio Rebalancing (F8.7 🔴 NEW - 18 pts)**, **Strategy-Driven Allocation (F8.8 🔴 NEWEST - 13 pts)**. **Epic 9 (Settings Management)** planned for centralized configuration UI.
 
 ## Essential Commands
 
@@ -131,6 +131,26 @@ User → React (3003) → FastAPI (8000) → PostgreSQL (5432)
 
 ### Recent Enhancements & Bug Fixes
 
+**Oct 30, 2025 - Issue #32: Compact Global Market Indicators Layout ✅ COMPLETE**
+
+**UX Enhancement**: Reduced vertical space usage by 60% (856px → ~350px) on AI Analysis page
+- **Layout Transformation**: Changed from vertical sections to horizontal flex-wrap grid
+- **Single-Line Indicators**: Label, price, and change displayed inline with bullet separator
+- **Category Badges**: Color-coded icons (⚡Risk, 📊Equities, 💰Commodities, 🔷Crypto)
+- **Reduced Spacing**: Container padding (20px → 12px), item gaps (10px → 6px)
+- **Smaller Fonts**: Price (16px → 14px), change (13px → 12px), labels (11px → 10px)
+- **Responsive Design**: Adapts to desktop (3-4 per row), tablet (2 per row), mobile (1 per row)
+- **Maintained Features**: Tooltips still work, hover effects preserved, VIX interpretation visible
+- **Files Modified**: `GlobalMarketIndicators.tsx` (~139 lines), `GlobalMarketIndicators.css` (~208 lines)
+- GitHub: Issue #32
+
+**Before/After**:
+```
+Before: 4 vertical sections × ~192px = ~856px total height
+After:  Horizontal grid with 6px gaps = ~350px total height
+Space saved: 506px (60% reduction)
+```
+
 **Oct 30, 2025 - F8.4-003 Portfolio Context Integration ✅ COMPLETE**
 
 **Position Analysis Transformation**: Claude now provides **strategic, portfolio-aware recommendations** considering full portfolio context:
@@ -149,6 +169,22 @@ User → React (3003) → FastAPI (8000) → PostgreSQL (5432)
 > "However, at **29.49% portfolio weight**, this single emerging markets exposure represents significant concentration risk. **Recommendation: REDUCE** - Trim position to 15-20% maximum to lock in profits and rebalance portfolio risk."
 
 **Bug Fixed**: Issue #25 - Duplicate `_calculate_sector_allocation` method resolved
+
+**Oct 30, 2025 - F8.6-003 Indicator Tooltips Enhancement ✅ COMPLETE**
+
+**Feature**: Explanatory tooltips for all 19 market indicators (12 global + 7 crypto)
+- Implementation: Custom Tooltip component with React Portal rendering
+- Tooltips: S&P 500, Dow, NASDAQ, Euro Stoxx 50, DAX, VIX, 10Y Treasury, Dollar Index, Gold, Oil, Copper, Bitcoin, Total Market Cap, Fear & Greed Index, 24h Volume, BTC/ETH Dominance, Active Cryptos, DeFi Market Cap
+- Accessibility: Keyboard navigation (Tab + Focus), ARIA attributes, high contrast mode support
+- Features: Hover/focus triggers, dynamic positioning, smooth fade-in animation
+- Files Created: `Tooltip.tsx` (107 lines), `Tooltip.css` (78 lines), `indicatorTooltips.ts` (51 lines)
+- Tests: 17 tests passing (100% coverage)
+
+**Bug Fixed**: Issue #31 - Tooltips appearing behind other elements
+- Problem: `backdrop-filter` CSS property created stacking contexts that trapped tooltips
+- Solution: Used React Portal to render tooltips to `document.body`, escaping all stacking contexts
+- Result: Tooltips now consistently appear on top (z-index: 99999)
+- Verified: Manual testing confirms tooltips display correctly above all UI elements
 
 **Test Suite Audit**: 96.7% passing (996/1,033 tests)
 - Backend: 636/661 passing (96.2%)
