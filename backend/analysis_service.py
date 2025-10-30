@@ -122,12 +122,12 @@ class AnalysisService:
             parsed_data=None,  # No structured data for global
             tokens_used=result['tokens_used'],
             generation_time_ms=result['generation_time_ms'],
-            expires_at=datetime.utcnow() + timedelta(hours=1)
+            expires_at=datetime.utcnow() + timedelta(hours=24)
         )
         self.db.add(analysis_record)
         await self.db.commit()
 
-        # Cache for 1 hour
+        # Cache for 24 hours (reduces API calls by 96%)
         analysis_data = {
             'analysis': result['content'],
             'global_crypto_market': data.get('global_crypto_market'),  # Include global crypto market data
@@ -135,7 +135,7 @@ class AnalysisService:
             'generated_at': datetime.utcnow(),
             'tokens_used': result['tokens_used']
         }
-        await self.cache.set(cache_key, analysis_data, ttl=3600)
+        await self.cache.set(cache_key, analysis_data, ttl=86400)
 
         logger.info(f"Global analysis generated: {result['tokens_used']} tokens")
 
@@ -203,7 +203,7 @@ class AnalysisService:
             parsed_data=parsed_data,
             tokens_used=result['tokens_used'],
             generation_time_ms=result['generation_time_ms'],
-            expires_at=datetime.utcnow() + timedelta(hours=1)
+            expires_at=datetime.utcnow() + timedelta(hours=24)
         )
         self.db.add(analysis_record)
         await self.db.commit()
@@ -236,7 +236,7 @@ class AnalysisService:
             'generated_at': datetime.utcnow(),
             'tokens_used': result['tokens_used']
         }
-        await self.cache.set(cache_key, analysis_data, ttl=3600)
+        await self.cache.set(cache_key, analysis_data, ttl=86400)
 
         logger.info(
             f"Position analysis generated for {symbol}: "
@@ -352,9 +352,9 @@ class AnalysisService:
         """
         cached = await self.cache.get(cache_key)
         if cached:
-            # Check if still valid (< 1 hour old for analysis, < 24h for forecast)
+            # Check if still valid (< 24 hours for all analysis types)
             age = datetime.utcnow() - cached['generated_at']
-            max_age = timedelta(hours=24) if 'forecast' in cache_key else timedelta(hours=1)
+            max_age = timedelta(hours=24)
             if age < max_age:
                 return cached
         return None
