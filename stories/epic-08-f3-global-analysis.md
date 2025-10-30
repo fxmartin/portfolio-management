@@ -234,3 +234,30 @@ class PromptDataCollector:
 **Dependencies**: F2.2-001 (Portfolio Service) ✅, F3.1-001 (Yahoo Finance) ✅
 **Risk Level**: Low
 **Assigned To**: Unassigned
+
+---
+
+## Feature Enhancement: Indicator Tooltips
+
+**Related Story**: F8.6-003 (Indicator Tooltips Enhancement)
+
+To improve user understanding of market indicators, all 12 global market indicators will have explanatory tooltips:
+
+**Tooltip Text Reference**:
+1. **S&P 500** (^GSPC): "Tracks 500 largest US companies. Rising indicates economic growth; falling signals recession concerns."
+2. **Dow Jones** (^DJI): "30 major US 'blue-chip' companies. Conservative benchmark for large-cap stability."
+3. **NASDAQ** (^IXIC): "Tech-heavy index with 2,500+ stocks. Measures investor appetite for growth and innovation."
+4. **Euro Stoxx 50** (^STOXX50E): "50 largest Eurozone companies. Benchmark for European economic health."
+5. **DAX** (^GDAXI): "Germany's top 30 companies. Leading indicator for European market strength."
+6. **VIX** (^VIX): "Market 'fear gauge' measuring expected volatility. <20 = calm, 20-30 = moderate fear, >30 = high uncertainty."
+7. **10Y Treasury Yield** (^TNX): "US government 10-year bond rate. Rising = growth expectations, falling = recession fears or flight to safety."
+8. **US Dollar Index** (DX-Y.NYB): "USD strength vs 6 major currencies. Rising dollar helps imports but hurts exports and commodities."
+9. **Gold** (GC=F): "Safe-haven asset rising during uncertainty and inflation. Use as portfolio stabilizer and inflation hedge."
+10. **WTI Oil** (CL=F): "Benchmark crude oil price. Rising indicates inflation risk and economic growth; falling signals slowdown."
+11. **Copper** (HG=F): "'Dr. Copper' industrial metal sensitive to economic activity. Best leading indicator of manufacturing and construction demand."
+12. **Bitcoin** (BTC-USD): "Original cryptocurrency tracking overall crypto sentiment. Rising signals risk-on appetite; falling indicates risk-off."
+
+**Crypto Market Indicators** (7 additional tooltips):
+- Total Market Cap, Fear & Greed Index, 24h Volume, Bitcoin Dominance, Ethereum Dominance, Active Cryptocurrencies, DeFi Market Cap
+
+See **F8.6-003** for complete tooltip implementation details and code examples.

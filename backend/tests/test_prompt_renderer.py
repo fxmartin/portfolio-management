@@ -559,8 +559,9 @@ class TestEnhancedDataCollection:
 
         class Position:
             def __init__(self, asset_type, value):
-                self.asset_type = asset_type
+                self.asset_type = AssetType.STOCK if asset_type == "STOCK" else (AssetType.CRYPTO if asset_type == "CRYPTO" else AssetType.METAL)
                 self.current_value = Decimal(str(value))
+                self.sector = "Technology" if asset_type == "STOCK" else None
 
         positions = [
             Position("STOCK", 30000),
@@ -568,17 +569,18 @@ class TestEnhancedDataCollection:
             Position("METAL", 5000),
         ]
 
-        allocation = collector._calculate_sector_allocation(positions)
+        total_value = 50000.0
+        allocation = collector._calculate_sector_allocation(positions, total_value)
 
-        assert allocation["STOCK"] == 60.0
-        assert allocation["CRYPTO"] == 30.0
-        assert allocation["METAL"] == 10.0
+        # New method only returns sector allocation for stocks
+        assert "Technology" in allocation
+        assert allocation["Technology"]["percentage"] == 100.0
 
     def test_calculate_sector_allocation_empty(self, mock_db, mock_portfolio_service):
         """Test sector allocation with no positions."""
         collector = PromptDataCollector(mock_db, mock_portfolio_service)
 
-        allocation = collector._calculate_sector_allocation([])
+        allocation = collector._calculate_sector_allocation([], 0.0)
         assert allocation == {}
 
     def test_calculate_sector_allocation_zero_value(self, mock_db, mock_portfolio_service):
@@ -587,10 +589,11 @@ class TestEnhancedDataCollection:
 
         class Position:
             def __init__(self):
-                self.asset_type = "STOCK"
+                self.asset_type = AssetType.STOCK
                 self.current_value = Decimal("0")
+                self.sector = "Technology"
 
-        allocation = collector._calculate_sector_allocation([Position()])
+        allocation = collector._calculate_sector_allocation([Position()], 0.0)
         assert allocation == {}
 
     @pytest.mark.asyncio

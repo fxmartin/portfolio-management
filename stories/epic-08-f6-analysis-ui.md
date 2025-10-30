@@ -520,3 +520,252 @@ const ScenarioCard: React.FC<{ scenario: string; data: any }> = ({ scenario, dat
 **Risk Level**: Low
 **Assigned To**: Unassigned
 
+---
+
+### Story F8.6-003: Indicator Tooltips Enhancement
+**Status**: 🔴 NOT STARTED
+**User Story**: As FX, I want to see explanatory tooltips when hovering over market indicators so that I understand what each indicator measures and how to interpret it
+
+**Acceptance Criteria**:
+- **Given** I view the Global Market Indicators section
+- **When** I hover over any indicator name
+- **Then** I see a concise tooltip (1-2 sentences) explaining the indicator
+- **And** the tooltip describes what it measures and how to interpret it
+- **And** tooltips appear for all 12 global market indicators
+- **And** tooltips appear for all 7 crypto market indicators in the Global Crypto Market section
+- **And** tooltips have consistent styling and positioning
+- **And** tooltips are accessible (keyboard navigation, ARIA labels)
+
+**Indicators Requiring Tooltips**:
+
+**Global Market Indicators (12 indicators)**:
+1. **S&P 500**: "Tracks 500 largest US companies. Rising indicates economic growth; falling signals recession concerns."
+2. **Dow Jones**: "30 major US 'blue-chip' companies. Conservative benchmark for large-cap stability."
+3. **NASDAQ**: "Tech-heavy index with 2,500+ stocks. Measures investor appetite for growth and innovation."
+4. **Euro Stoxx 50**: "50 largest Eurozone companies. Benchmark for European economic health."
+5. **DAX**: "Germany's top 30 companies. Leading indicator for European market strength."
+6. **VIX (Volatility)**: "Market 'fear gauge' measuring expected volatility. <20 = calm, 20-30 = moderate fear, >30 = high uncertainty."
+7. **10Y Treasury Yield**: "US government 10-year bond rate. Rising = growth expectations, falling = recession fears or flight to safety."
+8. **US Dollar Index**: "USD strength vs 6 major currencies. Rising dollar helps imports but hurts exports and commodities."
+9. **Gold**: "Safe-haven asset rising during uncertainty and inflation. Use as portfolio stabilizer and inflation hedge."
+10. **WTI Oil**: "Benchmark crude oil price. Rising indicates inflation risk and economic growth; falling signals slowdown."
+11. **Copper**: "'Dr. Copper' industrial metal sensitive to economic activity. Best leading indicator of manufacturing and construction demand."
+12. **Bitcoin**: "Original cryptocurrency tracking overall crypto sentiment. Rising signals risk-on appetite; falling indicates risk-off."
+
+**Crypto Market Indicators (7 indicators)**:
+1. **Total Market Cap**: "Combined value of all cryptocurrencies. Measures overall crypto sector health and bull/bear market status."
+2. **Fear & Greed Index**: "Crypto sentiment score 0-100. <25 = Extreme Fear (buy opportunity), >75 = Extreme Greed (consider selling)."
+3. **24h Volume**: "Total crypto traded in last 24 hours. High volume confirms price trends; low volume signals weak momentum."
+4. **Bitcoin Dominance**: "Bitcoin's market share of total crypto. >60% = caution, <40% = 'altseason' risk-on sentiment."
+5. **Ethereum Dominance**: "ETH's market share. Rising = capital flowing to smart contracts; falling = rotation to BTC or altcoins."
+6. **Active Cryptocurrencies**: "Number of traded cryptocurrencies. Expanding ecosystem indicator but less actionable than dominance metrics."
+7. **DeFi Market Cap**: "Value of decentralized finance protocols. Tracks adoption of non-custodial finance and higher-growth crypto sector."
+
+**Implementation Approach**:
+
+**Option 1: Native HTML title attribute** (Simplest, 2 points)
+```tsx
+<span className="indicator-label" title="Tracks 500 largest US companies. Rising indicates economic growth; falling signals recession concerns.">
+  {indicator.name}
+</span>
+```
+
+**Option 2: Custom tooltip component** (Recommended, 3 points)
+```tsx
+// Create reusable Tooltip component
+import { Tooltip } from './Tooltip';
+
+<Tooltip content="Tracks 500 largest US companies. Rising indicates economic growth; falling signals recession concerns.">
+  <span className="indicator-label">{indicator.name}</span>
+</Tooltip>
+```
+
+**Option 3: Third-party library** (Most features, 5 points)
+```tsx
+// Use react-tooltip or similar
+import ReactTooltip from 'react-tooltip';
+
+<span className="indicator-label" data-tip data-for={`tooltip-${indicator.symbol}`}>
+  {indicator.name}
+</span>
+<ReactTooltip id={`tooltip-${indicator.symbol}`} place="top" effect="solid">
+  {INDICATOR_TOOLTIPS[indicator.symbol]}
+</ReactTooltip>
+```
+
+**Recommended**: Option 2 (Custom Tooltip Component)
+- Full styling control matching portfolio management design
+- Accessibility built-in (ARIA attributes, keyboard support)
+- Minimal dependencies
+- Reusable across all indicator sections
+
+**Tooltip Configuration Object**:
+```typescript
+// frontend/src/config/indicatorTooltips.ts
+
+export const INDICATOR_TOOLTIPS: Record<string, string> = {
+  // Global Market Indicators
+  '^GSPC': "Tracks 500 largest US companies. Rising indicates economic growth; falling signals recession concerns.",
+  '^DJI': "30 major US 'blue-chip' companies. Conservative benchmark for large-cap stability.",
+  '^IXIC': "Tech-heavy index with 2,500+ stocks. Measures investor appetite for growth and innovation.",
+  '^STOXX50E': "50 largest Eurozone companies. Benchmark for European economic health.",
+  '^GDAXI': "Germany's top 30 companies. Leading indicator for European market strength.",
+  '^VIX': "Market 'fear gauge' measuring expected volatility. <20 = calm, 20-30 = moderate fear, >30 = high uncertainty.",
+  '^TNX': "US government 10-year bond rate. Rising = growth expectations, falling = recession fears or flight to safety.",
+  'DX-Y.NYB': "USD strength vs 6 major currencies. Rising dollar helps imports but hurts exports and commodities.",
+  'GC=F': "Safe-haven asset rising during uncertainty and inflation. Use as portfolio stabilizer and inflation hedge.",
+  'CL=F': "Benchmark crude oil price. Rising indicates inflation risk and economic growth; falling signals slowdown.",
+  'HG=F': "'Dr. Copper' industrial metal sensitive to economic activity. Best leading indicator of manufacturing and construction demand.",
+  'BTC-USD': "Original cryptocurrency tracking overall crypto sentiment. Rising signals risk-on appetite; falling indicates risk-off.",
+
+  // Crypto Market Indicators (by field name)
+  'total_market_cap': "Combined value of all cryptocurrencies. Measures overall crypto sector health and bull/bear market status.",
+  'fear_greed': "Crypto sentiment score 0-100. <25 = Extreme Fear (buy opportunity), >75 = Extreme Greed (consider selling).",
+  '24h_volume': "Total crypto traded in last 24 hours. High volume confirms price trends; low volume signals weak momentum.",
+  'btc_dominance': "Bitcoin's market share of total crypto. >60% = caution, <40% = 'altseason' risk-on sentiment.",
+  'eth_dominance': "ETH's market share. Rising = capital flowing to smart contracts; falling = rotation to BTC or altcoins.",
+  'active_cryptos': "Number of traded cryptocurrencies. Expanding ecosystem indicator but less actionable than dominance metrics.",
+  'defi_market_cap': "Value of decentralized finance protocols. Tracks adoption of non-custodial finance and higher-growth crypto sector."
+};
+```
+
+**Component Changes Required**:
+
+1. **GlobalMarketIndicators.tsx**:
+```tsx
+import { Tooltip } from './Tooltip';
+import { INDICATOR_TOOLTIPS } from '../config/indicatorTooltips';
+
+const renderIndicator = (indicator: MarketIndicator) => (
+  <div key={indicator.symbol} className="indicator-item">
+    <div className="indicator-content">
+      <Tooltip content={INDICATOR_TOOLTIPS[indicator.symbol]}>
+        <span className="indicator-label">{indicator.name}</span>
+      </Tooltip>
+      {/* ... rest of indicator display ... */}
+    </div>
+  </div>
+)
+```
+
+2. **GlobalCryptoMarket.tsx**:
+```tsx
+import { Tooltip } from './Tooltip';
+import { INDICATOR_TOOLTIPS } from '../config/indicatorTooltips';
+
+// Wrap each item-label with Tooltip
+<Tooltip content={INDICATOR_TOOLTIPS['total_market_cap']}>
+  <span className="item-label">Total Market Cap</span>
+</Tooltip>
+```
+
+3. **Create Tooltip.tsx component**:
+```tsx
+// frontend/src/components/Tooltip.tsx
+import React, { useState, useRef, useEffect } from 'react';
+import './Tooltip.css';
+
+interface TooltipProps {
+  content: string;
+  children: React.ReactElement;
+  position?: 'top' | 'bottom' | 'left' | 'right';
+}
+
+export const Tooltip: React.FC<TooltipProps> = ({
+  content,
+  children,
+  position = 'top'
+}) => {
+  const [visible, setVisible] = useState(false);
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
+  const triggerRef = useRef<HTMLSpanElement>(null);
+
+  const showTooltip = () => setVisible(true);
+  const hideTooltip = () => setVisible(false);
+
+  return (
+    <>
+      <span
+        ref={triggerRef}
+        className="tooltip-trigger"
+        onMouseEnter={showTooltip}
+        onMouseLeave={hideTooltip}
+        onFocus={showTooltip}
+        onBlur={hideTooltip}
+        tabIndex={0}
+        aria-describedby={visible ? 'tooltip' : undefined}
+      >
+        {children}
+      </span>
+      {visible && (
+        <div
+          id="tooltip"
+          className={`tooltip tooltip-${position}`}
+          role="tooltip"
+        >
+          {content}
+        </div>
+      )}
+    </>
+  );
+};
+```
+
+4. **Tooltip.css**:
+```css
+.tooltip-trigger {
+  cursor: help;
+  border-bottom: 1px dotted currentColor;
+  display: inline-block;
+}
+
+.tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  max-width: 300px;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.tooltip-top {
+  transform: translateY(-8px);
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  border: 6px solid transparent;
+}
+
+.tooltip-top::after {
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-top-color: rgba(0, 0, 0, 0.9);
+}
+```
+
+**Definition of Done**:
+- [ ] Tooltip component created with accessibility features
+- [ ] INDICATOR_TOOLTIPS configuration object created
+- [ ] GlobalMarketIndicators.tsx updated with tooltips (12 indicators)
+- [ ] GlobalCryptoMarket.tsx updated with tooltips (7 indicators)
+- [ ] Tooltips styled consistently with portfolio management design
+- [ ] Keyboard navigation supported (tab + focus shows tooltip)
+- [ ] ARIA attributes for screen readers
+- [ ] Unit tests for Tooltip component (≥85% coverage)
+- [ ] Visual regression tests for tooltip positioning
+- [ ] Documentation updated in CLAUDE.md
+
+**Story Points**: 3
+**Priority**: Should Have (UX Enhancement)
+**Dependencies**: F8.6-001 (Analysis Dashboard Tab) ✅, F8.3-001 (Global Analysis API) ✅
+**Risk Level**: Low
+**Assigned To**: Unassigned
+

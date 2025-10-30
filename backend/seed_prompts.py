@@ -59,7 +59,7 @@ Be direct, data-driven, and actionable. Reference specific market indicators whe
     {
         "name": "position_analysis",
         "category": "position",
-        "prompt_text": """Analyze the following investment position for a personal portfolio:
+        "prompt_text": """Analyze the following investment position within the context of the full portfolio:
 
 Asset: {symbol} ({name})
 Sector: {sector} | Type: {asset_type}
@@ -82,15 +82,31 @@ Market Context:
 
 {crypto_context}
 
-Provide analysis (150-200 words) covering:
-1. Current market position and recent performance
-2. Key factors driving price movement (consider market sentiment if crypto asset)
-3. Risk assessment for this holding
-4. Recommended action: HOLD, BUY_MORE, REDUCE, or SELL (with brief rationale)
+## Portfolio Context (Strategic View)
 
-IMPORTANT: Use the provided P&L percentage ({pnl_percentage}%) as the definitive performance metric. Do not recalculate P&L from price values.
+{portfolio_context}
 
-Be concise and actionable.""",
+**Concentration Analysis**: This position represents {position_percentage}% of your total portfolio.
+
+Provide analysis (200-300 words) covering:
+1. **Position Performance**: Current market position and recent performance
+2. **Market Drivers**: Key factors driving price movement (consider market sentiment if crypto asset)
+3. **Portfolio Fit**: How does this position fit your overall allocation? Is this sector/asset type over/underweight?
+4. **Concentration Risk**: Given your portfolio composition, does this position create concentration risk?
+5. **Strategic Recommendation**: HOLD, BUY_MORE, REDUCE, or SELL
+
+**Recommendation Considerations**:
+- If your portfolio is already heavily concentrated in this sector (>50%), suggest REDUCE even for performing assets
+- If diversification is poor (top 3 positions > 60%), recommend rebalancing
+- Consider both tactical (asset performance) AND strategic (portfolio balance) factors
+- Reference specific portfolio metrics when relevant (e.g., "Technology sector is 75% of stock holdings")
+
+IMPORTANT:
+- Use the provided P&L percentage ({pnl_percentage}%) as the definitive performance metric
+- Your recommendation MUST consider both individual asset merit AND portfolio-level diversification
+- Be direct about concentration risks - better diversification beats individual asset upside
+
+Be concise, data-driven, and strategic.""",
         "template_variables": {
             "symbol": "string",
             "name": "string",
@@ -107,7 +123,8 @@ Be concise and actionable.""",
             "asset_type": "string",
             "volume": "integer",
             "fear_greed_context": "string",
-            "crypto_context": "string"
+            "crypto_context": "string",
+            "portfolio_context": "string"
         }
     },
     {

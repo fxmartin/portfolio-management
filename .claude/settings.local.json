@@ -26,7 +26,11 @@
       "Bash(docker-compose exec -T backend python -c:*)",
       "Bash(docker-compose logs:*)",
       "WebFetch(domain:www.alphavantage.co)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(docker-compose exec:*)",
+      "WebSearch",
+      "Bash(docker-compose:*)",
+      "Bash(gh issue create:*)"
     ],
     "deny": [],
     "ask": []
