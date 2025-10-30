@@ -35,29 +35,49 @@ export const GlobalMarketIndicators: React.FC<GlobalMarketIndicatorsProps> = ({ 
     return change >= 0 ? 'positive' : 'negative'
   }
 
-  const renderIndicator = (indicator: MarketIndicator) => {
+  const getCategoryIcon = (category: 'equities' | 'risk' | 'commodities' | 'crypto') => {
+    switch (category) {
+      case 'risk':
+        return <Zap size={12} />
+      case 'equities':
+        return <BarChart3 size={12} />
+      case 'commodities':
+        return <DollarSign size={12} />
+      case 'crypto':
+        return <TrendingUp size={12} />
+    }
+  }
+
+  const getCategoryClass = (category: string) => {
+    return `category-${category}`
+  }
+
+  const renderIndicator = (indicator: MarketIndicator, category: 'equities' | 'risk' | 'commodities' | 'crypto') => {
     const tooltipText = INDICATOR_TOOLTIPS[indicator.symbol]
+    const content = (
+      <div className="indicator-content">
+        <span className={`category-badge ${getCategoryClass(category)}`}>
+          {getCategoryIcon(category)}
+        </span>
+        <span className="indicator-label">{indicator.name}</span>
+        <span className="indicator-separator">•</span>
+        <span className="indicator-price">{formatPrice(indicator.price, indicator.symbol)}</span>
+        <span className={`indicator-change ${getChangeClass(indicator.change_percent)}`}>
+          {formatChange(indicator.change_percent)}
+        </span>
+      </div>
+    )
 
     return (
       <div key={indicator.symbol} className="indicator-item">
-        <div className="indicator-content">
-          {tooltipText ? (
-            <Tooltip content={tooltipText}>
-              <span className="indicator-label">{indicator.name}</span>
-            </Tooltip>
-          ) : (
-            <span className="indicator-label">{indicator.name}</span>
-          )}
-          <div className="indicator-values">
-            <span className="indicator-price">{formatPrice(indicator.price, indicator.symbol)}</span>
-            <span className={`indicator-change ${getChangeClass(indicator.change_percent)}`}>
-              {formatChange(indicator.change_percent)}
-            </span>
-          </div>
-          {indicator.interpretation && (
-            <span className="indicator-interpretation">{indicator.interpretation}</span>
-          )}
-        </div>
+        {tooltipText ? (
+          <Tooltip content={tooltipText}>{content}</Tooltip>
+        ) : (
+          content
+        )}
+        {indicator.interpretation && (
+          <span className="indicator-interpretation">{indicator.interpretation}</span>
+        )}
       </div>
     )
   }
@@ -76,63 +96,24 @@ export const GlobalMarketIndicators: React.FC<GlobalMarketIndicatorsProps> = ({ 
   return (
     <div className="global-market-indicators">
       <div className="market-header">
-        <Activity size={18} />
+        <Activity size={16} />
         <h3>Global Market Snapshot</h3>
-        <span className="source-badge">Live Data</span>
+        <span className="source-badge">Live</span>
       </div>
 
       <div className="indicators-grid">
-        {/* Risk Indicators (CRITICAL - show first) */}
-        {data.risk.length > 0 && (
-          <div className="indicator-section risk-section">
-            <div className="section-header">
-              <Zap size={14} />
-              <span>Risk Indicators</span>
-            </div>
-            <div className="section-items">
-              {data.risk.map(renderIndicator)}
-            </div>
-          </div>
-        )}
+        {/* Flatten all indicators into a single horizontal grid */}
+        {/* Risk Indicators (show first) */}
+        {data.risk.map((indicator) => renderIndicator(indicator, 'risk'))}
 
         {/* Equities */}
-        {data.equities.length > 0 && (
-          <div className="indicator-section equities-section">
-            <div className="section-header">
-              <BarChart3 size={14} />
-              <span>Equities</span>
-            </div>
-            <div className="section-items">
-              {data.equities.map(renderIndicator)}
-            </div>
-          </div>
-        )}
+        {data.equities.map((indicator) => renderIndicator(indicator, 'equities'))}
 
         {/* Commodities */}
-        {data.commodities.length > 0 && (
-          <div className="indicator-section commodities-section">
-            <div className="section-header">
-              <DollarSign size={14} />
-              <span>Commodities</span>
-            </div>
-            <div className="section-items">
-              {data.commodities.map(renderIndicator)}
-            </div>
-          </div>
-        )}
+        {data.commodities.map((indicator) => renderIndicator(indicator, 'commodities'))}
 
         {/* Crypto */}
-        {data.crypto.length > 0 && (
-          <div className="indicator-section crypto-section">
-            <div className="section-header">
-              <TrendingUp size={14} />
-              <span>Crypto</span>
-            </div>
-            <div className="section-items">
-              {data.crypto.map(renderIndicator)}
-            </div>
-          </div>
-        )}
+        {data.crypto.map((indicator) => renderIndicator(indicator, 'crypto'))}
       </div>
     </div>
   )
