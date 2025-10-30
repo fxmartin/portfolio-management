@@ -3,6 +3,8 @@
 
 import { TrendingUp, Globe, BarChart3, Coins, Activity } from 'lucide-react'
 import type { GlobalCryptoMarketData } from '../api/analysis'
+import { Tooltip } from './Tooltip'
+import { INDICATOR_TOOLTIPS } from '../config/indicatorTooltips'
 import './GlobalCryptoMarket.css'
 
 interface GlobalCryptoMarketProps {
@@ -48,7 +50,9 @@ export const GlobalCryptoMarket: React.FC<GlobalCryptoMarketProps> = ({ data }) 
             <BarChart3 size={16} />
           </div>
           <div className="item-content">
-            <span className="item-label">Total Market Cap</span>
+            <Tooltip content={INDICATOR_TOOLTIPS['total_market_cap']}>
+              <span className="item-label">Total Market Cap</span>
+            </Tooltip>
             <span className="item-value">{formatNumber(data.total_market_cap_eur, 1)}</span>
             <span className={`item-detail ${data.market_cap_change_24h >= 0 ? 'positive' : 'negative'}`}>
               {formatPercentage(data.market_cap_change_24h)} 24h
@@ -63,7 +67,9 @@ export const GlobalCryptoMarket: React.FC<GlobalCryptoMarketProps> = ({ data }) 
               <Activity size={16} />
             </div>
             <div className="item-content">
-              <span className="item-label">Fear & Greed Index</span>
+              <Tooltip content={INDICATOR_TOOLTIPS['fear_greed']}>
+                <span className="item-label">Fear & Greed Index</span>
+              </Tooltip>
               <span className="item-value fear-greed-value">{data.fear_greed_value}/100</span>
               <span className="item-detail">{data.fear_greed_classification}</span>
             </div>
@@ -76,7 +82,9 @@ export const GlobalCryptoMarket: React.FC<GlobalCryptoMarketProps> = ({ data }) 
             <TrendingUp size={16} />
           </div>
           <div className="item-content">
-            <span className="item-label">24h Volume</span>
+            <Tooltip content={INDICATOR_TOOLTIPS['24h_volume']}>
+              <span className="item-label">24h Volume</span>
+            </Tooltip>
             <span className="item-value">{formatNumber(data.total_volume_24h_eur, 1)}</span>
             <span className="item-detail">Trading activity</span>
           </div>
@@ -85,7 +93,9 @@ export const GlobalCryptoMarket: React.FC<GlobalCryptoMarketProps> = ({ data }) 
         {/* BTC Dominance */}
         <div className="market-item btc">
           <div className="item-content">
-            <span className="item-label">Bitcoin Dominance</span>
+            <Tooltip content={INDICATOR_TOOLTIPS['btc_dominance']}>
+              <span className="item-label">Bitcoin Dominance</span>
+            </Tooltip>
             <span className="item-value">{data.btc_dominance.toFixed(1)}%</span>
             <span className="item-detail">BTC market share</span>
           </div>
@@ -94,7 +104,9 @@ export const GlobalCryptoMarket: React.FC<GlobalCryptoMarketProps> = ({ data }) 
         {/* ETH Dominance */}
         <div className="market-item eth">
           <div className="item-content">
-            <span className="item-label">Ethereum Dominance</span>
+            <Tooltip content={INDICATOR_TOOLTIPS['eth_dominance']}>
+              <span className="item-label">Ethereum Dominance</span>
+            </Tooltip>
             <span className="item-value">{data.eth_dominance.toFixed(1)}%</span>
             <span className="item-detail">ETH market share</span>
           </div>
@@ -106,7 +118,9 @@ export const GlobalCryptoMarket: React.FC<GlobalCryptoMarketProps> = ({ data }) 
             <Coins size={16} />
           </div>
           <div className="item-content">
-            <span className="item-label">Active Cryptos</span>
+            <Tooltip content={INDICATOR_TOOLTIPS['active_cryptos']}>
+              <span className="item-label">Active Cryptos</span>
+            </Tooltip>
             <span className="item-value">{formatCount(data.active_cryptocurrencies)}</span>
             <span className="item-detail">{formatCount(data.markets)} markets</span>
           </div>
@@ -116,7 +130,9 @@ export const GlobalCryptoMarket: React.FC<GlobalCryptoMarketProps> = ({ data }) 
         {data.defi_market_cap_eur && data.defi_market_cap_eur > 0 && (
           <div className="market-item defi">
             <div className="item-content">
-              <span className="item-label">DeFi Market Cap</span>
+              <Tooltip content={INDICATOR_TOOLTIPS['defi_market_cap']}>
+                <span className="item-label">DeFi Market Cap</span>
+              </Tooltip>
               <span className="item-value">{formatNumber(data.defi_market_cap_eur, 1)}</span>
               <span className="item-detail">{data.defi_dominance?.toFixed(1)}% of total</span>
             </div>
