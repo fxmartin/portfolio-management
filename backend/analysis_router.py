@@ -119,12 +119,14 @@ async def get_global_analysis(
     """
     Generate global market analysis for entire portfolio.
 
-    Returns cached analysis if available and recent (< 1 hour),
+    Returns cached analysis if available and recent (< 24 hours),
     otherwise generates fresh analysis using Claude API.
 
     **Performance**:
     - Fresh analysis: ~5-10 seconds
     - Cached analysis: <100ms
+
+    **Cache Duration**: 24 hours (reduces API calls by 96%)
 
     **Parameters**:
     - **force_refresh**: Set to `true` to bypass cache and generate new analysis
@@ -162,12 +164,14 @@ async def get_position_analysis(
     """
     Generate analysis for specific position.
 
-    Returns cached analysis if available and recent (< 1 hour),
+    Returns cached analysis if available and recent (< 24 hours),
     otherwise generates fresh analysis.
 
     **Performance**:
     - Fresh analysis: ~3-5 seconds
     - Cached analysis: <100ms
+
+    **Cache Duration**: 24 hours (reduces API calls by 96%)
     """
     try:
         result = await analysis_service.generate_position_analysis(symbol, force_refresh)
