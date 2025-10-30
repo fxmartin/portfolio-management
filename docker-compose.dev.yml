@@ -10,7 +10,8 @@ services:
       - PYTHONDONTWRITEBYTECODE=1  # Don't write .pyc files
     volumes:
       - ./backend:/app:cached  # Cached mount for better performance
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app --log-level debug
+      - /app/.venv  # Prevent host .venv from overriding container .venv
+    command: uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app --log-level debug
 
   frontend:
     environment:

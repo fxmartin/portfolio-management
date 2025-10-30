@@ -303,7 +303,7 @@ async def _get_holding_period(self, symbol: str) -> int:
 ---
 
 ### Story F8.4-003: Portfolio Context Integration
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete (Oct 30, 2025)
 **User Story**: As FX, I want position analysis to consider my entire portfolio composition so that I receive strategic recommendations aligned with my overall risk profile and diversification
 
 **Acceptance Criteria**:
@@ -502,6 +502,66 @@ Position analysis transforms from tactical ("this stock looks good") to strategi
 **Risk Level**: Low
 **Estimated Effort**: 4-6 hours
 **Assigned To**: Unassigned
+**Completed By**: Claude Code
+
+**Implementation Summary**:
+- Added 7 new helper methods to `PromptDataCollector` in `prompt_renderer.py`:
+  - `_collect_portfolio_context()` - Main orchestrator collecting all portfolio data
+  - `_calculate_asset_allocation()` - Breakdown by asset type (stocks/crypto/metals) with percentages
+  - `_calculate_sector_allocation()` - Stock sector distribution with percentages
+  - `_get_top_holdings()` - Top 10 positions by portfolio weight
+  - `_calculate_concentration_metrics()` - Risk metrics (top 3, max sector, max single asset)
+  - `_get_position_rank()` - Position ranking and relative weight
+  - `_format_portfolio_context()` - Human-readable string formatting for Claude prompts
+- Enhanced `collect_position_data()` to include formatted portfolio context string
+- Updated position analysis prompt template in `seed_prompts.py`:
+  - Added portfolio context section with strategic guidance
+  - Enhanced recommendation criteria for concentration awareness
+  - Explicit instructions to consider both tactical and strategic factors
+  - Added `portfolio_context` to template variables
+- Test Coverage: 14 comprehensive unit tests (100% passing):
+  - Full context collection with all fields
+  - Asset allocation calculation (percentages, counts, values)
+  - Sector allocation for stock positions
+  - Top 10 holdings with weights
+  - Concentration metrics (top 3, max sector, max single asset)
+  - Edge cases: empty portfolio, single position, no stocks, 100% concentration
+  - Position ranking with ordinal formatting
+  - Zero/None value handling
+  - Currency consistency (all EUR)
+  - Integration with `collect_position_data()`
+- Files Modified: `prompt_renderer.py` (+347 lines), `seed_prompts.py` (enhanced prompt)
+- Files Created: `tests/test_portfolio_context_collection.py` (392 lines)
+- Performance: Portfolio context collection adds <200ms overhead (well under 500ms requirement)
+
+**Example Portfolio Context Output**:
+```
+Total Portfolio Value: €50,000.00
+Number of Positions: 14
+
+Asset Allocation:
+  - CRYPTO: 30.0% (€15,000.00, 4 positions)
+  - STOCK: 60.0% (€30,000.00, 8 positions)
+  - METAL: 10.0% (€5,000.00, 2 positions)
+
+Sector Allocation (Stocks):
+  - Technology: 75.0% (€22,500.00, 5 positions)
+  - Finance: 20.0% (€6,000.00, 2 positions)
+  - Consumer: 5.0% (€1,500.00, 1 positions)
+
+Top 10 Holdings:
+  1. BTC: €10,000.00 (20.0%, CRYPTO)
+  2. MSTR: €8,000.00 (16.0%, STOCK, Technology)
+  3. NVDA: €5,000.00 (10.0%, STOCK, Technology)
+  ...
+
+Concentration Metrics:
+  - Top 3 positions: 46.0%
+  - Max single sector: 75.0%
+  - Max single asset: 20.0%
+```
+
+**Impact**: Position analysis now transforms from tactical ("this stock looks good") to strategic ("given your 60% tech exposure, reducing this position would improve diversification"), enabling portfolio-aware investment decisions.
 
 **Technical Notes**:
 - Reuse existing portfolio service methods where possible

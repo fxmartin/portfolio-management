@@ -13,7 +13,7 @@
 - Forecast accuracy tracking >60% for realistic scenarios
 - User engagement: Analysis viewed within 5 minutes of generation
 
-**Status**: 🟡 IN PROGRESS - 64% Complete (65/101 pts, F8.4-003, F8.7 & F8.8 pending)
+**Status**: 🟡 IN PROGRESS - 62% Complete (65/104 pts, F8.4-003, F8.6-003, F8.7 & F8.8 pending)
 
 ## Features in this Epic
 - [Feature 8.1: Prompt Management System](./epic-08-f1-prompt-management.md) ✅ (13 points, 3 stories) - COMPLETE
@@ -21,7 +21,7 @@
 - [Feature 8.3: Global Market Analysis](./epic-08-f3-global-analysis.md) ✅ (8 points, 2 stories) - COMPLETE
 - [Feature 8.4: Position-Level Analysis](./epic-08-f4-position-analysis.md) 🟡 (15 points, 3 stories) - IN PROGRESS (67% - F8.4-003 pending)
 - [Feature 8.5: Forecasting Engine with Scenarios](./epic-08-f5-forecasting.md) ✅ (13 points, 2 stories) - COMPLETE
-- [Feature 8.6: Analysis UI Dashboard](./epic-08-f6-analysis-ui.md) ✅ (8 points, 2 stories) - COMPLETE
+- [Feature 8.6: Analysis UI Dashboard](./epic-08-f6-analysis-ui.md) 🟡 (11 points, 3 stories) - IN PROGRESS (73% - F8.6-003 pending)
 - [Feature 8.7: AI-Powered Portfolio Rebalancing](./epic-08-f7-rebalancing.md) 🔴 (18 points, 3 stories) - NOT STARTED
 - [Feature 8.8: Strategy-Driven Portfolio Allocation](./epic-08-f8-strategy-driven-allocation.md) 🔴 (13 points, 3 stories) - NOT STARTED
 
@@ -33,10 +33,10 @@
 | F8.3: Global Analysis | 2 | 8 | ✅ Complete | 100% (8/8 pts) | [Details](./epic-08-f3-global-analysis.md) |
 | F8.4: Position Analysis | 3 | 15 | 🟡 In Progress | 67% (10/15 pts) | [Details](./epic-08-f4-position-analysis.md) |
 | F8.5: Forecasting Engine | 2 | 13 | ✅ Complete | 100% (13/13 pts) | [Details](./epic-08-f5-forecasting.md) |
-| F8.6: Analysis UI | 2 | 8 | ✅ Complete | 100% (8/8 pts) | [Details](./epic-08-f6-analysis-ui.md) |
+| F8.6: Analysis UI | 3 | 11 | 🟡 In Progress | 73% (8/11 pts) | [Details](./epic-08-f6-analysis-ui.md) |
 | F8.7: Portfolio Rebalancing | 3 | 18 | 🔴 Not Started | 0% (0/18 pts) | [Details](./epic-08-f7-rebalancing.md) |
 | F8.8: Strategy-Driven Allocation | 3 | 13 | 🔴 Not Started | 0% (0/13 pts) | [Details](./epic-08-f8-strategy-driven-allocation.md) |
-| **Total** | **20** | **101** | **🟡 IN PROGRESS** | **64% (65/101 pts)** | |
+| **Total** | **21** | **104** | **🟡 IN PROGRESS** | **62% (65/104 pts)** | |
 
 ---
 
@@ -148,7 +148,7 @@
 - **CORS**: Restrict API access to frontend origin
 
 ## Definition of Done for Epic
-- [ ] All 20 stories completed (14/20 complete - 70%, F8.4-003, F8.7 & F8.8 pending)
+- [ ] All 21 stories completed (14/21 complete - 67%, F8.4-003, F8.6-003, F8.7 & F8.8 pending)
 - [x] Database schema for prompts and analysis results ✅
 - [x] Anthropic Claude integration working ✅
 - [x] Global, position, and forecast analysis functional ✅
@@ -160,6 +160,7 @@
 - [x] API documentation complete ✅
 - [x] Performance benchmarks met ✅ (<10s global, <5s position, <15s forecast)
 - [ ] **F8.4-003: Portfolio context integration** (5 pts - adds strategic recommendations based on full portfolio composition)
+- [ ] **F8.6-003: Indicator Tooltips Enhancement** (3 pts - adds explanatory tooltips for all 19 market indicators)
 - [ ] **F8.7: AI-Powered Portfolio Rebalancing** (18 pts):
   - [ ] F8.7-001: Rebalancing Analysis Engine (8 pts)
   - [ ] F8.7-002: Claude-Powered Rebalancing Recommendations (5 pts)

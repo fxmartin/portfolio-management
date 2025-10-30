@@ -161,8 +161,12 @@ class PromptDataCollector:
         summary = await self.portfolio_service.get_portfolio_pnl_summary()
         positions = await self.portfolio_service.get_all_positions()
 
+        # Calculate total value for sector allocation
+        valid_positions_for_allocation = [p for p in positions if p.current_value is not None]
+        total_value = sum(float(p.current_value) for p in valid_positions_for_allocation)
+
         # Calculate sector allocation
-        sector_allocation = self._calculate_sector_allocation(positions)
+        sector_allocation = self._calculate_sector_allocation(valid_positions_for_allocation, total_value)
 
         # Get portfolio performance metrics
         performance = await self._get_portfolio_performance(summary)
@@ -453,6 +457,10 @@ Cryptocurrency Fundamentals (CoinGecko):
         # Add fear_greed_context to response
         response["fear_greed_context"] = fear_greed_context
 
+        # Add portfolio context for strategic recommendations (F8.4-003)
+        portfolio_context_data = await self._collect_portfolio_context()
+        response["portfolio_context"] = self._format_portfolio_context(portfolio_context_data)
+
         return response
 
     async def collect_forecast_data(self, symbol: str) -> Dict[str, Any]:
@@ -512,41 +520,6 @@ Cryptocurrency Fundamentals (CoinGecko):
             "sector": position.asset_type.value if isinstance(position.asset_type, AssetType) else str(position.asset_type),
             "asset_type": position.asset_type.value if isinstance(position.asset_type, AssetType) else str(position.asset_type),
             "market_context": market_context
-        }
-
-    def _calculate_sector_allocation(self, positions: list) -> Dict[str, float]:
-        """
-        Calculate portfolio allocation by sector.
-
-        Args:
-            positions: List of Position objects
-
-        Returns:
-            Dictionary mapping sector to percentage allocation
-        """
-        if not positions:
-            return {}
-
-        total_value = sum(float(p.current_value) for p in positions if p.current_value is not None)
-        if total_value == 0:
-            return {}
-
-        sectors = {}
-
-        for p in positions:
-            # Use asset_type as sector proxy
-            # In future, could fetch sector data from Yahoo Finance
-            if p.current_value is None:
-                continue
-            sector = p.asset_type or "Unknown"
-            if sector not in sectors:
-                sectors[sector] = 0.0
-            sectors[sector] += float(p.current_value)
-
-        # Convert to percentages
-        return {
-            sector: round(value / total_value * 100, 2)
-            for sector, value in sectors.items()
         }
 
     async def _get_portfolio_performance(self, summary: Any) -> Dict[str, Any]:
@@ -1056,3 +1029,350 @@ Cryptocurrency Fundamentals (CoinGecko):
         }
 
         return ETF_MAPPINGS.get(symbol, symbol)
+
+    async def _collect_portfolio_context(self) -> Dict[str, Any]:
+        """
+        Collect full portfolio context for strategic position analysis.
+
+        Gathers asset allocation, sector breakdown, top holdings, and
+        concentration metrics to enable portfolio-aware recommendations.
+
+        Returns:
+            Dictionary with comprehensive portfolio context including:
+            - total_value: Total portfolio value in EUR
+            - position_count: Number of positions
+            - asset_allocation: Breakdown by asset type (stocks/crypto/metals)
+            - sector_allocation: Breakdown by sector (stocks only)
+            - top_10_holdings: Top 10 positions by weight
+            - concentration_metrics: Risk metrics (top 3, max sector, max single asset)
+        """
+        positions = await self.portfolio_service.get_all_positions()
+
+        if not positions:
+            return {
+                "total_value": 0.0,
+                "position_count": 0,
+                "asset_allocation": {},
+                "sector_allocation": {},
+                "top_10_holdings": [],
+                "concentration_metrics": {
+                    "top_3_weight": 0.0,
+                    "single_sector_max": 0.0,
+                    "single_asset_max": 0.0
+                }
+            }
+
+        # Calculate total portfolio value (filter out None values)
+        valid_positions = [p for p in positions if p.current_value is not None]
+        total_value = sum(float(p.current_value) for p in valid_positions)
+
+        # Calculate asset allocation
+        asset_allocation = self._calculate_asset_allocation(valid_positions, total_value)
+
+        # Calculate sector allocation (stocks only)
+        sector_allocation = self._calculate_sector_allocation(valid_positions, total_value)
+
+        # Get top 10 holdings
+        top_holdings = self._get_top_holdings(valid_positions, total_value)
+
+        # Calculate concentration metrics
+        concentration_metrics = self._calculate_concentration_metrics(
+            valid_positions,
+            total_value,
+            sector_allocation
+        )
+
+        return {
+            "total_value": total_value,
+            "position_count": len(positions),
+            "asset_allocation": asset_allocation,
+            "sector_allocation": sector_allocation,
+            "top_10_holdings": top_holdings,
+            "concentration_metrics": concentration_metrics
+        }
+
+    def _calculate_asset_allocation(self, positions: list, total_value: float) -> Dict[str, Any]:
+        """
+        Calculate portfolio allocation by asset type.
+
+        Args:
+            positions: List of Position objects
+            total_value: Total portfolio value
+
+        Returns:
+            Dictionary mapping asset type to {value, percentage, count}
+        """
+        if total_value == 0:
+            return {}
+
+        allocation = {}
+
+        for position in positions:
+            asset_type_str = position.asset_type.value if isinstance(position.asset_type, AssetType) else str(position.asset_type)
+
+            if asset_type_str not in allocation:
+                allocation[asset_type_str] = {
+                    "value": 0.0,
+                    "percentage": 0.0,
+                    "count": 0
+                }
+
+            allocation[asset_type_str]["value"] += float(position.current_value)
+            allocation[asset_type_str]["count"] += 1
+
+        # Calculate percentages
+        for asset_type in allocation:
+            allocation[asset_type]["percentage"] = round(
+                (allocation[asset_type]["value"] / total_value) * 100, 2
+            )
+
+        return allocation
+
+    def _calculate_sector_allocation(self, positions: list, total_value: float) -> Dict[str, Any]:
+        """
+        Calculate sector allocation for stock positions only.
+
+        Args:
+            positions: List of Position objects
+            total_value: Total portfolio value
+
+        Returns:
+            Dictionary mapping sector to {value, percentage, count}
+        """
+        # Filter to stock positions only
+        stock_positions = [
+            p for p in positions
+            if (p.asset_type == AssetType.STOCK or p.asset_type == 'STOCK')
+            and hasattr(p, 'sector') and p.sector
+        ]
+
+        if not stock_positions:
+            return {}
+
+        # Calculate total stock value
+        total_stock_value = sum(float(p.current_value) for p in stock_positions)
+
+        if total_stock_value == 0:
+            return {}
+
+        allocation = {}
+
+        for position in stock_positions:
+            sector = position.sector
+
+            if sector not in allocation:
+                allocation[sector] = {
+                    "value": 0.0,
+                    "percentage": 0.0,
+                    "count": 0
+                }
+
+            allocation[sector]["value"] += float(position.current_value)
+            allocation[sector]["count"] += 1
+
+        # Calculate percentages relative to total stock value
+        for sector in allocation:
+            allocation[sector]["percentage"] = round(
+                (allocation[sector]["value"] / total_stock_value) * 100, 2
+            )
+
+        return allocation
+
+    def _get_top_holdings(self, positions: list, total_value: float) -> List[Dict[str, Any]]:
+        """
+        Get top 10 positions by portfolio weight.
+
+        Args:
+            positions: List of Position objects
+            total_value: Total portfolio value
+
+        Returns:
+            List of holdings with symbol, value, weight, asset_type, sector
+        """
+        if total_value == 0:
+            return []
+
+        # Sort positions by value (descending)
+        sorted_positions = sorted(
+            positions,
+            key=lambda p: float(p.current_value),
+            reverse=True
+        )
+
+        holdings = []
+        for position in sorted_positions[:10]:  # Top 10
+            weight = (float(position.current_value) / total_value) * 100
+            asset_type_str = position.asset_type.value if isinstance(position.asset_type, AssetType) else str(position.asset_type)
+
+            holding = {
+                "symbol": position.symbol,
+                "value": float(position.current_value),
+                "weight": round(weight, 2),
+                "asset_type": asset_type_str
+            }
+
+            # Add sector for stocks
+            if hasattr(position, 'sector') and position.sector:
+                holding["sector"] = position.sector
+
+            holdings.append(holding)
+
+        return holdings
+
+    def _calculate_concentration_metrics(
+        self,
+        positions: list,
+        total_value: float,
+        sector_allocation: Dict[str, Any]
+    ) -> Dict[str, float]:
+        """
+        Calculate portfolio concentration risk metrics.
+
+        Args:
+            positions: List of Position objects
+            total_value: Total portfolio value
+            sector_allocation: Sector allocation dictionary
+
+        Returns:
+            Dictionary with top_3_weight, single_sector_max, single_asset_max
+        """
+        if total_value == 0:
+            return {
+                "top_3_weight": 0.0,
+                "single_sector_max": 0.0,
+                "single_asset_max": 0.0
+            }
+
+        # Sort positions by value
+        sorted_positions = sorted(
+            positions,
+            key=lambda p: float(p.current_value),
+            reverse=True
+        )
+
+        # Top 3 concentration
+        top_3_value = sum(float(p.current_value) for p in sorted_positions[:3])
+        top_3_weight = round((top_3_value / total_value) * 100, 2)
+
+        # Single asset max concentration
+        max_single_asset = round((float(sorted_positions[0].current_value) / total_value) * 100, 2) if sorted_positions else 0.0
+
+        # Single sector max concentration
+        max_sector_pct = max(
+            (sector["percentage"] for sector in sector_allocation.values()),
+            default=0.0
+        )
+
+        return {
+            "top_3_weight": top_3_weight,
+            "single_sector_max": round(max_sector_pct, 2),
+            "single_asset_max": max_single_asset
+        }
+
+    async def _get_position_rank(self, symbol: str) -> Dict[str, Any]:
+        """
+        Get position's rank in portfolio by value.
+
+        Args:
+            symbol: Asset symbol
+
+        Returns:
+            Dictionary with rank, total_positions, weight, description
+        """
+        positions = await self.portfolio_service.get_all_positions()
+        valid_positions = [p for p in positions if p.current_value is not None]
+
+        if not valid_positions:
+            return {
+                "rank": 0,
+                "total_positions": 0,
+                "weight": 0.0,
+                "description": "No positions"
+            }
+
+        # Sort by value
+        sorted_positions = sorted(
+            valid_positions,
+            key=lambda p: float(p.current_value),
+            reverse=True
+        )
+
+        # Find position rank
+        rank = 0
+        for i, pos in enumerate(sorted_positions):
+            if pos.symbol == symbol:
+                rank = i + 1
+                break
+
+        total_value = sum(float(p.current_value) for p in valid_positions)
+        position_value = next((float(p.current_value) for p in valid_positions if p.symbol == symbol), 0)
+        weight = round((position_value / total_value * 100), 2) if total_value > 0 else 0.0
+
+        # Format ordinal
+        ordinal = self._format_ordinal(rank)
+
+        return {
+            "rank": rank,
+            "total_positions": len(valid_positions),
+            "weight": weight,
+            "description": f"{ordinal} largest position ({weight}% of portfolio)"
+        }
+
+    def _format_ordinal(self, n: int) -> str:
+        """Format number as ordinal (1st, 2nd, 3rd, etc.)."""
+        if n == 0:
+            return "0th"
+
+        suffix = ['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]
+        if 11 <= (n % 100) <= 13:
+            suffix = 'th'
+        return f"{n}{suffix}"
+
+    def _format_portfolio_context(self, context: Dict[str, Any]) -> str:
+        """
+        Format portfolio context as human-readable string for Claude prompt.
+
+        Args:
+            context: Portfolio context dictionary
+
+        Returns:
+            Formatted multi-line string
+        """
+        lines = [
+            f"Total Portfolio Value: €{context['total_value']:,.2f}",
+            f"Number of Positions: {context['position_count']}"
+        ]
+
+        # Asset allocation
+        if context['asset_allocation']:
+            lines.append("\nAsset Allocation:")
+            for asset_type, data in context['asset_allocation'].items():
+                lines.append(
+                    f"  - {asset_type}: {data['percentage']:.1f}% (€{data['value']:,.2f}, {data['count']} positions)"
+                )
+
+        # Sector allocation
+        if context['sector_allocation']:
+            lines.append("\nSector Allocation (Stocks):")
+            for sector, data in context['sector_allocation'].items():
+                lines.append(
+                    f"  - {sector}: {data['percentage']:.1f}% (€{data['value']:,.2f}, {data['count']} positions)"
+                )
+
+        # Top holdings
+        if context['top_10_holdings']:
+            lines.append("\nTop 10 Holdings:")
+            for i, holding in enumerate(context['top_10_holdings'], 1):
+                sector_info = f", {holding['sector']}" if 'sector' in holding else ""
+                lines.append(
+                    f"  {i}. {holding['symbol']}: €{holding['value']:,.2f} ({holding['weight']:.1f}%, {holding['asset_type']}{sector_info})"
+                )
+
+        # Concentration metrics
+        lines.append("\nConcentration Metrics:")
+        concentration = context['concentration_metrics']
+        lines.append(f"  - Top 3 positions: {concentration['top_3_weight']:.1f}%")
+        lines.append(f"  - Max single sector: {concentration['single_sector_max']:.1f}%")
+        lines.append(f"  - Max single asset: {concentration['single_asset_max']:.1f}%")
+
+        return "\n".join(lines)
