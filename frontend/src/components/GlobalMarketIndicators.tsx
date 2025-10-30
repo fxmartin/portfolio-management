@@ -3,6 +3,8 @@
 
 import { TrendingUp, TrendingDown, Activity, BarChart3, DollarSign, Zap } from 'lucide-react'
 import type { GlobalMarketIndicators, MarketIndicator } from '../api/analysis'
+import { Tooltip } from './Tooltip'
+import { INDICATOR_TOOLTIPS } from '../config/indicatorTooltips'
 import './GlobalMarketIndicators.css'
 
 interface GlobalMarketIndicatorsProps {
@@ -33,22 +35,32 @@ export const GlobalMarketIndicators: React.FC<GlobalMarketIndicatorsProps> = ({ 
     return change >= 0 ? 'positive' : 'negative'
   }
 
-  const renderIndicator = (indicator: MarketIndicator) => (
-    <div key={indicator.symbol} className="indicator-item">
-      <div className="indicator-content">
-        <span className="indicator-label">{indicator.name}</span>
-        <div className="indicator-values">
-          <span className="indicator-price">{formatPrice(indicator.price, indicator.symbol)}</span>
-          <span className={`indicator-change ${getChangeClass(indicator.change_percent)}`}>
-            {formatChange(indicator.change_percent)}
-          </span>
+  const renderIndicator = (indicator: MarketIndicator) => {
+    const tooltipText = INDICATOR_TOOLTIPS[indicator.symbol]
+
+    return (
+      <div key={indicator.symbol} className="indicator-item">
+        <div className="indicator-content">
+          {tooltipText ? (
+            <Tooltip content={tooltipText}>
+              <span className="indicator-label">{indicator.name}</span>
+            </Tooltip>
+          ) : (
+            <span className="indicator-label">{indicator.name}</span>
+          )}
+          <div className="indicator-values">
+            <span className="indicator-price">{formatPrice(indicator.price, indicator.symbol)}</span>
+            <span className={`indicator-change ${getChangeClass(indicator.change_percent)}`}>
+              {formatChange(indicator.change_percent)}
+            </span>
+          </div>
+          {indicator.interpretation && (
+            <span className="indicator-interpretation">{indicator.interpretation}</span>
+          )}
         </div>
-        {indicator.interpretation && (
-          <span className="indicator-interpretation">{indicator.interpretation}</span>
-        )}
       </div>
-    </div>
-  )
+    )
+  }
 
   // Check if we have any data to display
   const hasData =
