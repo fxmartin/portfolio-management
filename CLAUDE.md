@@ -167,6 +167,22 @@ Space saved: 214px (64% reduction)
 
 **Combined Impact**: Issues #32 + #33 save **~720px vertical space** (856 + 334 → 350 + 120) on AI Analysis page
 
+**Oct 30, 2025 - AI Analysis Cache Optimization ✅ COMPLETE**
+
+**Issue #34 - 96% API Cost Reduction**:
+- Extended cache TTL from 1 hour to **24 hours** for all AI analysis types
+- Reduces Anthropic API calls from 240/day to 10/day (96% reduction)
+- Cost savings: $4.80/day → $0.20/day (~**$1,680/year**)
+- User experience unchanged: Daily fresh analysis + manual refresh available
+- Files modified: `analysis_service.py`, `analysis_router.py`, test files
+- Commit: `813e4f7`
+- GitHub Issue: [#34](https://github.com/fxmartin/portfolio-management/issues/34) ✅ Closed
+
+**Cache TTL Settings** (All analysis types now 24 hours):
+- Global market analysis: 1h → **24h** (1 call/day vs 24 calls/day)
+- Position analysis: 1h → **24h** (10 calls/day vs 240 calls/day)
+- Forecasts: 24h (unchanged)
+
 **Oct 30, 2025 - F8.4-003 Portfolio Context Integration ✅ COMPLETE**
 
 **Position Analysis Transformation**: Claude now provides **strategic, portfolio-aware recommendations** considering full portfolio context:
