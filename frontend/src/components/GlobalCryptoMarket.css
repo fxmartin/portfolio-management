@@ -1,138 +1,235 @@
+/* ABOUTME: Compact horizontal layout for global crypto market metrics */
+/* ABOUTME: Single-line metrics with inline labels, values, and details */
+/* VERSION: 2.0 - Updated Oct 30, 2025 */
+
 .global-crypto-market {
   background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 10px;
+  padding: 12px 16px;
   margin: 16px 0;
   color: white;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .market-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .market-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
   flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  opacity: 0.95;
 }
 
+.source-badge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  opacity: 0.85;
+}
+
+/* Horizontal flex-wrap grid */
 .market-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: stretch;
 }
 
+/* Compact single-line metric items */
 .market-item {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border-radius: 8px;
-  padding: 14px;
+  flex: 0 1 auto;
+  min-width: 220px;
+  max-width: 320px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  border-radius: 6px;
+  padding: 6px 10px;
   display: flex;
-  gap: 12px;
-  transition: all 0.2s ease;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
 }
 
 .market-item:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* Special highlights */
 .market-item.highlight {
-  background: rgba(255, 255, 255, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.item-icon {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-}
-
-.item-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.item-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  opacity: 0.9;
-  font-weight: 500;
-}
-
-.item-value {
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.item-detail {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.item-detail.positive {
-  color: #d1fae5;
-  font-weight: 600;
-}
-
-.item-detail.negative {
-  color: #fecaca;
-  font-weight: 600;
-}
-
-.market-item.btc .item-value,
-.market-item.eth .item-value {
-  font-size: 24px;
-}
-
-.market-item.defi {
-  grid-column: span 2;
-  background: rgba(139, 92, 246, 0.2);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .market-item.fear-greed {
   background: rgba(255, 215, 0, 0.2);
-  border: 1px solid rgba(255, 215, 0, 0.4);
+  border: 1px solid rgba(255, 215, 0, 0.3);
 }
 
-.market-item.fear-greed .fear-greed-value {
+.market-item.defi {
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+/* Item icon */
+.item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+/* Crypto badges for BTC/ETH */
+.crypto-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.btc-badge {
+  background: rgba(247, 147, 26, 0.25);
+  color: #f7931a;
+}
+
+.eth-badge {
+  background: rgba(98, 126, 234, 0.25);
+  color: #627eea;
+}
+
+/* Single-line content: icon/badge + label + separator + value + detail */
+.item-content {
+  display: flex;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Label */
+.item-label {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.9;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Separator bullet */
+.item-separator {
+  font-size: 10px;
+  opacity: 0.5;
+  margin: 0 -2px;
+  flex-shrink: 0;
+}
+
+/* Value */
+.item-value {
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Fear & Greed special value styling */
+.fear-greed-value {
   color: #ffd700;
   font-weight: 800;
 }
 
+/* Change percentage (for market cap) */
+.item-change {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.item-change.positive {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+}
+
+.item-change.negative {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+/* Detail text (e.g., classification, market count) */
+.item-detail {
+  font-size: 10px;
+  opacity: 0.75;
+  font-style: italic;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* Responsive design */
+@media (max-width: 1024px) {
+  .market-item {
+    min-width: 200px;
+    max-width: 300px;
+  }
+}
+
 @media (max-width: 768px) {
-  .market-grid {
-    grid-template-columns: 1fr;
+  .global-crypto-market {
+    padding: 10px 12px;
   }
 
-  .market-item.defi {
-    grid-column: span 1;
+  .market-grid {
+    gap: 5px;
+  }
+
+  .market-item {
+    min-width: 180px;
+    max-width: 100%;
+    flex: 1 1 calc(50% - 5px);
   }
 
   .item-value {
-    font-size: 16px;
+    font-size: 13px;
   }
 
-  .market-item.btc .item-value,
-  .market-item.eth .item-value {
-    font-size: 20px;
+  .item-label {
+    font-size: 9px;
+  }
+
+  .item-detail {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 480px) {
+  .market-item {
+    flex: 1 1 100%;
+    min-width: 100%;
   }
 }
