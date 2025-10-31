@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { formatCurrency, formatPercentage, getPnLClassName } from '../utils/formatters'
 import { API_CONFIG, PORTFOLIO_CONFIG, REFRESH_INTERVALS } from '../config/app.config'
+import { usePortfolioRefresh } from '../contexts/PortfolioRefreshContext'
 import TransactionDetailsRow from './TransactionDetailsRow'
 import './HoldingsTable.css'
 
@@ -83,6 +84,7 @@ export default function HoldingsTable({
   refreshInterval = DEFAULT_REFRESH_INTERVAL,
   externalFilter = null,
 }: HoldingsTableProps) {
+  const { refreshKey } = usePortfolioRefresh()
   const [positions, setPositions] = useState<Position[]>([])
   const [filteredPositions, setFilteredPositions] = useState<Position[]>([])
   const [loading, setLoading] = useState(true)
@@ -135,6 +137,14 @@ export default function HoldingsTable({
       }
     }
   }, [autoRefresh, refreshInterval, fetchPositions, refreshPrices])
+
+  // Listen for manual refresh triggers (e.g., after transaction create/update/delete)
+  useEffect(() => {
+    if (refreshKey > 0) {
+      console.log('[HoldingsTable] Manual refresh triggered by context')
+      fetchPositions()
+    }
+  }, [refreshKey, fetchPositions])
 
   // Filter and sort positions whenever dependencies change
   useEffect(() => {

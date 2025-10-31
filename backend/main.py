@@ -16,6 +16,7 @@ try:
     from .transaction_router import router as transaction_router
     from .prompt_router import router as prompt_router
     from .analysis_router import router as analysis_router
+    from .rebalancing_router import router as rebalancing_router
 except ImportError:
     from database import init_db_async, test_connection
     from import_router import router as import_router
@@ -25,6 +26,7 @@ except ImportError:
     from transaction_router import router as transaction_router
     from prompt_router import router as prompt_router
     from analysis_router import router as analysis_router
+    from rebalancing_router import router as rebalancing_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -88,6 +90,7 @@ app.include_router(portfolio_router)
 app.include_router(transaction_router)
 app.include_router(prompt_router)
 app.include_router(analysis_router)
+app.include_router(rebalancing_router)
 
 @app.get("/")
 async def root():

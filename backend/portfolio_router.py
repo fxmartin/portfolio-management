@@ -890,22 +890,23 @@ async def get_realized_pnl_summary(
     session: AsyncSession = Depends(get_async_db)
 ) -> Dict:
     """
-    Get realized P&L summary from closed positions with fee breakdown.
+    Get realized P&L summary from all sell transactions with fee breakdown.
 
-    A position is considered "closed" when total sold quantity >= total bought quantity.
-    Uses FIFO methodology to calculate realized gains/losses.
+    Calculates realized gains/losses for ANY positions with sell transactions,
+    including both partial sales and fully closed positions.
+    Uses FIFO methodology to determine cost basis for sold shares.
 
     Returns:
         Dictionary with:
-        - total_realized_pnl: Total realized gains/losses across all closed positions
+        - total_realized_pnl: Total realized gains/losses from all sales
         - total_fees: Sum of all transaction fees (buy + sell)
         - net_pnl: Realized P&L minus total fees
-        - closed_positions_count: Number of closed positions
+        - closed_positions_count: Number of symbols with sell transactions
         - breakdown: Per-asset-type breakdown (stocks, crypto, metals) with:
             - realized_pnl: Realized gains/losses for this asset type
             - fees: Transaction fees for this asset type
             - net_pnl: Net P&L after fees for this asset type
-            - closed_count: Number of closed positions in this asset type
+            - closed_count: Number of symbols with sales in this asset type
         - last_updated: Timestamp of calculation (ISO format)
     """
     try:

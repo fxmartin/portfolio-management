@@ -105,8 +105,8 @@ const RealizedPnLCard = () => {
 
       {data.closed_positions_count === 0 ? (
         <div className="empty-state">
-          <p>No closed positions yet</p>
-          <p className="empty-state-hint">Realized P&L will appear here when you fully close a position by selling all shares</p>
+          <p>No realized P&L yet</p>
+          <p className="empty-state-hint">Realized P&L will appear here when you sell any shares (partial or full sales)</p>
         </div>
       ) : (
         <>

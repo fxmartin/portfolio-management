@@ -6,6 +6,7 @@ import axios from 'axios'
 import { formatCurrency, formatPnLChange, formatDateTime, getPnLClassName } from '../utils/formatters'
 import { API_CONFIG, PORTFOLIO_CONFIG, REFRESH_INTERVALS, formatRefreshInterval } from '../config/app.config'
 import { getMarketStatus, getStatusIndicator, type MarketStatus } from '../utils/marketStatus'
+import { usePortfolioRefresh } from '../contexts/PortfolioRefreshContext'
 import AssetAllocationChart from './AssetAllocationChart'
 import './OpenPositionsCard.css'
 
@@ -107,6 +108,7 @@ export default function OpenPositionsCard({
   autoRefresh = true,
   refreshInterval = DEFAULT_REFRESH_INTERVAL,
 }: OpenPositionsCardProps) {
+  const { refreshKey } = usePortfolioRefresh()
   const [data, setData] = useState<OpenPositionsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -173,6 +175,14 @@ export default function OpenPositionsCard({
       }
     }
   }, [autoRefresh, refreshInterval, fetchData, refreshPrices])
+
+  // Listen for manual refresh triggers (e.g., after transaction create/update/delete)
+  useEffect(() => {
+    if (refreshKey > 0) {
+      console.log('[OpenPositionsCard] Manual refresh triggered by context')
+      fetchData()
+    }
+  }, [refreshKey, fetchData])
 
   // Update market statuses every 60 seconds
   useEffect(() => {

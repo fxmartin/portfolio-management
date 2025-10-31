@@ -439,22 +439,22 @@ class PortfolioService:
 
     async def get_realized_pnl_summary(self) -> Dict:
         """
-        Calculate realized P&L summary from fully closed positions.
+        Calculate realized P&L summary from all sell transactions.
 
-        Uses FIFO methodology to calculate realized gains/losses for symbols where
-        the position is fully closed (total sold >= total bought).
+        Uses FIFO methodology to calculate realized gains/losses for any symbols
+        with sell transactions, including both partial and fully closed positions.
 
         Returns:
             Dictionary with:
-            - total_realized_pnl: Total realized gains/losses from closed positions
+            - total_realized_pnl: Total realized gains/losses from all sales
             - total_fees: Sum of all transaction fees (buy + sell)
             - net_pnl: Realized P&L minus total fees
-            - closed_positions_count: Number of fully closed positions
+            - closed_positions_count: Number of symbols with sell transactions
             - breakdown: Per-asset-type breakdown (stocks, crypto, metals) with:
                 - realized_pnl: Realized gains/losses for this asset type
                 - fees: Transaction fees for this asset type
                 - net_pnl: Net P&L after fees for this asset type
-                - closed_count: Number of fully closed positions in this asset type
+                - closed_count: Number of symbols with sales in this asset type
         """
         from sqlalchemy import func, case
         from collections import defaultdict
@@ -486,7 +486,8 @@ class PortfolioService:
         result = await self.session.execute(stmt)
         position_status = result.all()
 
-        # Get all symbols that have fully closed positions
+        # Get all symbols that have ANY sell transactions
+        # Realized P&L should be calculated for all sales, not just fully closed positions
         symbols_with_sales = []
         for row in position_status:
             symbol = row.symbol
@@ -494,8 +495,8 @@ class PortfolioService:
             total_bought = row.total_bought or Decimal("0")
             total_sold = row.total_sold or Decimal("0")
 
-            # Only include symbols where position is fully closed (sold >= bought)
-            if total_sold > 0 and total_sold >= total_bought:
+            # Include any symbol with sell transactions (partial or full sales)
+            if total_sold > 0:
                 symbols_with_sales.append((symbol, asset_type))
 
         # Step 2: Calculate realized P&L for all symbols with sales using FIFO

@@ -273,4 +273,40 @@ describe('Tooltip', () => {
       expect(tooltip).toHaveClass('tooltip-top')
     })
   })
+
+  it('renders tooltip to document.body using Portal', async () => {
+    render(
+      <Tooltip content="Test tooltip">
+        <span>Portal test</span>
+      </Tooltip>
+    )
+
+    const trigger = screen.getByText('Portal test').parentElement!
+    fireEvent.mouseEnter(trigger)
+
+    await waitFor(() => {
+      const tooltip = screen.getByRole('tooltip')
+      // Tooltip should be a direct child of body (via Portal)
+      expect(tooltip.parentElement).toBe(document.body)
+    })
+  })
+
+  it('has tooltip class with high z-index styling', async () => {
+    render(
+      <Tooltip content="Test tooltip">
+        <span>Z-index test</span>
+      </Tooltip>
+    )
+
+    const trigger = screen.getByText('Z-index test').parentElement!
+    fireEvent.mouseEnter(trigger)
+
+    await waitFor(() => {
+      const tooltip = screen.getByRole('tooltip')
+      // Tooltip should have the tooltip class which has z-index: 99999 in CSS
+      expect(tooltip).toHaveClass('tooltip')
+      // Tooltip should be rendered to body (via Portal) to escape stacking contexts
+      expect(tooltip.parentElement).toBe(document.body)
+    })
+  })
 })

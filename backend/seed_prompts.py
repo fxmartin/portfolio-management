@@ -1,13 +1,14 @@
 # ABOUTME: Seed script for populating default AI analysis prompts
-# ABOUTME: Creates 3 default prompts (global, position, forecast) for AI market analysis
+# ABOUTME: Creates 4 default prompts (rebalancing, global, position, forecast) for AI market analysis
 
 """
 Seed script for Epic 8: AI-Powered Market Analysis
 
 This script populates the database with default prompt templates for:
-1. Global market analysis
-2. Position-specific analysis
-3. Two-quarter forecasts with scenarios
+1. Portfolio rebalancing recommendations
+2. Global market analysis
+3. Position-specific analysis
+4. Two-quarter forecasts with scenarios
 
 Run with: uv run python seed_prompts.py
 Or import and call: seed_default_prompts(session)
@@ -25,6 +26,107 @@ logger = logging.getLogger(__name__)
 
 
 DEFAULT_PROMPTS = [
+    {
+        "name": "portfolio_rebalancing",
+        "category": "rebalancing",
+        "prompt_text": """You are a portfolio advisor providing specific rebalancing recommendations.
+
+## Current Portfolio State
+
+**Total Value**: €{portfolio_total_value}
+**Target Allocation Model**: {target_model}
+
+## Current Allocation vs Target
+
+{allocation_table}
+
+## Current Positions
+
+{positions_table}
+
+## Market Context
+
+{market_indices}
+
+## Instructions
+
+Generate specific rebalancing recommendations to achieve the target allocation:
+
+1. **Identify specific positions to reduce** (OVERWEIGHT assets)
+   - Which symbols to sell and how much
+   - Consider current market conditions and tax implications
+   - Prioritize positions with gains to minimize losses
+
+2. **Identify specific positions to increase or new positions to open** (UNDERWEIGHT assets)
+   - Which symbols to buy and how much
+   - Consider diversification within the asset type
+   - Suggest specific entry points if possible
+
+3. **Prioritize recommendations** by largest deviations first
+
+4. **Provide rationale** for each recommendation explaining:
+   - Why this specific position
+   - How it addresses the allocation gap
+   - Market timing considerations
+   - Risk/reward assessment
+
+5. **Consider practical constraints**:
+   - Minimum trade sizes (don't suggest trades <€50)
+   - Transaction costs (assume 0.5% per trade)
+   - Avoid creating too many small positions
+
+## Response Format
+
+Return recommendations in this JSON structure:
+
+```json
+{{
+  "summary": "Overall rebalancing strategy summary in 2-3 sentences",
+  "priority": "HIGH|MEDIUM|LOW based on deviation severity",
+  "recommendations": [
+    {{
+      "action": "SELL",
+      "symbol": "BTC",
+      "asset_type": "crypto",
+      "quantity": 0.05,
+      "current_price": 81234.56,
+      "estimated_value": 4061.73,
+      "rationale": "Reduce crypto exposure from 35% to 25%. BTC is overweight and currently showing strength (+2.3% today) - good opportunity to lock in gains.",
+      "priority": 1,
+      "timing": "Consider selling into current strength (+2.3% today)",
+      "transaction_data": {{
+        "transaction_type": "SELL",
+        "symbol": "BTC",
+        "quantity": 0.05,
+        "price": 81234.56,
+        "total_value": 4061.73,
+        "currency": "EUR",
+        "notes": "Rebalancing: Reduce crypto from 35% to 25% target"
+      }}
+    }}
+  ],
+  "expected_outcome": {{
+    "stocks_percentage": 60.0,
+    "crypto_percentage": 25.0,
+    "metals_percentage": 15.0,
+    "total_trades": 5,
+    "estimated_costs": 125.50,
+    "net_allocation_improvement": "+15% closer to target"
+  }},
+  "risk_assessment": "Low - Recommendations diversified across asset types...",
+  "implementation_notes": "Execute in 2-3 tranches over 1 week to minimize market impact"
+}}
+```
+
+Be specific with quantities and EUR amounts. Ensure all recommendations together achieve the target allocation.""",
+        "template_variables": {
+            "portfolio_total_value": "decimal",
+            "target_model": "string",
+            "allocation_table": "string",
+            "positions_table": "string",
+            "market_indices": "string"
+        }
+    },
     {
         "name": "global_market_analysis",
         "category": "global",

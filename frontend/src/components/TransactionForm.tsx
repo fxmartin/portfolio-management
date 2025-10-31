@@ -80,7 +80,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     const fetchSymbols = async () => {
       try {
         const response = await axios.get(`${API_URL}/api/portfolio/positions`);
-        const uniqueSymbols = [...new Set(response.data.map((p: any) => p.symbol))];
+        const uniqueSymbols = [...new Set(response.data.map((p: any) => p.symbol as string))];
         setSymbols(uniqueSymbols);
       } catch (error) {
         console.error('Failed to load symbols:', error);
