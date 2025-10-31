@@ -131,6 +131,48 @@ User → React (3003) → FastAPI (8000) → PostgreSQL (5432)
 
 ### Recent Enhancements & Bug Fixes
 
+**Oct 31, 2025 - Issue #35: Realized P&L Bug Fix ✅ COMPLETE**
+
+**Critical Bug Fixed**: Realized P&L was only calculated for fully closed positions (total sold >= total bought), causing partial sales to be ignored.
+- **Problem**: Selling 50 of 100 AMEM shares at profit showed €0 realized P&L
+- **Root Cause**: `portfolio_service.py:498` checked `total_sold >= total_bought` instead of `total_sold > 0`
+- **Fix**: Changed condition to count ANY sell transaction (partial or full sales)
+- **Impact**:
+  - ✅ Partial position sales now correctly generate realized P&L
+  - ✅ Accurate financial reporting for tax purposes
+  - ✅ Users can track profit-taking from partial sales immediately
+- **Files Modified**:
+  - `backend/portfolio_service.py` - Fixed logic, updated docstrings
+  - `backend/portfolio_router.py` - Updated API documentation
+  - `backend/tests/test_realized_pnl.py` - Updated test expectations (8/8 passing)
+  - `frontend/src/components/RealizedPnLCard.tsx` - Updated UI text
+- **Example**: Buy 100 AMEM @ €50, Sell 50 @ €70 = €1,000 realized profit (now displays correctly)
+- Commit: `373b119`
+- GitHub Issue: [#35](https://github.com/fxmartin/portfolio-management/issues/35) ✅ Closed
+
+**Oct 31, 2025 - Portfolio Refresh Context ✅ COMPLETE**
+
+**UX Enhancement**: Immediate position updates after manual transactions and CSV uploads
+- **Problem**: Dashboard only refreshed on timers (30-120s), so manual transactions didn't show immediately
+- **Solution**: React Context API for coordinating portfolio refreshes across components
+- **Implementation**:
+  - Created `PortfolioRefreshContext` with `triggerRefresh()` function
+  - `OpenPositionsCard` & `HoldingsTable` listen for refresh signals
+  - `TransactionList` & `TransactionImport` trigger refreshes after operations
+  - Backend already auto-recalculated positions (no changes needed)
+- **User Experience**:
+  - ✅ Create/update/delete manual transaction → Dashboard updates instantly
+  - ✅ Upload CSV → Dashboard updates instantly
+  - ✅ Auto-refresh timers still work for live price updates
+- **Files Modified**:
+  - `frontend/src/contexts/PortfolioRefreshContext.tsx` (new)
+  - `frontend/src/App.tsx` (wrapped with provider)
+  - `frontend/src/components/OpenPositionsCard.tsx` (listens)
+  - `frontend/src/components/HoldingsTable.tsx` (listens)
+  - `frontend/src/components/TransactionList.tsx` (triggers)
+  - `frontend/src/components/TransactionImport.tsx` (triggers)
+- **Architecture**: Event-driven refresh using React Context + `refreshKey` counter
+
 **Oct 30, 2025 - Issue #33: Compact Global Crypto Market Layout ✅ COMPLETE**
 
 **UX Enhancement**: Reduced vertical space usage by 64% (334px → ~120px) on AI Analysis page
