@@ -753,15 +753,16 @@ export const Tooltip: React.FC<TooltipProps> = ({
 
 **Implementation Summary** (Oct 30, 2025):
 - **Files Created**:
-  - `frontend/src/components/Tooltip.tsx` (94 lines) - Reusable tooltip component with positioning logic
+  - `frontend/src/components/Tooltip.tsx` (107 lines) - Reusable tooltip component with React Portal
   - `frontend/src/components/Tooltip.css` (78 lines) - Styled tooltip with animations and accessibility support
   - `frontend/src/config/indicatorTooltips.ts` (51 lines) - Configuration with 19 tooltip texts
-  - `frontend/src/components/Tooltip.test.tsx` (288 lines) - Comprehensive test suite with 15 tests
+  - `frontend/src/components/Tooltip.test.tsx` (312 lines) - Comprehensive test suite with 17 tests
 - **Files Modified**:
   - `frontend/src/components/GlobalMarketIndicators.tsx` - Added Tooltip wrapper to 12 indicators
   - `frontend/src/components/GlobalCryptoMarket.tsx` - Added Tooltip wrapper to 7 crypto indicators
 - **Features Implemented**:
   - Custom Tooltip component with hover and focus triggers
+  - **React Portal rendering** - Tooltips render to `document.body` to escape stacking contexts
   - Dynamic positioning (top/bottom/left/right) with viewport boundary detection
   - Keyboard accessibility (Tab navigation, Focus/Blur events)
   - ARIA attributes (role="tooltip", aria-describedby)
@@ -769,9 +770,14 @@ export const Tooltip: React.FC<TooltipProps> = ({
   - Fixed positioning to handle scrolling
   - Dotted underline on trigger elements (cursor: help)
   - High contrast mode and reduced motion support
+  - Very high z-index (99999) to appear above all elements
   - All 19 indicators now have explanatory tooltips
-- **Tests**: 15 passing (100% coverage for component logic)
-  - Render, visibility, mouse events, keyboard events, ARIA, positioning, edge cases
+- **Tests**: 17 passing (100% coverage for component logic)
+  - Render, visibility, mouse events, keyboard events, ARIA, positioning, Portal rendering, edge cases
+- **Bug Fix** (Issue #31): Fixed tooltips appearing behind elements
+  - Problem: `backdrop-filter` CSS property created stacking contexts that trapped tooltips
+  - Solution: Used React Portal to render tooltips at root level, escaping all stacking contexts
+  - Result: Tooltips now consistently appear on top of all UI elements
 
 **Definition of Done**:
 - [x] Tooltip component created with accessibility features ✅

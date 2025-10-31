@@ -30,7 +30,9 @@
       "Bash(docker-compose exec:*)",
       "WebSearch",
       "Bash(docker-compose:*)",
-      "Bash(gh issue create:*)"
+      "Bash(gh issue create:*)",
+      "Bash(make dev:*)",
+      "Bash(gh issue close:*)"
     ],
     "deny": [],
     "ask": []

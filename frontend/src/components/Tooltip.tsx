@@ -2,6 +2,7 @@
 // ABOUTME: Shows explanatory text on hover/focus with keyboard navigation support
 
 import React, { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import './Tooltip.css'
 
 interface TooltipProps {
@@ -66,6 +67,24 @@ export const Tooltip: React.FC<TooltipProps> = ({
     }
   }, [visible, position])
 
+  // Render tooltip to document.body using Portal to escape stacking contexts
+  const tooltipPortal = visible && createPortal(
+    <div
+      ref={tooltipRef}
+      id="tooltip"
+      className={`tooltip tooltip-${position}`}
+      role="tooltip"
+      style={{
+        position: 'fixed',
+        left: `${coords.x}px`,
+        top: `${coords.y}px`,
+      }}
+    >
+      {content}
+    </div>,
+    document.body
+  )
+
   return (
     <>
       <span
@@ -80,21 +99,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
       >
         {children}
       </span>
-      {visible && (
-        <div
-          ref={tooltipRef}
-          id="tooltip"
-          className={`tooltip tooltip-${position}`}
-          role="tooltip"
-          style={{
-            position: 'fixed',
-            left: `${coords.x}px`,
-            top: `${coords.y}px`,
-          }}
-        >
-          {content}
-        </div>
-      )}
+      {tooltipPortal}
     </>
   )
 }

@@ -372,7 +372,7 @@ class TestRealizedPnL:
 
     @pytest.mark.asyncio
     async def test_partially_closed_position(self, db_session):
-        """Test position where sell < buy (not fully closed, should not count)"""
+        """Test position where sell < buy (partial sale should count realized P&L)"""
         transactions = [
             Transaction(
                 transaction_date=datetime(2024, 1, 1),
@@ -409,11 +409,16 @@ class TestRealizedPnL:
         service = PortfolioService(db_session)
         summary = await service.get_realized_pnl_summary()
 
-        # Position is not fully closed (70 shares remaining)
-        # Should not be counted as closed position
-        assert summary["closed_positions_count"] == 0
-        # But fees should still be tracked
+        # Partial sale: sold 30 of 100 shares (70 shares remaining)
+        # FIFO: Bought 30 @ 140, Sold 30 @ 150
+        # Realized gain: (150 - 140) * 30 = 300
+        # Total fees: 2.00 + 1.50 = 3.50
+        # Net P&L: 300 - 3.50 = 296.50
+        assert summary["total_realized_pnl"] == Decimal("300.00")
         assert summary["total_fees"] == Decimal("3.50")
+        assert summary["net_pnl"] == Decimal("296.50")
+        assert summary["closed_positions_count"] == 1  # GOOGL has sales
+        assert summary["breakdown"]["stocks"]["closed_count"] == 1
 
     @pytest.mark.asyncio
     async def test_multiple_closed_positions_same_asset_type(self, db_session):

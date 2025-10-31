@@ -340,6 +340,157 @@ class AnalysisService:
 
         return response
 
+    async def generate_rebalancing_recommendations(
+        self,
+        rebalancing_analysis: Any,  # RebalancingAnalysis object
+        force_refresh: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Generate AI-powered rebalancing recommendations based on allocation analysis.
+
+        Args:
+            rebalancing_analysis: RebalancingAnalysis object with current/target allocation
+            force_refresh: If True, bypass cache and generate fresh recommendations
+
+        Returns:
+            {
+                'summary': str,
+                'priority': str,  # HIGH/MEDIUM/LOW
+                'recommendations': List[RebalancingRecommendation],
+                'expected_outcome': ExpectedOutcome,
+                'risk_assessment': str,
+                'implementation_notes': str,
+                'generated_at': datetime,
+                'tokens_used': int,
+                'cached': bool
+            }
+        """
+        # Early exit if rebalancing not required
+        if not rebalancing_analysis.rebalancing_required:
+            return {
+                'summary': 'Your portfolio is well-balanced. No rebalancing needed.',
+                'priority': 'LOW',
+                'recommendations': [],
+                'expected_outcome': {
+                    'stocks_percentage': 0,
+                    'crypto_percentage': 0,
+                    'metals_percentage': 0,
+                    'total_trades': 0,
+                    'estimated_costs': 0,
+                    'net_allocation_improvement': 'Portfolio is already balanced'
+                },
+                'risk_assessment': 'None - portfolio is balanced',
+                'implementation_notes': 'Review allocation quarterly',
+                'generated_at': datetime.utcnow(),
+                'tokens_used': 0,
+                'cached': False
+            }
+
+        cache_key = f"analysis:rebalancing:{rebalancing_analysis.target_model}"
+
+        # Check cache first (6 hours)
+        if not force_refresh:
+            cached = await self._get_cached_analysis(cache_key)
+            if cached:
+                # Override cache age check for 6-hour TTL
+                age = datetime.utcnow() - cached['generated_at']
+                if age < timedelta(hours=6):
+                    logger.info("Returning cached rebalancing recommendations")
+                    return {**cached, 'cached': True}
+
+        logger.info("Generating fresh rebalancing recommendations")
+
+        # Fetch prompt
+        prompt_template = await self.prompts.get_prompt_by_name("portfolio_rebalancing")
+        if not prompt_template:
+            raise ValueError("Rebalancing prompt not found")
+
+        # Build allocation table
+        allocation_table = "| Asset Type | Current % | Target % | Deviation | Status | Delta (EUR) |\n"
+        allocation_table += "|------------|-----------|----------|-----------|--------|--------------|\n"
+        for alloc in rebalancing_analysis.current_allocation:
+            allocation_table += f"| {alloc.asset_type.value} | {alloc.current_percentage:.1f}% | {alloc.target_percentage:.1f}% | {alloc.deviation:+.1f}% | {alloc.status.value} | €{alloc.delta_value:,.2f} |\n"
+
+        # Build positions table
+        from rebalancing_service import RebalancingService
+        rebalancing_service = RebalancingService(self.db)
+        positions_table = "| Symbol | Asset Type | Quantity | Current Price | Value | % of Portfolio |\n"
+        positions_table += "|--------|-----------|----------|---------------|-------|----------------|\n"
+
+        for asset_type in rebalancing_analysis.current_allocation:
+            positions = await rebalancing_service.get_positions_by_asset_type(asset_type.asset_type)
+            for pos in positions:
+                value = pos.quantity * pos.current_price if pos.current_price else 0
+                pct = (value / rebalancing_analysis.total_portfolio_value * 100) if rebalancing_analysis.total_portfolio_value > 0 else 0
+                positions_table += f"| {pos.symbol} | {pos.asset_type.value} | {pos.quantity} | €{pos.current_price:,.2f} | €{value:,.2f} | {pct:.1f}% |\n"
+
+        # Collect market context
+        global_data = await self.data.collect_global_data()
+        market_indicators = global_data.get('market_indicators', {})
+
+        # Format market indices
+        market_indices = f"""
+- S&P 500: {market_indicators.get('sp500', {}).get('price', 'N/A')} ({market_indicators.get('sp500', {}).get('change_percent', 'N/A')})
+- Bitcoin: ${market_indicators.get('bitcoin', {}).get('price', 'N/A')} ({market_indicators.get('bitcoin', {}).get('change_percent', 'N/A')})
+- Gold: ${market_indicators.get('gold', {}).get('price', 'N/A')}/oz ({market_indicators.get('gold', {}).get('change_percent', 'N/A')})
+"""
+
+        # Prepare data for prompt rendering
+        data = {
+            'portfolio_total_value': float(rebalancing_analysis.total_portfolio_value),
+            'target_model': rebalancing_analysis.target_model,
+            'allocation_table': allocation_table,
+            'positions_table': positions_table,
+            'market_indices': market_indices
+        }
+
+        # Render prompt
+        renderer = PromptRenderer()
+        rendered_prompt = renderer.render(
+            prompt_template.prompt_text,
+            prompt_template.template_variables,
+            data
+        )
+
+        # Generate recommendations
+        result = await self.claude.generate_analysis(rendered_prompt)
+
+        # Parse JSON response
+        try:
+            recommendations_data = self._extract_json_from_response(result['content'])
+        except (ValueError, json.JSONDecodeError) as e:
+            logger.error(f"Failed to parse rebalancing recommendations: {e}")
+            raise ValueError("Failed to parse recommendations from AI response")
+
+        # Store in database
+        analysis_record = AnalysisResult(
+            analysis_type='rebalancing',
+            symbol=None,
+            prompt_id=prompt_template.id,
+            prompt_version=prompt_template.version,
+            raw_response=result['content'],
+            parsed_data=recommendations_data,
+            tokens_used=result['tokens_used'],
+            generation_time_ms=result['generation_time_ms'],
+            expires_at=datetime.utcnow() + timedelta(hours=6)
+        )
+        self.db.add(analysis_record)
+        await self.db.commit()
+
+        response = {
+            **recommendations_data,
+            'generated_at': datetime.utcnow(),
+            'tokens_used': result['tokens_used'],
+            'cached': False
+        }
+
+        # Cache for 6 hours
+        await self.cache.set(cache_key, response, ttl=21600)  # 6 hours
+
+        logger.info(f"Rebalancing recommendations generated: {result['tokens_used']} tokens")
+
+        return response
+
     async def _get_cached_analysis(self, cache_key: str) -> Optional[Dict[str, Any]]:
         """
         Check Redis cache for recent analysis.

@@ -2,7 +2,7 @@
 // ABOUTME: Provides navigation between Portfolio, Upload, and Database sections
 
 import { useState, useEffect, useRef } from 'react'
-import { LayoutDashboard, Upload, Database, BarChart3, Trash2, FileText, Brain } from 'lucide-react'
+import { LayoutDashboard, Upload, Database, BarChart3, Trash2, FileText, Brain, Scale } from 'lucide-react'
 import './Sidebar.css'
 
 interface SidebarProps {
@@ -123,6 +123,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
           tabIndex={0}
         >
           <Brain size={24} />
+        </button>
+
+        {/* Rebalancing */}
+        <button
+          className={`sidebar-item ${activeTab === 'rebalancing' ? 'active' : ''}`}
+          onClick={() => handleMenuItemClick('rebalancing')}
+          onKeyPress={(e) => handleKeyPress(e, () => handleMenuItemClick('rebalancing'))}
+          title="Rebalancing"
+          aria-label="Portfolio Rebalancing"
+          tabIndex={0}
+        >
+          <Scale size={24} />
         </button>
 
         {/* Database with Submenu */}

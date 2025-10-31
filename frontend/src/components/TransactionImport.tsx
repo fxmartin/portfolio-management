@@ -3,6 +3,7 @@
 
 import React, { useState, useRef, DragEvent } from 'react';
 import axios from 'axios';
+import { usePortfolioRefresh } from '../contexts/PortfolioRefreshContext';
 import './TransactionImport.css';
 import ProgressBar from './ProgressBar';
 import Toast from './Toast';
@@ -30,6 +31,7 @@ interface UploadResult {
 }
 
 const TransactionImport: React.FC = () => {
+  const { triggerRefresh } = usePortfolioRefresh();
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -219,6 +221,10 @@ const TransactionImport: React.FC = () => {
           `Successfully uploaded ${successCount} file(s)`,
           `${results.reduce((sum, r) => sum + r.transactions_count, 0)} transactions imported`
         );
+
+        // Trigger portfolio refresh to update OpenPositionsCard and HoldingsTable
+        console.log('[TransactionImport] CSV import successful, triggering portfolio refresh');
+        triggerRefresh();
       }
 
       if (errorCount > 0) {

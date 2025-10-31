@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { usePortfolioRefresh } from '../contexts/PortfolioRefreshContext';
 import { TransactionForm } from './TransactionForm';
 import type { Transaction } from './TransactionForm';
 import './TransactionList.css';
@@ -15,6 +16,7 @@ interface TransactionListItem extends Transaction {
   source: string;
   source_file?: string;
   deleted_at?: string;
+  total_amount?: number;
 }
 
 interface AuditEntry {
@@ -29,6 +31,7 @@ interface AuditEntry {
 }
 
 export const TransactionList: React.FC = () => {
+  const { triggerRefresh } = usePortfolioRefresh();
   const [transactions, setTransactions] = useState<TransactionListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +71,10 @@ export const TransactionList: React.FC = () => {
 
       const response = await axios.get(`${API_URL}/api/transactions?${params.toString()}`);
       setTransactions(response.data);
+
+      // Trigger portfolio refresh to update OpenPositionsCard and HoldingsTable
+      console.log('[TransactionList] Transaction data updated, triggering portfolio refresh');
+      triggerRefresh();
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load transactions');
       console.error('Error loading transactions:', err);
