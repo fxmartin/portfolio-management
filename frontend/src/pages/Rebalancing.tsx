@@ -12,7 +12,11 @@ import './Rebalancing.css'
 
 type AllocationModel = 'moderate' | 'aggressive' | 'conservative' | 'custom'
 
-export const RebalancingPage: React.FC = () => {
+interface RebalancingPageProps {
+  onNavigateToTransactions?: () => void
+}
+
+export const RebalancingPage: React.FC<RebalancingPageProps> = ({ onNavigateToTransactions }) => {
   const [selectedModel, setSelectedModel] = useState<AllocationModel>('moderate')
   const [customStocks, setCustomStocks] = useState<number>(50)
   const [customCrypto, setCustomCrypto] = useState<number>(30)
@@ -72,6 +76,13 @@ export const RebalancingPage: React.FC = () => {
     }
   }
 
+  const handleCreateTransaction = (transactionData: any) => {
+    // Navigate to transactions tab
+    if (onNavigateToTransactions) {
+      onNavigateToTransactions()
+    }
+  }
+
   return (
     <div className="rebalancing-page">
       {/* Page Header */}
@@ -128,8 +139,9 @@ export const RebalancingPage: React.FC = () => {
           {selectedModel === 'custom' && (
             <div className="custom-allocation-inputs">
               <div className="input-group">
-                <label>Stocks (%)</label>
+                <label htmlFor="custom-stocks">Stocks (%)</label>
                 <input
+                  id="custom-stocks"
                   type="number"
                   min="0"
                   max="100"
@@ -138,8 +150,9 @@ export const RebalancingPage: React.FC = () => {
                 />
               </div>
               <div className="input-group">
-                <label>Crypto (%)</label>
+                <label htmlFor="custom-crypto">Crypto (%)</label>
                 <input
+                  id="custom-crypto"
                   type="number"
                   min="0"
                   max="100"
@@ -148,8 +161,9 @@ export const RebalancingPage: React.FC = () => {
                 />
               </div>
               <div className="input-group">
-                <label>Metals (%)</label>
+                <label htmlFor="custom-metals">Metals (%)</label>
                 <input
+                  id="custom-metals"
                   type="number"
                   min="0"
                   max="100"
@@ -208,6 +222,7 @@ export const RebalancingPage: React.FC = () => {
               <RebalancingRecommendationsList
                 analysis={analysis}
                 recommendations={recommendations}
+                onCreateTransaction={handleCreateTransaction}
               />
             </section>
           </div>

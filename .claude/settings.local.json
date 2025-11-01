@@ -40,7 +40,10 @@
       "Bash(git checkout:*)",
       "Bash(uv run ruff:*)",
       "Bash(uv run:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(timeout 10 npm test -- RebalancingRecommendationsList.test.tsx -t \"should toggle planned state\")"
     ],
     "deny": [],
     "ask": []

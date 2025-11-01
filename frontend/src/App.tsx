@@ -67,7 +67,7 @@ function App() {
 
             {/* Rebalancing Tab */}
             <div data-tab="rebalancing" className="rebalancing-tab">
-              <RebalancingPage />
+              <RebalancingPage onNavigateToTransactions={() => setActiveTab('transactions')} />
             </div>
 
             {/* Database Stats Tab */}
