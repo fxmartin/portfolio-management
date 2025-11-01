@@ -1,0 +1,450 @@
+/* ABOUTME: Styles for StrategyRecommendationsCard component */
+/* ABOUTME: Includes responsive layouts, tables, action buttons, and accordions */
+
+.strategy-recommendations-card {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.strategy-recommendations-card.loading,
+.strategy-recommendations-card.error,
+.strategy-recommendations-card.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 16px;
+}
+
+.strategy-recommendations-card.error {
+  color: #dc2626;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 16px;
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #1f2937;
+}
+
+.refresh-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background 0.2s;
+}
+
+.refresh-button:hover {
+  background: #2563eb;
+}
+
+/* Alignment Score Section */
+.alignment-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.alignment-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.125rem;
+  color: #374151;
+}
+
+/* Key Insights */
+.insights-section {
+  padding: 24px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.insights-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.125rem;
+  color: #374151;
+}
+
+.insights-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.insights-list li {
+  padding: 8px 0 8px 24px;
+  position: relative;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.insights-list li::before {
+  content: '•';
+  position: absolute;
+  left: 8px;
+  color: #3b82f6;
+  font-weight: bold;
+}
+
+/* Opportunities Section */
+.opportunities-section {
+  padding: 24px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.opportunities-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.125rem;
+  color: #374151;
+}
+
+.opportunities-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.opportunities-table thead {
+  background: #f9fafb;
+}
+
+.opportunities-table th {
+  padding: 12px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.opportunities-table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: top;
+}
+
+.opportunities-table .symbol {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.opportunities-table .pnl-pct {
+  color: #059669;
+  font-weight: 500;
+}
+
+.opportunities-table .recommendation {
+  font-weight: 500;
+  color: #3b82f6;
+}
+
+.opportunities-table .transaction-details {
+  font-size: 0.8125rem;
+}
+
+.opportunities-table .transaction-details .total {
+  font-weight: 600;
+  color: #1f2937;
+  margin-top: 4px;
+}
+
+.opportunities-table .rationale {
+  color: #6b7280;
+  font-size: 0.8125rem;
+  max-width: 200px;
+}
+
+.opportunities-table .action-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.icon-button {
+  padding: 6px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-button:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.icon-button.planned {
+  background: #10b981;
+  border-color: #059669;
+  color: white;
+}
+
+.icon-button.planned:hover {
+  background: #059669;
+}
+
+/* Assessments Section */
+.assessments-section {
+  padding: 24px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.assessments-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.125rem;
+  color: #374151;
+}
+
+.assessments-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.assessments-table thead {
+  background: #f9fafb;
+}
+
+.assessments-table th {
+  padding: 12px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.assessments-table td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.action-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.action-badge.action-hold {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.action-badge.action-reduce {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.action-badge.action-close {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.assessments-table .fits-strategy {
+  font-weight: 500;
+}
+
+/* Suggestions Section */
+.suggestions-section {
+  padding: 24px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.suggestions-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.125rem;
+  color: #374151;
+}
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.suggestion-item {
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.suggestion-item strong {
+  color: #1f2937;
+}
+
+.suggestion-rationale {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 0.8125rem;
+}
+
+/* Action Plan Accordion */
+.action-plan-section {
+  padding: 24px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.action-plan-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.125rem;
+  color: #374151;
+}
+
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.accordion-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.accordion-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  transition: background 0.2s;
+}
+
+.accordion-header:hover {
+  background: #f3f4f6;
+}
+
+.accordion-content {
+  padding: 16px;
+  background: white;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.accordion-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.accordion-content li {
+  padding: 8px 0 8px 24px;
+  position: relative;
+  color: #4b5563;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.accordion-content li::before {
+  content: '→';
+  position: absolute;
+  left: 8px;
+  color: #3b82f6;
+  font-weight: bold;
+}
+
+/* Footer */
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 24px;
+}
+
+.next-review {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.export-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background 0.2s;
+}
+
+.export-button:hover {
+  background: #059669;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .strategy-recommendations-card {
+    padding: 16px;
+  }
+
+  .card-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .opportunities-table,
+  .assessments-table {
+    font-size: 0.75rem;
+  }
+
+  .opportunities-table th,
+  .opportunities-table td,
+  .assessments-table th,
+  .assessments-table td {
+    padding: 8px 4px;
+  }
+
+  .opportunities-table .action-buttons {
+    flex-direction: column;
+  }
+
+  .card-footer {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+}

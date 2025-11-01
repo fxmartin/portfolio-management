@@ -1,5 +1,5 @@
 # ABOUTME: Seed script for populating default AI analysis prompts
-# ABOUTME: Creates 4 default prompts (rebalancing, global, position, forecast) for AI market analysis
+# ABOUTME: Creates 5 default prompts (rebalancing, global, position, forecast, strategy-driven) for AI market analysis
 
 """
 Seed script for Epic 8: AI-Powered Market Analysis
@@ -9,6 +9,7 @@ This script populates the database with default prompt templates for:
 2. Global market analysis
 3. Position-specific analysis
 4. Two-quarter forecasts with scenarios
+5. Strategy-driven portfolio recommendations (F8.8-002)
 
 Run with: uv run python seed_prompts.py
 Or import and call: seed_default_prompts(session)
@@ -277,6 +278,200 @@ Format response as JSON:
             "sector": "string",
             "asset_type": "string",
             "market_context": "string"
+        }
+    },
+    {
+        "name": "strategy_driven_recommendations",
+        "category": "strategy",
+        "prompt_text": """You are a portfolio advisor analyzing how well a portfolio aligns with the user's investment strategy and providing actionable recommendations.
+
+## User's Investment Strategy
+
+**Strategy Statement**: {strategy_text}
+
+**Target Annual Return**: {target_annual_return}%
+**Risk Tolerance**: {risk_tolerance}
+**Time Horizon**: {time_horizon_years} years
+**Maximum Positions**: {max_positions}
+**Profit-Taking Threshold**: {profit_taking_threshold}%
+
+## Current Portfolio
+
+**Total Value**: €{portfolio_total_value}
+**Number of Positions**: {position_count}
+
+### Asset Allocation
+{asset_allocation}
+
+### Current Positions
+{positions_table}
+
+### Portfolio Concentration
+- Top 3 positions: {top_3_weight}%
+- Largest single position: {single_asset_max}%
+- Largest sector: {single_sector_max}%
+
+## Analysis Tasks
+
+1. **Profit-Taking Assessment**:
+   - Identify positions that have exceeded the {profit_taking_threshold}% profit threshold
+   - Consider holding period and tax implications
+   - For each opportunity, provide specific transaction_data with exact SELL quantities
+
+2. **Position Alignment Review**:
+   - Evaluate each position against the stated strategy
+   - Flag positions that don't fit the strategy (MISALIGNED)
+   - Identify overweight positions that need reduction
+
+3. **New Position Suggestions**:
+   - Recommend new positions to better align with the strategy
+   - Consider gaps in diversification
+   - Suggest specific symbols with rationale
+
+4. **Action Plan**:
+   - Create prioritized list of actions (1=highest priority)
+   - Include specific transaction_data for BUY/SELL actions
+   - Balance profit-taking with strategic rebalancing
+
+5. **Target Return Assessment**:
+   - Evaluate if the target annual return ({target_annual_return}%) is achievable
+   - Identify required changes to reach the target
+   - Assess risk level needed
+
+## Response Format
+
+Return recommendations in this JSON structure:
+
+```json
+{{
+  "summary": "2-3 sentence executive summary of portfolio alignment and key recommendations",
+
+  "alignment_score": 7.5,
+
+  "key_insights": [
+    "Portfolio has 15 positions, exceeding the 5 max limit from strategy",
+    "BTC at +132% has exceeded the +{profit_taking_threshold}% profit-taking threshold",
+    "Crypto allocation is 28%, higher than suggested 15% in strategy",
+    "Missing exposure to emerging markets as specified in strategy"
+  ],
+
+  "profit_taking_opportunities": [
+    {{
+      "symbol": "BTC",
+      "current_value": 8123.45,
+      "entry_cost": 3500.00,
+      "unrealized_gain": 4623.45,
+      "gain_percentage": 132.1,
+      "holding_period_days": 425,
+      "recommendation": "TAKE_PROFIT|HOLD_FOR_MORE|PARTIAL_SELL",
+      "rationale": "Position has exceeded {profit_taking_threshold}% threshold with 132% gain...",
+      "suggested_sell_percentage": 50,
+      "transaction_data": {{
+        "transaction_type": "SELL",
+        "symbol": "BTC",
+        "quantity": 0.05,
+        "price": 81234.56,
+        "total_value": 4061.73,
+        "currency": "EUR",
+        "notes": "Lock in 50% of gains while maintaining exposure"
+      }}
+    }}
+  ],
+
+  "position_assessments": [
+    {{
+      "symbol": "AAPL",
+      "current_allocation": 15.2,
+      "strategic_fit": "ALIGNED|OVERWEIGHT|UNDERWEIGHT|MISALIGNED",
+      "action_needed": "HOLD|REDUCE|INCREASE|SELL",
+      "rationale": "Explain why this position fits/doesn't fit the strategy..."
+    }}
+  ],
+
+  "new_position_suggestions": [
+    {{
+      "symbol": "VTI",
+      "asset_type": "STOCK",
+      "rationale": "US total market ETF provides broad diversification aligned with strategy...",
+      "suggested_allocation": 10.0,
+      "entry_strategy": "Dollar-cost average over 3 months"
+    }}
+  ],
+
+  "action_plan": {{
+    "immediate_actions": [
+      {{
+        "priority": 1,
+        "action": "Sell 50% of BTC position to lock in gains",
+        "symbol": "BTC",
+        "details": "Position has exceeded profit threshold with 132% gain...",
+        "expected_impact": "Reduce crypto allocation from 28% to 20%, lock in €4,000 gains",
+        "transaction_data": {{
+          "transaction_type": "SELL",
+          "symbol": "BTC",
+          "quantity": 0.05,
+          "price": 81234.56,
+          "total_value": 4061.73,
+          "currency": "EUR"
+        }}
+      }}
+    ],
+    "redeployment": [
+      {{
+        "priority": 2,
+        "action": "Invest BTC proceeds into emerging markets ETF",
+        "details": "Add missing emerging markets exposure per strategy...",
+        "expected_impact": "Align with geographic diversification goals"
+      }}
+    ],
+    "gradual_adjustments": [
+      {{
+        "priority": 3,
+        "action": "Consolidate from 15 positions to max 5",
+        "details": "Close or reduce smaller positions over 3-6 months...",
+        "expected_impact": "Simplify portfolio while maintaining core strategy"
+      }}
+    ]
+  }},
+
+  "target_annual_return_assessment": {{
+    "target_return": {target_annual_return},
+    "current_projected_return": 8.5,
+    "achievability": "ACHIEVABLE|CHALLENGING|UNREALISTIC",
+    "required_changes": "Specific changes needed to reach target...",
+    "risk_level": "Assessment of risk required to achieve target..."
+  }},
+
+  "risk_assessment": "Portfolio is moderately aligned with stated strategy. Main issues: crypto overweight (28% vs suggested 15%), insufficient diversification in stocks...",
+
+  "next_review_date": "2025-04-01"
+}}
+```
+
+## Important Guidelines
+
+- Be specific: Provide exact quantities, prices, and EUR values in transaction_data
+- Be realistic: Consider current market conditions and practical constraints
+- Be strategic: Balance profit-taking, diversification, and long-term goals
+- Be honest: If the target return is unrealistic, say so clearly
+- Prioritize actions: Most important actions first (priority 1, 2, 3...)
+- Focus on alignment: Every recommendation should reference the stated strategy
+
+Generate comprehensive recommendations that help the user achieve their investment goals while managing risk appropriately.""",
+        "template_variables": {
+            "strategy_text": "string",
+            "target_annual_return": "decimal",
+            "risk_tolerance": "string",
+            "time_horizon_years": "integer",
+            "max_positions": "integer",
+            "profit_taking_threshold": "decimal",
+            "portfolio_total_value": "decimal",
+            "position_count": "integer",
+            "asset_allocation": "string",
+            "positions_table": "string",
+            "top_3_weight": "decimal",
+            "single_asset_max": "decimal",
+            "single_sector_max": "decimal"
         }
     }
 ]
