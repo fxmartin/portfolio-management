@@ -6,7 +6,7 @@ export interface InvestmentStrategy {
   user_id: number;
   strategy_text: string;
   target_annual_return?: number;
-  risk_tolerance?: 'low' | 'medium' | 'high' | 'custom';
+  risk_tolerance?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CUSTOM';
   time_horizon_years?: number;
   max_positions?: number;
   profit_taking_threshold?: number;
@@ -98,7 +98,7 @@ export interface StrategyTemplate {
   description: string;
   strategy_text: string;
   target_annual_return: number;
-  risk_tolerance: 'low' | 'medium' | 'high';
+  risk_tolerance: 'LOW' | 'MEDIUM' | 'HIGH';
   time_horizon_years: number;
   max_positions: number;
   profit_taking_threshold: number;

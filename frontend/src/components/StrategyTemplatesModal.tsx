@@ -17,7 +17,7 @@ const STRATEGY_TEMPLATES: StrategyTemplate[] = [
     id: 'conservative-growth',
     title: 'Conservative Growth',
     description: 'Stable dividends, low risk, focus on established companies',
-    risk_tolerance: 'low',
+    risk_tolerance: 'LOW',
     target_annual_return: 8,
     time_horizon_years: 15,
     max_positions: 20,
@@ -40,7 +40,7 @@ Core principles:
     id: 'balanced-growth',
     title: 'Balanced Growth',
     description: 'Mix of stocks/crypto, medium risk, diversified approach',
-    risk_tolerance: 'medium',
+    risk_tolerance: 'MEDIUM',
     target_annual_return: 15,
     time_horizon_years: 10,
     max_positions: 30,
@@ -64,7 +64,7 @@ Core principles:
     id: 'aggressive-growth',
     title: 'Aggressive Growth',
     description: 'High-growth tech, high volatility, maximum returns focus',
-    risk_tolerance: 'high',
+    risk_tolerance: 'HIGH',
     target_annual_return: 25,
     time_horizon_years: 7,
     max_positions: 40,
@@ -89,7 +89,7 @@ Core principles:
     id: 'income-focus',
     title: 'Income Focus',
     description: 'Dividend stocks, bonds, steady cash flow generation',
-    risk_tolerance: 'low',
+    risk_tolerance: 'LOW',
     target_annual_return: 6,
     time_horizon_years: 20,
     max_positions: 25,
@@ -114,7 +114,7 @@ Core principles:
     id: 'value-investing',
     title: 'Value Investing',
     description: 'Undervalued established companies, margin of safety approach',
-    risk_tolerance: 'medium',
+    risk_tolerance: 'MEDIUM',
     target_annual_return: 12,
     time_horizon_years: 12,
     max_positions: 15,
@@ -164,8 +164,8 @@ export const StrategyTemplatesModal: React.FC<StrategyTemplatesModalProps> = ({
             <article key={template.id} className="template-card">
               <div className="template-header">
                 <h3 className="template-title">{template.title}</h3>
-                <span className={`risk-badge risk-${template.risk_tolerance}`}>
-                  Risk: {template.risk_tolerance.charAt(0).toUpperCase() + template.risk_tolerance.slice(1)}
+                <span className={`risk-badge risk-${template.risk_tolerance.toLowerCase()}`}>
+                  Risk: {template.risk_tolerance.charAt(0) + template.risk_tolerance.slice(1).toLowerCase()}
                 </span>
               </div>
 
