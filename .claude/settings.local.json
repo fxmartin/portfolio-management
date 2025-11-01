@@ -32,7 +32,15 @@
       "Bash(docker-compose:*)",
       "Bash(gh issue create:*)",
       "Bash(make dev:*)",
-      "Bash(gh issue close:*)"
+      "Bash(gh issue close:*)",
+      "Bash(gh issue view:*)",
+      "Bash(make test:*)",
+      "Bash(tee:*)",
+      "Bash(gh auth:*)",
+      "Bash(git checkout:*)",
+      "Bash(uv run ruff:*)",
+      "Bash(uv run:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

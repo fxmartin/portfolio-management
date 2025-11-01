@@ -15,12 +15,16 @@ Run it manually to verify:
 
 Usage:
     python tests/manual_claude_integration_test.py
+
+Note: These tests are SKIPPED during normal pytest runs.
+      To run them, execute this file directly with python.
 """
 
 import asyncio
 import sys
 import os
 from pathlib import Path
+import pytest
 
 # Add backend to path
 backend_path = Path(__file__).parent.parent
@@ -30,6 +34,7 @@ from config import get_settings
 from claude_service import ClaudeService, ClaudeAPIError
 
 
+@pytest.mark.skip(reason="Manual integration test - requires real Anthropic API key. Run directly with: python tests/manual_claude_integration_test.py")
 async def test_basic_analysis():
     """Test basic analysis generation."""
     print("\n" + "="*60)
@@ -122,6 +127,7 @@ async def test_basic_analysis():
         return False
 
 
+@pytest.mark.skip(reason="Manual integration test - requires real Anthropic API key. Run directly with: python tests/manual_claude_integration_test.py")
 async def test_rate_limiting():
     """Test rate limiting with multiple rapid requests."""
     print("\n" + "="*60)
