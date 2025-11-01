@@ -12,6 +12,7 @@ interface StrategyEditorCardProps {
 }
 
 const MAX_CHARS = 5000
+const MIN_CHARS = 50
 const MIN_WORDS = 20
 
 export const StrategyEditorCard: React.FC<StrategyEditorCardProps> = ({
@@ -27,6 +28,8 @@ export const StrategyEditorCard: React.FC<StrategyEditorCardProps> = ({
 
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   useEffect(() => {
     if (strategy) {
@@ -42,9 +45,10 @@ export const StrategyEditorCard: React.FC<StrategyEditorCardProps> = ({
   const charCount = strategyText.length
   const wordCount = strategyText.trim().split(/\s+/).filter(word => word.length > 0).length
 
-  const isValid = wordCount >= MIN_WORDS && charCount <= MAX_CHARS
+  const hasMinChars = charCount >= MIN_CHARS
   const hasMinWords = wordCount >= MIN_WORDS
   const underMaxChars = charCount <= MAX_CHARS
+  const isValid = hasMinChars && hasMinWords && underMaxChars
 
   const handleTemplateSelect = (template: StrategyTemplate) => {
     setStrategyText(template.strategy_text)
@@ -59,6 +63,9 @@ export const StrategyEditorCard: React.FC<StrategyEditorCardProps> = ({
     if (!isValid) return
 
     setIsSaving(true)
+    setSaveError(null)
+    setSaveSuccess(false)
+
     try {
       await onSave({
         strategy_text: strategyText,
@@ -68,6 +75,11 @@ export const StrategyEditorCard: React.FC<StrategyEditorCardProps> = ({
         max_positions: maxPositions,
         profit_taking_threshold: profitTakingThreshold
       })
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 3000) // Clear success message after 3s
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to save strategy'
+      setSaveError(errorMsg)
     } finally {
       setIsSaving(false)
     }
@@ -96,7 +108,7 @@ export const StrategyEditorCard: React.FC<StrategyEditorCardProps> = ({
             </label>
             <textarea
               id="strategy-text"
-              className={`form-textarea ${!hasMinWords || !underMaxChars ? 'invalid' : ''}`}
+              className={`form-textarea ${!hasMinChars || !hasMinWords || !underMaxChars ? 'invalid' : ''}`}
               value={strategyText}
               onChange={(e) => setStrategyText(e.target.value)}
               placeholder="Describe your investment strategy, goals, risk tolerance, asset allocation preferences, and decision-making criteria..."
@@ -106,8 +118,8 @@ export const StrategyEditorCard: React.FC<StrategyEditorCardProps> = ({
 
             <div className="textarea-footer">
               <div className="counters">
-                <span className={`counter ${!underMaxChars ? 'error' : ''}`}>
-                  {charCount} / {MAX_CHARS} characters
+                <span className={`counter ${!hasMinChars ? 'error' : ''}`}>
+                  {charCount} / {MAX_CHARS} characters {!hasMinChars && `(minimum ${MIN_CHARS})`}
                 </span>
                 <span className={`counter ${!hasMinWords ? 'error' : ''}`}>
                   {wordCount} words (minimum {MIN_WORDS})
@@ -255,6 +267,16 @@ export const StrategyEditorCard: React.FC<StrategyEditorCardProps> = ({
 
           {/* Save Button */}
           <div className="card-footer">
+            {saveError && (
+              <div className="alert alert-error">
+                {saveError}
+              </div>
+            )}
+            {saveSuccess && (
+              <div className="alert alert-success">
+                Strategy saved successfully!
+              </div>
+            )}
             <button
               type="button"
               className="btn btn-primary"
