@@ -1397,28 +1397,29 @@ Cryptocurrency Fundamentals (CoinGecko):
             details, asset/sector allocation, and concentration risk metrics
         """
         # Extract strategy parameters (handle None values)
+        # Note: Pass raw values, not pre-formatted strings - PromptRenderer will format them
         strategy_data = {
             "strategy_text": strategy.strategy_text,
-            "target_annual_return": f"{float(strategy.target_annual_return):.2f}" if strategy.target_annual_return else "Not specified",
+            "target_annual_return": float(strategy.target_annual_return) if strategy.target_annual_return is not None else 0.0,
             "risk_tolerance": strategy.risk_tolerance or "Not specified",
-            "time_horizon_years": str(strategy.time_horizon_years) if strategy.time_horizon_years else "Not specified",
-            "max_positions": str(strategy.max_positions) if strategy.max_positions else "Not specified",
-            "profit_taking_threshold": f"{float(strategy.profit_taking_threshold):.2f}" if strategy.profit_taking_threshold else "Not specified"
+            "time_horizon_years": int(strategy.time_horizon_years) if strategy.time_horizon_years is not None else 0,
+            "max_positions": int(strategy.max_positions) if strategy.max_positions is not None else 0,
+            "profit_taking_threshold": float(strategy.profit_taking_threshold) if strategy.profit_taking_threshold is not None else 0.0
         }
 
         # Handle empty positions
         if not positions:
             return {
                 **strategy_data,
-                "portfolio_total_value": "0.00",
+                "portfolio_total_value": 0.0,
                 "position_count": 0,
                 "positions_table": "No positions",
                 "asset_allocation": "No positions",
                 "sector_allocation": "Not available",
                 "geographic_exposure": "Not available",
-                "top_3_weight": "0.00",
-                "single_asset_max": "0.00",
-                "single_sector_max": "0.00"
+                "top_3_weight": 0.0,
+                "single_asset_max": 0.0,
+                "single_sector_max": 0.0
             }
 
         # Calculate portfolio totals
@@ -1448,15 +1449,15 @@ Cryptocurrency Fundamentals (CoinGecko):
 
         return {
             **strategy_data,
-            "portfolio_total_value": f"{total_value:.2f}",
+            "portfolio_total_value": total_value,
             "position_count": len(positions),
             "positions_table": positions_table,
             "asset_allocation": asset_allocation_str,
             "sector_allocation": sector_allocation_str,
             "geographic_exposure": geographic_exposure,
-            "top_3_weight": f"{concentration['top_3_weight']:.2f}",
-            "single_asset_max": f"{concentration['single_asset_max']:.2f}",
-            "single_sector_max": f"{concentration['single_sector_max']:.2f}"
+            "top_3_weight": concentration['top_3_weight'],
+            "single_asset_max": concentration['single_asset_max'],
+            "single_sector_max": concentration['single_sector_max']
         }
 
     def _build_positions_table(self, positions: list, total_value: float) -> str:
