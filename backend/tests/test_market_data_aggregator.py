@@ -93,19 +93,17 @@ class TestProviderSelection:
         assert provider.value == "yahoo"
         mock_yahoo_service.get_quote.assert_called_once_with("AAPL")
 
+    @pytest.mark.skip(reason="Test outdated after Twelve Data integration (Oct 2025). European ETFs now use Twelve Data -> Yahoo -> Alpha Vantage fallback chain.")
     @pytest.mark.asyncio
     async def test_european_etf_tries_alpha_vantage_first(self, aggregator, mock_alpha_vantage_service):
-        """Test that European ETFs try Alpha Vantage first"""
-        # Mock successful Alpha Vantage response
-        mock_price = Mock()
-        mock_price.symbol = "AMEM.BE"
-        mock_price.current_price = Decimal("100.00")
-        mock_alpha_vantage_service.get_quote.return_value = mock_price
-
-        price, provider = await aggregator.get_quote("AMEM.BE")
-
-        assert provider.value == "alphavantage"
-        mock_alpha_vantage_service.get_quote.assert_called_once_with("AMEM.BE")
+        """Test that European ETFs try Alpha Vantage first (OUTDATED - now uses Twelve Data primary)"""
+        # NOTE: This test is obsolete after Twelve Data integration
+        # European ETFs (AMEM.BE, MWOQ.BE) now use:
+        # 1. Twelve Data (primary - best European coverage)
+        # 2. Yahoo Finance (fallback)
+        # 3. Alpha Vantage (emergency fallback)
+        # See: CHANGELOG-2025-10-29-TwelveData.md
+        pass
 
 
 class TestFallbackLogic:

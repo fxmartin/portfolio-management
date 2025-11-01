@@ -202,6 +202,8 @@ class TestPositionDataIntegration:
         # Create a mock that returns the position
         mock_portfolio_service = Mock()
         mock_portfolio_service.get_position = AsyncMock(return_value=aapl_position)
+        # Mock get_all_positions for portfolio percentage calculation
+        mock_portfolio_service.get_all_positions = AsyncMock(return_value=[aapl_position])
 
         collector.portfolio_service = mock_portfolio_service
 
