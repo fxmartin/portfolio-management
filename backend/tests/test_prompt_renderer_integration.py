@@ -1,16 +1,16 @@
 # ABOUTME: Integration tests for PromptRenderer with real database prompts
 # ABOUTME: Tests end-to-end rendering flow with seeded prompts and portfolio data
 
+from decimal import Decimal
+
 import pytest
 import pytest_asyncio
-from decimal import Decimal
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from models import Prompt, Base
-from prompt_renderer import PromptRenderer, PromptDataCollector
+from models import Base, Prompt
+from prompt_renderer import PromptRenderer
 from seed_prompts import seed_default_prompts_async
-
 
 # Use SQLite for testing (in-memory database)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -57,7 +57,8 @@ class TestRealPromptRendering:
         prompt = result.scalar_one_or_none()
         assert prompt is not None, "global_market_analysis prompt not found in database"
 
-        # Prepare realistic portfolio data
+        # Prepare realistic portfolio data - top_holdings should be a pre-formatted STRING
+        # (as returned by PromptDataCollector._format_holdings_list())
         data = {
             "portfolio_value": Decimal("50000.00"),
             "asset_allocation": {
@@ -66,7 +67,7 @@ class TestRealPromptRendering:
                 "metals": 5000
             },
             "position_count": 15,
-            "top_holdings": ["AAPL (€10000.00)", "BTC (€7000.00)", "TSLA (€6000.00)"],
+            "top_holdings": "AAPL: €10000.00 (20.0% of portfolio, +15.5% P&L)\nBTC: €7000.00 (14.0% of portfolio, +25.8% P&L)\nTSLA: €6000.00 (12.0% of portfolio, -5.2% P&L)",
             "market_context": "S&P 500 up 1.2%, VIX at 15 (low volatility), 10-year yield at 4.5%",
             "global_crypto_context": "Bitcoin dominance at 55%, total market cap $2.1T"
         }
@@ -77,7 +78,12 @@ class TestRealPromptRendering:
         # Verify the rendered prompt contains expected data
         assert "50000.00" in result
         assert "15" in result
-        assert "AAPL" in result or "BTC" in result or "TSLA" in result
+        # CRITICAL: Verify full symbol names appear, NOT single letters
+        assert "AAPL" in result
+        assert "BTC" in result
+        assert "TSLA" in result
+        # Ensure NO single-letter corruption (the bug we're fixing)
+        assert ", T, S, L, A" not in result  # Would indicate string iteration bug
         assert "stocks: 30000" in result
         assert "crypto: 15000" in result
 

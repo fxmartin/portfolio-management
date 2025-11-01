@@ -14,12 +14,13 @@ Run with: uv run python seed_prompts.py
 Or import and call: seed_default_prompts(session)
 """
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-from sqlalchemy.ext.asyncio import AsyncSession
-from models import Prompt
-from database import get_db
 import logging
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+
+from models import Prompt
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -153,7 +154,7 @@ Be direct, data-driven, and actionable. Reference specific market indicators whe
             "portfolio_value": "decimal",
             "asset_allocation": "object",
             "position_count": "integer",
-            "top_holdings": "array",
+            "top_holdings": "string",  # Pre-formatted string from _format_holdings_list()
             "market_context": "string",
             "global_crypto_context": "string"
         }
@@ -395,7 +396,7 @@ if __name__ == "__main__":
     db = SessionLocal()
     try:
         result = seed_default_prompts(db)
-        print(f"\n✅ Seed completed successfully!")
+        print("\n✅ Seed completed successfully!")
         print(f"   Created: {result['created']}")
         print(f"   Updated: {result['updated']}")
         print(f"   Skipped: {result['skipped']}")
