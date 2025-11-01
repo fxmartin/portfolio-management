@@ -36,6 +36,9 @@ build/
 *~
 .DS_Store
 
+# Claude Code
+.claude/
+
 # Docker
 *.log
 postgres_data/
