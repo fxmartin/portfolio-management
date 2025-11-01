@@ -83,12 +83,12 @@ portfolio-management/
 
 ## Project Metrics
 
-**Development Time**: ~31-38 hours active development (Oct 21-29, 2025)
-- 63 git commits across 7 active days
-- 24 GitHub issues (21 closed)
-- **Completion**: 74% (261/352 story points) - 9 epics total
+**Development Time**: ~42.9 hours active development (80 commits across 10 active days)
+- Current pace: 8.0 commits/day, 97% issues resolved
+- Development intensity: 15.1 activities/day over 12 day span
+- **Completion**: 76% (269/352 story points) - 9 epics total
 
-*Run `python3 scripts/estimate_hours.py` to see updated time estimates*
+*Run `python3 scripts/estimate_effort_v2.py` to see updated time estimates*
 
 ## Recent Improvements
 
