@@ -122,7 +122,8 @@ class AnalysisService:
             parsed_data=None,  # No structured data for global
             tokens_used=result['tokens_used'],
             generation_time_ms=result['generation_time_ms'],
-            expires_at=datetime.now(UTC) + timedelta(hours=24)
+            created_at=datetime.now(),  # Timezone-naive for database
+            expires_at=datetime.now() + timedelta(hours=24)  # Timezone-naive
         )
         self.db.add(analysis_record)
         await self.db.commit()
@@ -203,7 +204,8 @@ class AnalysisService:
             parsed_data=parsed_data,
             tokens_used=result['tokens_used'],
             generation_time_ms=result['generation_time_ms'],
-            expires_at=datetime.now(UTC) + timedelta(hours=24)
+            created_at=datetime.now(),  # Timezone-naive for database
+            expires_at=datetime.now() + timedelta(hours=24)  # Timezone-naive
         )
         self.db.add(analysis_record)
         await self.db.commit()
@@ -320,7 +322,8 @@ class AnalysisService:
             parsed_data=forecast_data,
             tokens_used=result['tokens_used'],
             generation_time_ms=result['generation_time_ms'],
-            expires_at=datetime.now(UTC) + timedelta(hours=24)  # Longer TTL for forecasts
+            created_at=datetime.now(),  # Timezone-naive for database
+            expires_at=datetime.now() + timedelta(hours=24)  # Timezone-naive
         )
         self.db.add(analysis_record)
         await self.db.commit()
@@ -475,7 +478,8 @@ class AnalysisService:
             parsed_data=recommendations_data,
             tokens_used=result['tokens_used'],
             generation_time_ms=result['generation_time_ms'],
-            expires_at=datetime.now(UTC) + timedelta(hours=6)
+            created_at=datetime.now(),  # Timezone-naive for database
+            expires_at=datetime.now() + timedelta(hours=6)  # Timezone-naive
         )
         self.db.add(analysis_record)
         await self.db.commit()
@@ -715,7 +719,8 @@ class AnalysisService:
             parsed_data=recommendations_data,
             tokens_used=result['tokens_used'],
             generation_time_ms=result['generation_time_ms'],
-            expires_at=datetime.now(UTC) + timedelta(hours=12)
+            created_at=datetime.now(),  # Timezone-naive for database
+            expires_at=datetime.now() + timedelta(hours=12)  # Timezone-naive
         )
         self.db.add(analysis_record)
         await self.db.commit()
