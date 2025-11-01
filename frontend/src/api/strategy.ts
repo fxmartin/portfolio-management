@@ -1,7 +1,7 @@
 // ABOUTME: API integration functions for investment strategy management
 // ABOUTME: Handles CRUD operations for strategies and recommendation fetching
 
-import { InvestmentStrategy, StrategyDrivenRecommendationResponse } from '../types/strategy';
+import type { InvestmentStrategy, StrategyDrivenRecommendationResponse } from '../types/strategy';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
