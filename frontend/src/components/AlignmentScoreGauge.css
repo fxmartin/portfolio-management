@@ -1,0 +1,52 @@
+.alignment-gauge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.gauge-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.gauge-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.gauge-score {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #1f2937;
+}
+
+.gauge-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.gauge-progress {
+  transition: stroke 0.3s ease, stroke-dashoffset 0.5s ease;
+}
+
+.gauge-low {
+  stroke: #ef4444;
+}
+
+.gauge-medium {
+  stroke: #f59e0b;
+}
+
+.gauge-high {
+  stroke: #10b981;
+}

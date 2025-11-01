@@ -12,6 +12,7 @@ import HoldingsTable from './components/HoldingsTable'
 import RealizedPnLCard from './components/RealizedPnLCard'
 import AnalysisPage from './pages/Analysis'
 import RebalancingPage from './pages/Rebalancing'
+import StrategyPage from './pages/StrategyPage'
 import { DatabaseResetModal, useDatabaseReset } from './components/DatabaseResetModal'
 import DatabaseStats from './components/DatabaseStats'
 import './App.css'
@@ -68,6 +69,11 @@ function App() {
             {/* Rebalancing Tab */}
             <div data-tab="rebalancing" className="rebalancing-tab">
               <RebalancingPage onNavigateToTransactions={() => setActiveTab('transactions')} />
+            </div>
+
+            {/* Strategy Tab */}
+            <div data-tab="strategy" className="strategy-tab">
+              <StrategyPage onNavigateToTransactions={() => setActiveTab('transactions')} />
             </div>
 
             {/* Database Stats Tab */}
