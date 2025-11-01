@@ -107,10 +107,10 @@ describe('RealizedPnLCard', () => {
     render(<RealizedPnLCard />)
 
     await waitFor(() => {
-      expect(screen.getByText(/No closed positions yet/i)).toBeInTheDocument()
+      expect(screen.getByText(/No realized P&L yet/i)).toBeInTheDocument()
     })
 
-    expect(screen.getByText(/realized p&l will appear here/i)).toBeInTheDocument()
+    expect(screen.getByText(/realized p&l will appear here when you sell any shares/i)).toBeInTheDocument()
   })
 
   it('displays realized P&L for single position with sales with profit', async () => {
@@ -162,15 +162,13 @@ describe('RealizedPnLCard', () => {
     // Check breakdown section appears
     expect(screen.getByText('Breakdown by Asset Type')).toBeInTheDocument()
 
-    // Check stocks breakdown (profit)
+    // Check stocks breakdown (net P&L = 497.50)
     expect(screen.getByText('Stocks')).toBeInTheDocument()
-    const stocksPnl = screen.getAllByText('€ 500.00')
-    expect(stocksPnl.length).toBeGreaterThan(0)
-    expect(screen.getByText('1 closed')).toBeInTheDocument()
+    expect(screen.getByText('€ 497.50')).toBeInTheDocument()
 
-    // Check crypto breakdown (loss)
+    // Check crypto breakdown (net P&L = -1009.50)
     expect(screen.getByText('Crypto')).toBeInTheDocument()
-    expect(screen.getByText('-$ 1,000.00')).toBeInTheDocument()
+    expect(screen.getByText('-€ 1,009.50')).toBeInTheDocument()
   })
 
   it('displays all three asset types when all have positions with sales', async () => {
@@ -194,7 +192,7 @@ describe('RealizedPnLCard', () => {
     render(<RealizedPnLCard />)
 
     await waitFor(() => {
-      expect(screen.getByText(/No closed positions yet/i)).toBeInTheDocument()
+      expect(screen.getByText(/No realized P&L yet/i)).toBeInTheDocument()
     })
 
     expect(screen.queryByText('Breakdown by Asset Type')).not.toBeInTheDocument()
@@ -209,12 +207,15 @@ describe('RealizedPnLCard', () => {
       expect(screen.getByText('2 positions with sales')).toBeInTheDocument()
     })
 
-    // Find profit and loss values and check their classes
-    const profitElements = screen.getAllByText(/€500\.00/)
-    const lossElements = screen.getAllByText(/-€1,000\.00/)
+    // Find profit value (stocks net P&L = 497.50)
+    const profitElement = screen.getByText('€ 497.50')
+    expect(profitElement).toBeInTheDocument()
+    expect(profitElement.className).toContain('profit')
 
-    expect(profitElements.length).toBeGreaterThan(0)
-    expect(lossElements.length).toBeGreaterThan(0)
+    // Find loss value (crypto net P&L = -1009.50)
+    const lossElement = screen.getByText('-€ 1,009.50')
+    expect(lossElement).toBeInTheDocument()
+    expect(lossElement.className).toContain('loss')
   })
 
   it('formats currency values correctly', async () => {
@@ -259,13 +260,11 @@ describe('RealizedPnLCard', () => {
 
     await waitFor(() => {
       expect(screen.getByText('3 positions with sales')).toBeInTheDocument()
-      // Check that breakdown rows show labels
-      const realizedLabels = screen.queryAllByText('Realized:')
-      const feesLabels = screen.queryAllByText('Fees:')
-      const netLabels = screen.queryAllByText('Net:')
-
-      // At least one of each label should exist
-      expect(realizedLabels.length + feesLabels.length + netLabels.length).toBeGreaterThan(0)
     }, { timeout: 3000 })
+
+    // Check that all three asset type net P&L values are displayed
+    expect(screen.getByText('€ 1,995.00')).toBeInTheDocument()  // Stocks net
+    expect(screen.getByText('€ 4,977.50')).toBeInTheDocument()  // Crypto net
+    expect(screen.getByText('€ 89.50')).toBeInTheDocument()     // Metals net
   })
 })

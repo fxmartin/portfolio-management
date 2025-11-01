@@ -66,7 +66,9 @@ class TestRealPromptRendering:
                 "metals": 5000
             },
             "position_count": 15,
-            "top_holdings": ["AAPL (€10000.00)", "BTC (€7000.00)", "TSLA (€6000.00)"]
+            "top_holdings": ["AAPL (€10000.00)", "BTC (€7000.00)", "TSLA (€6000.00)"],
+            "market_context": "S&P 500 up 1.2%, VIX at 15 (low volatility), 10-year yield at 4.5%",
+            "global_crypto_context": "Bitcoin dominance at 55%, total market cap $2.1T"
         }
 
         # Render the prompt
@@ -96,13 +98,19 @@ class TestRealPromptRendering:
             "name": "Bitcoin",
             "quantity": Decimal("1.5"),
             "current_price": Decimal("50000.00"),
+            "current_value": Decimal("75000.00"),
             "cost_basis": Decimal("60000.00"),
+            "avg_cost_per_unit": Decimal("40000.00"),
             "unrealized_pnl": Decimal("-10000.00"),
             "pnl_percentage": Decimal("-16.67"),
             "position_percentage": Decimal("30.00"),
             "day_change": Decimal("2.50"),
             "sector": "Cryptocurrency",
-            "asset_type": "CRYPTO"
+            "asset_type": "CRYPTO",
+            "volume": 1000000000,
+            "fear_greed_context": "Fear & Greed Index: 65 (Greed)",
+            "crypto_context": "24h volume: $50B, Market dominance: 55%",
+            "portfolio_context": "Crypto allocation: 30% of portfolio (target: 25%). Tech stocks: 40% of stock holdings."
         }
 
         result = renderer.render(prompt.prompt_text, prompt.template_variables, data)
@@ -159,7 +167,7 @@ class TestRealPromptRendering:
         """Test that all seeded prompts have valid template variable schemas."""
         result = await db_session.execute(select(Prompt).filter_by(is_active=True))
         prompts = result.scalars().all()
-        assert len(prompts) == 3, "Should have 3 default prompts"
+        assert len(prompts) == 4, "Should have 4 default prompts (portfolio_rebalancing, global_market_analysis, position_analysis, forecast_two_quarters)"
 
         valid_types = ['string', 'integer', 'decimal', 'boolean', 'array', 'object']
 
@@ -233,13 +241,19 @@ class TestPromptPerformance:
             "name": "Bitcoin",
             "quantity": Decimal("1.0"),
             "current_price": Decimal("50000.00"),
+            "current_value": Decimal("50000.00"),
             "cost_basis": Decimal("45000.00"),
+            "avg_cost_per_unit": Decimal("45000.00"),
             "unrealized_pnl": Decimal("5000.00"),
             "pnl_percentage": Decimal("11.11"),
             "position_percentage": Decimal("25.00"),
             "day_change": Decimal("1.50"),
             "sector": "Crypto",
-            "asset_type": "CRYPTO"
+            "asset_type": "CRYPTO",
+            "volume": 1000000000,
+            "fear_greed_context": "Fear & Greed Index: 65 (Greed)",
+            "crypto_context": "24h volume: $50B",
+            "portfolio_context": "Crypto: 25% of portfolio"
         }
 
         # Measure rendering time
