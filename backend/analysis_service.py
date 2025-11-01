@@ -608,3 +608,132 @@ class AnalysisService:
                     raise ValueError(
                         f"{quarter}.{scenario} missing required fields: {missing_fields}"
                     )
+
+    async def generate_strategy_recommendations(
+        self,
+        strategy,  # InvestmentStrategy
+        positions: list,  # List[Position]
+        force_refresh: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Generate AI-powered strategy-driven recommendations.
+
+        Analyzes portfolio alignment with investment strategy and provides
+        actionable recommendations for profit-taking, rebalancing, and
+        new position suggestions.
+
+        Args:
+            strategy: InvestmentStrategy object with user's goals
+            positions: List of Position objects
+            force_refresh: If True, bypass cache and generate fresh analysis
+
+        Returns:
+            {
+                'summary': str,
+                'profit_taking_opportunities': List[Dict],
+                'position_assessments': List[Dict],
+                'new_position_suggestions': List[Dict],
+                'action_plan': List[Dict],
+                'target_return_assessment': Dict,
+                'portfolio_alignment_score': float,
+                'risk_assessment': str,
+                'implementation_notes': str,
+                'generated_at': datetime,
+                'tokens_used': int,
+                'cached': bool
+            }
+
+        Raises:
+            ValueError: If prompt template not found
+            Exception: If Claude API call fails or JSON parsing fails
+        """
+        cache_key = f"strategy_recommendations:user_{strategy.user_id}"
+
+        # Check cache first (12 hours)
+        if not force_refresh:
+            cached = await self._get_cached_analysis(cache_key)
+            if cached:
+                # Override default 24h check - strategy recommendations use 12h TTL
+                generated_at = cached['generated_at']
+                if generated_at.tzinfo is None:
+                    generated_at = generated_at.replace(tzinfo=UTC)
+                age = datetime.now(UTC) - generated_at
+                if age < timedelta(hours=12):
+                    logger.info("Returning cached strategy recommendations")
+                    return {**cached, 'cached': True}
+
+        logger.info("Generating fresh strategy recommendations")
+
+        # Fetch prompt template
+        prompt_template = await self.prompts.get_prompt_by_name("strategy_driven_recommendations")
+        if not prompt_template:
+            raise ValueError("Strategy-driven recommendations prompt not found in database")
+
+        # Collect data for prompt
+        data = await self.data.collect_strategy_analysis_data(strategy, positions)
+
+        # Render prompt
+        renderer = PromptRenderer()
+        rendered_prompt = renderer.render(
+            prompt_template.prompt_text,
+            prompt_template.template_variables,
+            data
+        )
+
+        # Generate recommendations with Claude
+        result = await self.claude.generate_analysis(
+            rendered_prompt,
+            temperature=0.1  # Lower temperature for more consistent recommendations
+        )
+
+        # Parse JSON response (handle both direct JSON and markdown-wrapped)
+        try:
+            recommendations_data = self._extract_json_from_response(result['content'])
+        except (ValueError, json.JSONDecodeError) as e:
+            logger.error(f"Failed to parse strategy recommendations JSON: {e}")
+            logger.error(f"Response preview: {result['content'][:500]}")
+            raise ValueError(f"Failed to parse recommendations from AI response: {e}")
+
+        # Validate response structure (ensure required fields present)
+        required_fields = [
+            'summary', 'profit_taking_opportunities', 'position_assessments',
+            'new_position_suggestions', 'action_plan', 'portfolio_alignment_score',
+            'risk_assessment', 'implementation_notes'
+        ]
+        missing_fields = [f for f in required_fields if f not in recommendations_data]
+        if missing_fields:
+            logger.error(f"Missing required fields in recommendations: {missing_fields}")
+            raise ValueError(f"AI response missing required fields: {missing_fields}")
+
+        # Store in database
+        analysis_record = AnalysisResult(
+            analysis_type='strategy_recommendations',
+            symbol=None,  # Portfolio-wide analysis
+            prompt_id=prompt_template.id,
+            prompt_version=prompt_template.version,
+            raw_response=result['content'],
+            parsed_data=recommendations_data,
+            tokens_used=result['tokens_used'],
+            generation_time_ms=result['generation_time_ms'],
+            expires_at=datetime.now(UTC) + timedelta(hours=12)
+        )
+        self.db.add(analysis_record)
+        await self.db.commit()
+
+        # Build response
+        response = {
+            **recommendations_data,
+            'generated_at': datetime.now(UTC),
+            'tokens_used': result['tokens_used'],
+            'cached': False
+        }
+
+        # Cache for 12 hours (43200 seconds)
+        await self.cache.set(cache_key, response, ttl=43200)
+
+        logger.info(
+            f"Strategy recommendations generated: {result['tokens_used']} tokens, "
+            f"alignment_score={recommendations_data.get('portfolio_alignment_score', 'N/A')}"
+        )
+
+        return response
