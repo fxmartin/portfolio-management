@@ -20,7 +20,19 @@ export async function createStrategy(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  if (!response.ok) throw new Error('Failed to create strategy');
+  if (!response.ok) {
+    // Try to parse validation error details
+    try {
+      const errorData = await response.json();
+      if (errorData.detail && Array.isArray(errorData.detail)) {
+        const messages = errorData.detail.map((err: any) => err.msg).join(', ');
+        throw new Error(messages);
+      }
+    } catch (parseError) {
+      // If can't parse, use generic message
+    }
+    throw new Error('Failed to create strategy');
+  }
   return response.json();
 }
 
@@ -32,7 +44,19 @@ export async function updateStrategy(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  if (!response.ok) throw new Error('Failed to update strategy');
+  if (!response.ok) {
+    // Try to parse validation error details
+    try {
+      const errorData = await response.json();
+      if (errorData.detail && Array.isArray(errorData.detail)) {
+        const messages = errorData.detail.map((err: any) => err.msg).join(', ');
+        throw new Error(messages);
+      }
+    } catch (parseError) {
+      // If can't parse, use generic message
+    }
+    throw new Error('Failed to update strategy');
+  }
   return response.json();
 }
 
