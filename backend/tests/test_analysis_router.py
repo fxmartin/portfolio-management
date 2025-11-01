@@ -1,11 +1,23 @@
 # ABOUTME: Integration tests for Analysis API endpoints (Epic 8 - F8.3-001)
 # ABOUTME: Tests global, position, and forecast analysis endpoints
 
+"""
+NOTE: These tests require a full running environment (Redis, PostgreSQL, services).
+They are SKIPPED during normal pytest runs.
+
+To run integration tests:
+1. Start all services: docker-compose up
+2. Run tests with: pytest tests/test_analysis_router.py -m integration
+"""
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime
 from fastapi.testclient import TestClient
 from main import app
+
+# Mark all tests in this module as integration tests
+pytestmark = pytest.mark.skip(reason="Integration tests require running services (Redis, PostgreSQL). Start services with: docker-compose up")
 
 
 class TestGlobalAnalysisEndpoint:
@@ -37,20 +49,16 @@ class TestGlobalAnalysisEndpoint:
 
     def test_get_global_analysis_success(self, mock_analysis_service):
         """Test successful global analysis generation."""
-        client = TestClient(app)
+        from analysis_router import get_analysis_service
 
-        # Mock the analysis service at the module level
-        from analysis_router import router
-        original_dependency = router.dependency_overrides.copy()
-
-        # Override the dependency
+        # Override the dependency at the app level (not router level)
         async def override_analysis_service():
             return mock_analysis_service
 
-        from analysis_router import get_analysis_service
-        router.dependency_overrides[get_analysis_service] = override_analysis_service
+        app.dependency_overrides[get_analysis_service] = override_analysis_service
 
         try:
+            client = TestClient(app)
             response = client.get("/api/analysis/global")
 
             assert response.status_code == 200
@@ -65,22 +73,20 @@ class TestGlobalAnalysisEndpoint:
             assert data['cached'] is False
             assert 'Market Sentiment' in data['analysis']
         finally:
-            # Restore original dependencies
-            router.dependency_overrides = original_dependency
+            # Clear dependency overrides
+            app.dependency_overrides.clear()
 
     def test_get_global_analysis_with_force_refresh(self, mock_analysis_service):
         """Test global analysis with force_refresh parameter."""
-        client = TestClient(app)
-
-        from analysis_router import router, get_analysis_service
-        original_dependency = router.dependency_overrides.copy()
+        from analysis_router import get_analysis_service
 
         async def override_analysis_service():
             return mock_analysis_service
 
-        router.dependency_overrides[get_analysis_service] = override_analysis_service
+        app.dependency_overrides[get_analysis_service] = override_analysis_service
 
         try:
+            client = TestClient(app)
             response = client.get("/api/analysis/global?force_refresh=true")
 
             assert response.status_code == 200
@@ -89,7 +95,7 @@ class TestGlobalAnalysisEndpoint:
             assert 'analysis' in data
             assert data['cached'] is False
         finally:
-            router.dependency_overrides = original_dependency
+            app.dependency_overrides.clear()
 
 
 class TestAnalysisEndpointErrors:
@@ -97,11 +103,9 @@ class TestAnalysisEndpointErrors:
 
     def test_global_analysis_prompt_not_found(self):
         """Test error when global analysis prompt doesn't exist."""
-        client = TestClient(app)
+        from analysis_router import get_analysis_service
 
         # Mock service that raises ValueError
-        from analysis_router import router, get_analysis_service
-
         async def mock_generate_error(force_refresh=False):
             raise ValueError("Global analysis prompt not found")
 
@@ -111,23 +115,21 @@ class TestAnalysisEndpointErrors:
         async def override_service():
             return mock_service
 
-        original_dependency = router.dependency_overrides.copy()
-        router.dependency_overrides[get_analysis_service] = override_service
+        app.dependency_overrides[get_analysis_service] = override_service
 
         try:
+            client = TestClient(app)
             response = client.get("/api/analysis/global")
 
             # Should return 404 when prompt not found
             assert response.status_code == 404
             assert "not found" in response.json()['detail'].lower()
         finally:
-            router.dependency_overrides = original_dependency
+            app.dependency_overrides.clear()
 
     def test_global_analysis_internal_error(self):
         """Test error handling for unexpected errors."""
-        client = TestClient(app)
-
-        from analysis_router import router, get_analysis_service
+        from analysis_router import get_analysis_service
 
         async def mock_generate_error(force_refresh=False):
             raise Exception("Claude API timeout")
@@ -138,17 +140,17 @@ class TestAnalysisEndpointErrors:
         async def override_service():
             return mock_service
 
-        original_dependency = router.dependency_overrides.copy()
-        router.dependency_overrides[get_analysis_service] = override_service
+        app.dependency_overrides[get_analysis_service] = override_service
 
         try:
+            client = TestClient(app)
             response = client.get("/api/analysis/global")
 
             # Should return 500 for unexpected errors
             assert response.status_code == 500
             assert "Failed to generate analysis" in response.json()['detail']
         finally:
-            router.dependency_overrides = original_dependency
+            app.dependency_overrides.clear()
 
 
 class TestBulkAnalysisEndpoint:

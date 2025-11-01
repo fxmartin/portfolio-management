@@ -56,6 +56,23 @@ export const TransactionList: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
+  // Check for prefill data from rebalancing on mount
+  useEffect(() => {
+    const prefillData = sessionStorage.getItem('transaction_prefill')
+    if (prefillData) {
+      try {
+        const data = JSON.parse(prefillData)
+        setEditingTransaction(data as Transaction)
+        setFormMode('create')
+        setIsFormOpen(true)
+        // Clear the prefill data after using it
+        sessionStorage.removeItem('transaction_prefill')
+      } catch (err) {
+        console.error('Error parsing prefill data:', err)
+      }
+    }
+  }, []);
+
   const fetchTransactions = async () => {
     setLoading(true);
     setError(null);

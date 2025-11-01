@@ -1,23 +1,49 @@
 // ABOUTME: List of AI-powered rebalancing recommendations with action buttons
 // ABOUTME: Displays prioritized buy/sell recommendations with copy and expand functionality
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { RebalancingAnalysis, RebalancingRecommendationResponse } from '../api/rebalancing'
 import { copyTransactionDataToClipboard } from '../api/rebalancing'
-import { TrendingUp, TrendingDown, Copy, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
+import { TrendingUp, TrendingDown, Copy, ChevronDown, ChevronUp, AlertCircle, Plus, Check } from 'lucide-react'
 import './RebalancingRecommendationsList.css'
 
 interface RebalancingRecommendationsListProps {
   analysis: RebalancingAnalysis
   recommendations: RebalancingRecommendationResponse | null
+  onCreateTransaction?: (transactionData: any) => void
 }
 
 const RebalancingRecommendationsList: React.FC<RebalancingRecommendationsListProps> = ({
   analysis,
-  recommendations
+  recommendations,
+  onCreateTransaction
 }) => {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
   const [copiedId, setCopiedId] = useState<number | null>(null)
+  const [plannedActions, setPlannedActions] = useState<Set<number>>(new Set())
+  const [completedActions, setCompletedActions] = useState<Set<number>>(new Set())
+
+  // Load state from localStorage on mount
+  useEffect(() => {
+    const savedPlanned = localStorage.getItem('rebalancing_planned')
+    const savedCompleted = localStorage.getItem('rebalancing_completed')
+
+    if (savedPlanned) {
+      setPlannedActions(new Set(JSON.parse(savedPlanned)))
+    }
+    if (savedCompleted) {
+      setCompletedActions(new Set(JSON.parse(savedCompleted)))
+    }
+  }, [])
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('rebalancing_planned', JSON.stringify(Array.from(plannedActions)))
+  }, [plannedActions])
+
+  useEffect(() => {
+    localStorage.setItem('rebalancing_completed', JSON.stringify(Array.from(completedActions)))
+  }, [completedActions])
 
   const toggleExpand = (id: number) => {
     const newExpanded = new Set(expandedIds)
@@ -33,6 +59,52 @@ const RebalancingRecommendationsList: React.FC<RebalancingRecommendationsListPro
     copyTransactionDataToClipboard(transactionData)
     setCopiedId(id)
     setTimeout(() => setCopiedId(null), 2000)
+  }
+
+  const handleCreateTransaction = (rec: any) => {
+    const prefillData = {
+      transaction_type: rec.transaction_data.transaction_type,
+      symbol: rec.transaction_data.symbol,
+      quantity: rec.transaction_data.quantity,
+      price_per_unit: rec.transaction_data.price,
+      currency: rec.transaction_data.currency,
+      notes: rec.transaction_data.notes,
+      source: 'REBALANCING_RECOMMENDATION'
+    }
+
+    // Store in sessionStorage for the transaction form to pick up
+    sessionStorage.setItem('transaction_prefill', JSON.stringify(prefillData))
+
+    // Call the callback if provided (to trigger tab navigation)
+    if (onCreateTransaction) {
+      onCreateTransaction(prefillData)
+    }
+  }
+
+  const togglePlanned = (id: number) => {
+    const newPlanned = new Set(plannedActions)
+    if (newPlanned.has(id)) {
+      newPlanned.delete(id)
+    } else {
+      newPlanned.add(id)
+    }
+    setPlannedActions(newPlanned)
+  }
+
+  const toggleCompleted = (id: number) => {
+    const newCompleted = new Set(completedActions)
+    if (newCompleted.has(id)) {
+      newCompleted.delete(id)
+    } else {
+      newCompleted.add(id)
+      // Also mark as planned if not already
+      if (!plannedActions.has(id)) {
+        const newPlanned = new Set(plannedActions)
+        newPlanned.add(id)
+        setPlannedActions(newPlanned)
+      }
+    }
+    setCompletedActions(newCompleted)
   }
 
   if (!analysis.rebalancing_required) {
@@ -79,9 +151,11 @@ const RebalancingRecommendationsList: React.FC<RebalancingRecommendationsListPro
         {recommendations.recommendations.map((rec, index) => {
           const isExpanded = expandedIds.has(index)
           const isCopied = copiedId === index
+          const isPlanned = plannedActions.has(index)
+          const isCompleted = completedActions.has(index)
 
           return (
-            <div key={index} className={`recommendation-item ${rec.action.toLowerCase()}`}>
+            <div key={index} className={`recommendation-item ${rec.action.toLowerCase()} ${isCompleted ? 'completed' : ''} ${isPlanned ? 'planned' : ''}`}>
               {/* Header */}
               <div className="item-header">
                 <div className="item-priority">#{rec.priority}</div>
@@ -175,9 +249,34 @@ const RebalancingRecommendationsList: React.FC<RebalancingRecommendationsListPro
                   className="copy-button"
                   onClick={() => handleCopy(index, rec.transaction_data)}
                   disabled={isCopied}
+                  title="Copy transaction data to clipboard as CSV"
                 >
                   <Copy size={16} />
                   {isCopied ? 'Copied!' : 'Copy Data'}
+                </button>
+                <button
+                  className="create-button"
+                  onClick={() => handleCreateTransaction(rec)}
+                  title="Create transaction from this recommendation"
+                >
+                  <Plus size={16} />
+                  Create Transaction
+                </button>
+                <button
+                  className={`planned-button ${isPlanned ? 'active' : ''}`}
+                  onClick={() => togglePlanned(index)}
+                  title={isPlanned ? 'Unmark as planned' : 'Mark as planned'}
+                >
+                  <Check size={16} />
+                  {isPlanned ? 'Planned ✓' : 'Mark Planned'}
+                </button>
+                <button
+                  className={`completed-button ${isCompleted ? 'active' : ''}`}
+                  onClick={() => toggleCompleted(index)}
+                  title={isCompleted ? 'Unmark as completed' : 'Mark as completed'}
+                >
+                  <Check size={16} />
+                  {isCompleted ? 'Completed ✓' : 'Mark Completed'}
                 </button>
               </div>
             </div>

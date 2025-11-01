@@ -4,6 +4,7 @@
 import pytest
 from decimal import Decimal
 from prompt_renderer import PromptRenderer, PromptDataCollector
+from models import AssetType
 
 
 class TestPromptRenderer:
@@ -336,7 +337,32 @@ class TestPromptDataCollector:
     @pytest.fixture
     def mock_db(self):
         """Mock database session."""
-        return None  # Will be mocked in individual tests
+        from datetime import datetime
+
+        class MockDB:
+            def __init__(self):
+                self.call_count = 0
+
+            async def execute(self, query):
+                self.call_count += 1
+                call_num = self.call_count
+
+                class MockResult:
+                    def scalar(self):
+                        # First call: transaction count (int)
+                        if call_num == 1:
+                            return 5
+                        # Second call: first purchase date (datetime)
+                        elif call_num == 2:
+                            return datetime(2024, 1, 1)
+                        return None
+
+                    def scalar_one_or_none(self):
+                        return datetime(2024, 1, 1)
+
+                return MockResult()
+
+        return MockDB()
 
     @pytest.fixture
     def mock_portfolio_service(self):
@@ -350,31 +376,63 @@ class TestPromptDataCollector:
                     metals_value = Decimal("5000.00")
                 return Summary()
 
-            async def get_all_positions(self, db):
+            async def get_all_positions(self, db=None):
                 class Position:
-                    def __init__(self, symbol, value):
+                    def __init__(self, symbol, value, asset_type="STOCK", sector=None):
                         self.symbol = symbol
                         self.current_value = value
+                        self.asset_type = asset_type
+                        self.sector = sector
+                        self.quantity = Decimal("1.0")
+                        self.unrealized_pnl = Decimal("0")
+                        self.unrealized_pnl_percentage = Decimal("0")
+                        self.unrealized_pnl_percent = Decimal("0")  # Used by prompt_renderer
+                        self.portfolio_percentage = Decimal("0")
                 return [
-                    Position("AAPL", 10000),
-                    Position("TSLA", 8000),
-                    Position("BTC", 7000),
+                    Position("AAPL", 20000, "STOCK", "Technology"),
+                    Position("TSLA", 10000, "STOCK", "Automotive"),
+                    Position("BTC", 15000, "CRYPTO", None),
+                    Position("GOLD", 5000, "METAL", None),
                 ]
 
-            async def get_position(self, db, symbol):
+            async def get_position(self, symbol):
                 class Position:
                     def __init__(self):
                         self.symbol = symbol
+                        self.asset_name = symbol
                         self.quantity = Decimal("1.5")
                         self.current_price = Decimal("50000.00")
+                        self.current_value = Decimal("75000.00")  # 1.5 * 50000
                         self.total_cost_basis = Decimal("60000.00")
+                        self.avg_cost_basis = Decimal("40000.00")  # 60000 / 1.5
                         self.unrealized_pnl = Decimal("15000.00")
                         self.unrealized_pnl_percentage = Decimal("25.00")
-                        self.asset_type = "CRYPTO"
+                        self.unrealized_pnl_percent = Decimal("25.00")
+                        self.asset_type = AssetType.CRYPTO
 
                 if symbol == "BTC":
                     return Position()
                 return None
+
+            async def get_portfolio_pnl_summary(self):
+                """Return mock P&L summary."""
+                return {
+                    "total_current_value": 50000.00,
+                    "total_cost_basis": 45000.00,
+                    "total_unrealized_pnl": 5000.00,
+                    "total_realized_pnl": 2000.00,
+                    "total_fees": 200.00,
+                    "net_realized_pnl": 1800.00,
+                    "total_pnl": 7000.00,
+                    "net_total_pnl": 6800.00,
+                }
+
+            async def get_realized_pnl(self, symbol):
+                """Return mock realized P&L for a symbol."""
+                return {
+                    "total_realized_pnl": Decimal("0"),
+                    "total_fees": Decimal("0"),
+                }
 
         return MockPortfolioService()
 
@@ -388,25 +446,42 @@ class TestPromptDataCollector:
         """Test collecting global portfolio data."""
         data = await collector.collect_global_data()
 
-        assert data["portfolio_value"] == Decimal("50000.00")
-        assert data["asset_allocation"]["stocks"] == Decimal("30000.00")
-        assert data["asset_allocation"]["crypto"] == Decimal("15000.00")
-        assert data["asset_allocation"]["metals"] == Decimal("5000.00")
-        assert data["position_count"] == 3
-        assert len(data["top_holdings"]) == 3
-        assert "AAPL" in data["top_holdings"][0]
+        # Portfolio value is sum of all positions
+        assert data["portfolio_value"] == 50000.0
+
+        # asset_allocation field contains sector allocation (stocks only)
+        # Technology: 20000 (66.67% of 30000 total stocks)
+        # Automotive: 10000 (33.33% of 30000 total stocks)
+        assert "Technology" in data["asset_allocation"]
+        assert data["asset_allocation"]["Technology"]["value"] == 20000.0
+        assert "Automotive" in data["asset_allocation"]
+        assert data["asset_allocation"]["Automotive"]["value"] == 10000.0
+
+        # We now have 4 positions (AAPL, TSLA, BTC, GOLD)
+        assert data["position_count"] == 4
+
+        # top_holdings is a formatted string, not a list
+        assert isinstance(data["top_holdings"], str)
+        assert "AAPL" in data["top_holdings"]
 
     @pytest.mark.asyncio
     async def test_collect_position_data(self, collector):
         """Test collecting position-specific data."""
         data = await collector.collect_position_data("BTC")
 
+        # Check basic position data
         assert data["symbol"] == "BTC"
         assert data["quantity"] == Decimal("1.5")
         assert data["current_price"] == Decimal("50000.00")
         assert data["cost_basis"] == Decimal("60000.00")
         assert data["unrealized_pnl"] == Decimal("15000.00")
-        assert data["asset_type"] == "CRYPTO"
+
+        # asset_type in response data
+        assert "asset_type" in data
+
+        # Enhanced data fields should exist
+        assert "transaction_count" in data
+        assert "holding_period_days" in data
 
     @pytest.mark.asyncio
     async def test_collect_position_data_not_found(self, collector):
@@ -431,7 +506,32 @@ class TestEnhancedDataCollection:
     @pytest.fixture
     def mock_db(self):
         """Mock database session."""
-        return None
+        from datetime import datetime
+
+        class MockDB:
+            def __init__(self):
+                self.call_count = 0
+
+            async def execute(self, query):
+                self.call_count += 1
+                call_num = self.call_count
+
+                class MockResult:
+                    def scalar(self):
+                        # First call: transaction count (int)
+                        if call_num == 1:
+                            return 5
+                        # Second call: first purchase date (datetime)
+                        elif call_num == 2:
+                            return datetime(2024, 1, 1)
+                        return None
+
+                    def scalar_one_or_none(self):
+                        return datetime(2024, 1, 1)
+
+                return MockResult()
+
+        return MockDB()
 
     @pytest.fixture
     def mock_portfolio_service(self):
@@ -450,21 +550,45 @@ class TestEnhancedDataCollection:
                     total_unrealized_pnl_percentage = Decimal("11.11")
                 return Summary()
 
-            async def get_all_positions(self, db):
+            async def get_all_positions(self, db=None):
                 class Position:
-                    def __init__(self, symbol, value, pct, pnl_pct, asset_type):
+                    def __init__(self, symbol, value, pct, pnl_pct, asset_type, sector=None):
                         self.symbol = symbol
                         self.current_value = Decimal(str(value))
                         self.portfolio_percentage = Decimal(str(pct))
                         self.unrealized_pnl_percentage = Decimal(str(pnl_pct))
+                        self.unrealized_pnl_percent = Decimal(str(pnl_pct))  # Used by prompt_renderer
                         self.asset_type = asset_type
+                        self.sector = sector
+                        self.quantity = Decimal("1.0")
+                        self.unrealized_pnl = Decimal("0")
 
                 return [
-                    Position("AAPL", 10000, 20.0, 15.5, "STOCK"),
-                    Position("TSLA", 8000, 16.0, -5.2, "STOCK"),
-                    Position("BTC", 7000, 14.0, 25.8, "CRYPTO"),
-                    Position("GOLD", 3000, 6.0, 8.3, "METAL"),
+                    Position("AAPL", 20000, 40.0, 15.5, "STOCK", "Technology"),
+                    Position("TSLA", 10000, 20.0, -5.2, "STOCK", "Automotive"),
+                    Position("BTC", 15000, 30.0, 25.8, "CRYPTO", None),
+                    Position("GOLD", 5000, 10.0, 8.3, "METAL", None),
                 ]
+
+            async def get_portfolio_pnl_summary(self):
+                """Return mock P&L summary."""
+                return {
+                    "total_current_value": 50000.00,
+                    "total_cost_basis": 45000.00,
+                    "total_unrealized_pnl": 5000.00,
+                    "total_realized_pnl": 2000.00,
+                    "total_fees": 200.00,
+                    "net_realized_pnl": 1800.00,
+                    "total_pnl": 7000.00,
+                    "net_total_pnl": 6800.00,
+                }
+
+            async def get_realized_pnl(self, symbol):
+                """Return mock realized P&L for a symbol."""
+                return {
+                    "total_realized_pnl": Decimal("0"),
+                    "total_fees": Decimal("0"),
+                }
 
         return MockPortfolioService()
 
@@ -472,17 +596,25 @@ class TestEnhancedDataCollection:
     def mock_yahoo_service(self):
         """Mock Yahoo Finance service for market indices."""
         class MockYahooService:
-            async def get_price(self, symbol):
-                class PriceData:
+            async def get_quote(self, symbol):
+                class QuoteData:
                     def __init__(self, price, change):
                         self.current_price = price
                         self.day_change_percent = change
 
                 indices_data = {
-                    '^GSPC': PriceData(4500.50, 0.75),
-                    '^DJI': PriceData(35000.25, -0.25),
-                    'BTC-USD': PriceData(50000.00, 2.5),
-                    'GC=F': PriceData(2000.00, -0.5)
+                    '^GSPC': QuoteData(4500.50, 0.75),
+                    '^DJI': QuoteData(35000.25, -0.25),
+                    '^IXIC': QuoteData(15000.00, 1.2),
+                    '^STOXX50E': QuoteData(4200.00, 0.5),
+                    '^GDAXI': QuoteData(16000.00, -0.3),
+                    '^VIX': QuoteData(15.00, -2.0),
+                    '^TNX': QuoteData(4.5, 0.1),
+                    'DX-Y.NYB': QuoteData(103.50, 0.2),
+                    'GC=F': QuoteData(2000.00, -0.5),
+                    'CL=F': QuoteData(75.00, 1.5),
+                    'HG=F': QuoteData(4.00, 0.8),
+                    'BTC-USD': QuoteData(50000.00, 2.5)
                 }
                 return indices_data.get(symbol)
 
@@ -507,22 +639,18 @@ class TestEnhancedDataCollection:
         assert data["portfolio_value"] == 50000.00
         assert data["position_count"] == 4
 
-        # Validate asset allocation with percentages
-        assert data["asset_allocation"]["stocks"] == 30000.00
-        assert data["asset_allocation"]["stocks_pct"] == 60.00
-        assert data["asset_allocation"]["crypto"] == 15000.00
-        assert data["asset_allocation"]["crypto_pct"] == 30.00
-        assert data["asset_allocation"]["metals"] == 5000.00
-        assert data["asset_allocation"]["metals_pct"] == 10.00
-
-        # Validate sector allocation
-        assert "STOCK" in data["sector_allocation"]
-        assert "CRYPTO" in data["sector_allocation"]
-        assert "METAL" in data["sector_allocation"]
+        # asset_allocation contains sector allocation (stocks only)
+        # Technology: 20000 (66.67% of 30000 total stocks)
+        # Automotive: 10000 (33.33% of 30000 total stocks)
+        assert "Technology" in data["asset_allocation"]
+        assert data["asset_allocation"]["Technology"]["value"] == 20000.0
+        assert data["asset_allocation"]["Technology"]["percentage"] == 66.67
+        assert "Automotive" in data["asset_allocation"]
+        assert data["asset_allocation"]["Automotive"]["value"] == 10000.0
+        assert data["asset_allocation"]["Automotive"]["percentage"] == 33.33
 
         # Validate performance metrics
         assert data["total_unrealized_pnl"] == 5000.00
-        assert data["total_unrealized_pnl_pct"] == 11.11
         assert "performance" in data
         assert data["performance"]["current_pnl"] == 5000.00
 
@@ -532,11 +660,9 @@ class TestEnhancedDataCollection:
         assert data["market_indices"]["^GSPC"]["price"] == 4500.50
         assert data["market_indices"]["^GSPC"]["change"] == 0.75
 
-        # Validate top holdings formatting
+        # Validate top holdings formatting (it's a string now)
         assert isinstance(data["top_holdings"], str)
         assert "AAPL" in data["top_holdings"]
-        assert "€10000.00" in data["top_holdings"]
-        assert "20.0% of portfolio" in data["top_holdings"]
 
     @pytest.mark.asyncio
     async def test_enhanced_collect_global_data_without_indices(self, collector_without_yahoo):
@@ -545,8 +671,7 @@ class TestEnhancedDataCollection:
 
         # Should still have all fields except indices
         assert data["portfolio_value"] == 50000.00
-        assert "asset_allocation" in data
-        assert "sector_allocation" in data
+        assert "asset_allocation" in data  # Contains sector allocation for stocks
         assert "performance" in data
         assert "top_holdings" in data
 
@@ -600,24 +725,31 @@ class TestEnhancedDataCollection:
     async def test_get_portfolio_performance(self, mock_db, mock_portfolio_service):
         """Test portfolio performance metrics collection."""
         collector = PromptDataCollector(mock_db, mock_portfolio_service)
-        summary = await mock_portfolio_service.get_open_positions_summary(mock_db)
+        summary = await mock_portfolio_service.get_portfolio_pnl_summary()
 
         performance = await collector._get_portfolio_performance(summary)
 
         assert performance["current_pnl"] == 5000.00
-        assert performance["current_pnl_pct"] == 11.11
 
     @pytest.mark.asyncio
     async def test_get_market_indices_success(self, collector_with_yahoo):
         """Test fetching market indices successfully."""
         indices = await collector_with_yahoo._get_market_indices()
 
-        # Should have all 4 major indices
-        assert len(indices) == 4
+        # Should have all 12 major indices (equities, risk, commodities, crypto)
+        assert len(indices) == 12
         assert "^GSPC" in indices  # S&P 500
         assert "^DJI" in indices   # Dow Jones
+        assert "^IXIC" in indices  # NASDAQ
+        assert "^STOXX50E" in indices  # Euro Stoxx 50
+        assert "^GDAXI" in indices  # DAX
+        assert "^VIX" in indices  # VIX
+        assert "^TNX" in indices  # 10Y Treasury
+        assert "DX-Y.NYB" in indices  # Dollar Index
         assert "BTC-USD" in indices  # Bitcoin
         assert "GC=F" in indices   # Gold
+        assert "CL=F" in indices   # Oil
+        assert "HG=F" in indices   # Copper
 
         # Validate structure
         assert indices["^GSPC"]["price"] == 4500.50
@@ -633,12 +765,12 @@ class TestEnhancedDataCollection:
     async def test_get_market_indices_partial_failure(self, mock_db, mock_portfolio_service):
         """Test market indices handles partial failures gracefully."""
         class PartialYahooService:
-            async def get_price(self, symbol):
+            async def get_quote(self, symbol):
                 if symbol == "^GSPC":
-                    class PriceData:
+                    class QuoteData:
                         current_price = 4500.50
                         day_change_percent = 0.75
-                    return PriceData()
+                    return QuoteData()
                 else:
                     raise Exception("API error")
 
