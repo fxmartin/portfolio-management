@@ -21,7 +21,7 @@ export const StrategyEditorCard: React.FC<StrategyEditorCardProps> = ({
 }) => {
   const [strategyText, setStrategyText] = useState('')
   const [targetAnnualReturn, setTargetAnnualReturn] = useState<number>(10)
-  const [riskTolerance, setRiskTolerance] = useState<'low' | 'medium' | 'high' | 'custom'>('medium')
+  const [riskTolerance, setRiskTolerance] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'CUSTOM'>('MEDIUM')
   const [timeHorizonYears, setTimeHorizonYears] = useState<number>(10)
   const [maxPositions, setMaxPositions] = useState<number>(25)
   const [profitTakingThreshold, setProfitTakingThreshold] = useState<number>(50)
@@ -35,7 +35,7 @@ export const StrategyEditorCard: React.FC<StrategyEditorCardProps> = ({
     if (strategy) {
       setStrategyText(strategy.strategy_text)
       setTargetAnnualReturn(strategy.target_annual_return || 10)
-      setRiskTolerance(strategy.risk_tolerance || 'medium')
+      setRiskTolerance((strategy.risk_tolerance as 'LOW' | 'MEDIUM' | 'HIGH' | 'CUSTOM') || 'MEDIUM')
       setTimeHorizonYears(strategy.time_horizon_years || 10)
       setMaxPositions(strategy.max_positions || 25)
       setProfitTakingThreshold(strategy.profit_taking_threshold || 50)
@@ -185,10 +185,10 @@ export const StrategyEditorCard: React.FC<StrategyEditorCardProps> = ({
                   value={riskTolerance}
                   onChange={(e) => setRiskTolerance(e.target.value as any)}
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="custom">Custom</option>
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="CUSTOM">Custom</option>
                 </select>
               </div>
             </div>
