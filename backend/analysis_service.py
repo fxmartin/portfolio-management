@@ -2,7 +2,7 @@
 # ABOUTME: Generates global, position-level, and forecast analyses with caching
 
 from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import json
 import re
 import logging
@@ -122,7 +122,7 @@ class AnalysisService:
             parsed_data=None,  # No structured data for global
             tokens_used=result['tokens_used'],
             generation_time_ms=result['generation_time_ms'],
-            expires_at=datetime.utcnow() + timedelta(hours=24)
+            expires_at=datetime.now(UTC) + timedelta(hours=24)
         )
         self.db.add(analysis_record)
         await self.db.commit()
@@ -132,7 +132,7 @@ class AnalysisService:
             'analysis': result['content'],
             'global_crypto_market': data.get('global_crypto_market'),  # Include global crypto market data
             'market_indicators': data.get('market_indicators'),  # Include global market indicators
-            'generated_at': datetime.utcnow(),
+            'generated_at': datetime.now(UTC),
             'tokens_used': result['tokens_used']
         }
         await self.cache.set(cache_key, analysis_data, ttl=86400)
@@ -203,7 +203,7 @@ class AnalysisService:
             parsed_data=parsed_data,
             tokens_used=result['tokens_used'],
             generation_time_ms=result['generation_time_ms'],
-            expires_at=datetime.utcnow() + timedelta(hours=24)
+            expires_at=datetime.now(UTC) + timedelta(hours=24)
         )
         self.db.add(analysis_record)
         await self.db.commit()
@@ -233,7 +233,7 @@ class AnalysisService:
             'analysis': result['content'],
             'recommendation': parsed_data.get('recommendation'),
             'crypto_fundamentals': crypto_fundamentals,
-            'generated_at': datetime.utcnow(),
+            'generated_at': datetime.now(UTC),
             'tokens_used': result['tokens_used']
         }
         await self.cache.set(cache_key, analysis_data, ttl=86400)
@@ -320,14 +320,14 @@ class AnalysisService:
             parsed_data=forecast_data,
             tokens_used=result['tokens_used'],
             generation_time_ms=result['generation_time_ms'],
-            expires_at=datetime.utcnow() + timedelta(hours=24)  # Longer TTL for forecasts
+            expires_at=datetime.now(UTC) + timedelta(hours=24)  # Longer TTL for forecasts
         )
         self.db.add(analysis_record)
         await self.db.commit()
 
         response = {
             **forecast_data,
-            'generated_at': datetime.utcnow(),
+            'generated_at': datetime.now(UTC),
             'tokens_used': result['tokens_used'],
             'cached': False
         }
@@ -381,7 +381,7 @@ class AnalysisService:
                 },
                 'risk_assessment': 'None - portfolio is balanced',
                 'implementation_notes': 'Review allocation quarterly',
-                'generated_at': datetime.utcnow(),
+                'generated_at': datetime.now(UTC),
                 'tokens_used': 0,
                 'cached': False
             }
@@ -393,7 +393,10 @@ class AnalysisService:
             cached = await self._get_cached_analysis(cache_key)
             if cached:
                 # Override cache age check for 6-hour TTL
-                age = datetime.utcnow() - cached['generated_at']
+                generated_at = cached['generated_at']
+                if generated_at.tzinfo is None:
+                    generated_at = generated_at.replace(tzinfo=UTC)
+                age = datetime.now(UTC) - generated_at
                 if age < timedelta(hours=6):
                     logger.info("Returning cached rebalancing recommendations")
                     return {**cached, 'cached': True}
@@ -472,14 +475,14 @@ class AnalysisService:
             parsed_data=recommendations_data,
             tokens_used=result['tokens_used'],
             generation_time_ms=result['generation_time_ms'],
-            expires_at=datetime.utcnow() + timedelta(hours=6)
+            expires_at=datetime.now(UTC) + timedelta(hours=6)
         )
         self.db.add(analysis_record)
         await self.db.commit()
 
         response = {
             **recommendations_data,
-            'generated_at': datetime.utcnow(),
+            'generated_at': datetime.now(UTC),
             'tokens_used': result['tokens_used'],
             'cached': False
         }
@@ -503,8 +506,11 @@ class AnalysisService:
         """
         cached = await self.cache.get(cache_key)
         if cached:
-            # Check if still valid (< 24 hours for all analysis types)
-            age = datetime.utcnow() - cached['generated_at']
+            # Check if still valid (< 24 hours for all analysis types) with timezone-aware comparison
+            generated_at = cached['generated_at']
+            if generated_at.tzinfo is None:
+                generated_at = generated_at.replace(tzinfo=UTC)
+            age = datetime.now(UTC) - generated_at
             max_age = timedelta(hours=24)
             if age < max_age:
                 return cached
@@ -540,21 +546,40 @@ class AnalysisService:
 
     def _extract_json_from_response(self, response: str) -> Dict[str, Any]:
         """
-        Extract JSON from markdown code block.
+        Extract JSON from response (direct JSON or markdown code block).
 
         Args:
-            response: Response text that may contain ```json...``` block
+            response: Response text that may contain JSON directly or in ```json...``` block
 
         Returns:
             Parsed JSON data
 
         Raises:
-            ValueError: If no JSON found in response
+            ValueError: If no valid JSON found in response
         """
-        json_match = re.search(r'```json\n(.*?)\n```', response, re.DOTALL)
+        # Try 1: Direct JSON parse
+        try:
+            return json.loads(response)
+        except json.JSONDecodeError:
+            pass
+
+        # Try 2: Extract from markdown code block ```json...```
+        json_match = re.search(r'```json\s*\n(.*?)\n```', response, re.DOTALL)
         if json_match:
-            return json.loads(json_match.group(1))
-        raise ValueError("No JSON found in response")
+            try:
+                return json.loads(json_match.group(1))
+            except json.JSONDecodeError:
+                pass
+
+        # Try 3: Extract any {...} block
+        json_match = re.search(r'\{.*\}', response, re.DOTALL)
+        if json_match:
+            try:
+                return json.loads(json_match.group(0))
+            except json.JSONDecodeError:
+                pass
+
+        raise ValueError(f"Could not parse JSON from Claude response: {response[:200]}...")
 
     def _validate_forecast(self, forecast: Dict[str, Any]):
         """

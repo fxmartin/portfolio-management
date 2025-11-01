@@ -12,8 +12,43 @@ vi.mock('import.meta', () => ({
 }))
 
 // Mock ResizeObserver for Recharts
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}))
+class ResizeObserverMock {
+  observe = vi.fn()
+  unobserve = vi.fn()
+  disconnect = vi.fn()
+}
+
+global.ResizeObserver = ResizeObserverMock as any
+
+// Mock localStorage
+const localStorageMock = {
+  getItem: vi.fn(() => null),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+  length: 0,
+  key: vi.fn()
+}
+
+// Mock sessionStorage
+const sessionStorageMock = {
+  getItem: vi.fn(() => null),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+  length: 0,
+  key: vi.fn()
+}
+
+// @ts-ignore
+global.localStorage = localStorageMock
+// @ts-ignore
+global.sessionStorage = sessionStorageMock
+
+// Mock navigator.clipboard for copy functionality
+Object.assign(navigator, {
+  clipboard: {
+    writeText: vi.fn().mockResolvedValue(undefined),
+    readText: vi.fn().mockResolvedValue('')
+  }
+})

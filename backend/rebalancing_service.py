@@ -1,7 +1,7 @@
 # ABOUTME: Service for portfolio rebalancing analysis and recommendations
 # ABOUTME: Calculates allocation deviations and identifies rebalancing opportunities
 
-from datetime import datetime
+from datetime import datetime, UTC
 from decimal import Decimal
 from typing import List, Optional, Dict
 from sqlalchemy import select, func
@@ -89,7 +89,7 @@ class RebalancingService:
                 largest_deviation=Decimal("0"),
                 most_overweight=None,
                 most_underweight=None,
-                generated_at=datetime.utcnow()
+                generated_at=datetime.now(UTC)
             )
 
         # Build allocation comparison
