@@ -268,6 +268,26 @@ class AnalysisResult(Base):
         return f"<AnalysisResult({self.analysis_type}, symbol={self.symbol}, tokens={self.tokens_used})>"
 
 
+class InvestmentStrategy(Base):
+    """Investment strategy model for storing user investment goals and constraints (Epic 8 - F8.8)"""
+    __tablename__ = 'investment_strategy'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, nullable=False, unique=True, index=True)
+    strategy_text = Column(String, nullable=False)  # TEXT in PostgreSQL
+    target_annual_return = Column(Numeric(5, 2))  # e.g., 12.50%
+    risk_tolerance = Column(String(10))  # LOW, MEDIUM, HIGH, CUSTOM
+    time_horizon_years = Column(Integer)  # e.g., 10 years
+    max_positions = Column(Integer)  # e.g., 15 positions
+    profit_taking_threshold = Column(Numeric(5, 2))  # e.g., 25.00%
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    version = Column(Integer, default=1, nullable=False)
+
+    def __repr__(self):
+        return f"<InvestmentStrategy(user_id={self.user_id}, v{self.version})>"
+
+
 # Create indexes for better query performance
 Index('idx_transactions_import', Transaction.__table__.c.import_timestamp)
 Index('idx_positions_symbol_type', Position.__table__.c.symbol, Position.__table__.c.asset_type)

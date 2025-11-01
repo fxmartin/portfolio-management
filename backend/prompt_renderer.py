@@ -3,7 +3,7 @@
 
 from typing import Any, Dict, Optional, List
 from decimal import Decimal
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, UTC
 from models import AssetType
 import yfinance as yf
 
@@ -1376,3 +1376,177 @@ Cryptocurrency Fundamentals (CoinGecko):
         lines.append(f"  - Max single asset: {concentration['single_asset_max']:.1f}%")
 
         return "\n".join(lines)
+
+    async def collect_strategy_analysis_data(
+        self,
+        strategy,  # InvestmentStrategy
+        positions: list  # List[Position]
+    ) -> Dict[str, Any]:
+        """
+        Collect data for strategy-driven portfolio analysis.
+
+        Aggregates portfolio data, position details, and concentration metrics
+        to enable AI-powered recommendations aligned with investment strategy.
+
+        Args:
+            strategy: InvestmentStrategy object with user's goals
+            positions: List of Position objects
+
+        Returns:
+            Dictionary with strategy parameters, portfolio metrics, position
+            details, asset/sector allocation, and concentration risk metrics
+        """
+        # Extract strategy parameters (handle None values)
+        strategy_data = {
+            "strategy_text": strategy.strategy_text,
+            "target_annual_return": f"{float(strategy.target_annual_return):.2f}" if strategy.target_annual_return else "Not specified",
+            "risk_tolerance": strategy.risk_tolerance or "Not specified",
+            "time_horizon_years": str(strategy.time_horizon_years) if strategy.time_horizon_years else "Not specified",
+            "max_positions": str(strategy.max_positions) if strategy.max_positions else "Not specified",
+            "profit_taking_threshold": f"{float(strategy.profit_taking_threshold):.2f}" if strategy.profit_taking_threshold else "Not specified"
+        }
+
+        # Handle empty positions
+        if not positions:
+            return {
+                **strategy_data,
+                "portfolio_total_value": "0.00",
+                "position_count": 0,
+                "positions_table": "No positions",
+                "asset_allocation": "No positions",
+                "sector_allocation": "Not available",
+                "geographic_exposure": "Not available",
+                "top_3_weight": "0.00",
+                "single_asset_max": "0.00",
+                "single_sector_max": "0.00"
+            }
+
+        # Calculate portfolio totals
+        valid_positions = [p for p in positions if p.current_value is not None]
+        total_value = sum(float(p.current_value) for p in valid_positions)
+
+        # Build positions detail table
+        positions_table = self._build_positions_table(valid_positions, total_value)
+
+        # Calculate asset allocation
+        asset_allocation_dict = self._calculate_asset_allocation(valid_positions, total_value)
+        asset_allocation_str = self._format_asset_allocation(asset_allocation_dict)
+
+        # Calculate sector allocation (stocks only)
+        sector_allocation_dict = self._calculate_sector_allocation(valid_positions, total_value)
+        sector_allocation_str = self._format_sector_allocation(sector_allocation_dict)
+
+        # Calculate concentration metrics
+        concentration = self._calculate_concentration_metrics(
+            valid_positions,
+            total_value,
+            sector_allocation_dict
+        )
+
+        # Geographic exposure (MVP: not available)
+        geographic_exposure = "Not available"
+
+        return {
+            **strategy_data,
+            "portfolio_total_value": f"{total_value:.2f}",
+            "position_count": len(positions),
+            "positions_table": positions_table,
+            "asset_allocation": asset_allocation_str,
+            "sector_allocation": sector_allocation_str,
+            "geographic_exposure": geographic_exposure,
+            "top_3_weight": f"{concentration['top_3_weight']:.2f}",
+            "single_asset_max": f"{concentration['single_asset_max']:.2f}",
+            "single_sector_max": f"{concentration['single_sector_max']:.2f}"
+        }
+
+    def _build_positions_table(self, positions: list, total_value: float) -> str:
+        """
+        Build markdown table of position details.
+
+        Args:
+            positions: List of Position objects
+            total_value: Total portfolio value
+
+        Returns:
+            Markdown-formatted table string
+        """
+        if not positions:
+            return "No positions"
+
+        # Sort positions by value (descending) using existing helper
+        sorted_positions = sorted(
+            positions,
+            key=lambda p: float(p.current_value) if p.current_value else 0,
+            reverse=True
+        )
+
+        # Build table header
+        lines = [
+            "| Symbol | Asset Type | Quantity | Entry Price | Current Price | Value | P&L | P&L % | Holding Period |",
+            "|--------|-----------|----------|-------------|---------------|-------|-----|-------|----------------|"
+        ]
+
+        # Build table rows
+        for position in sorted_positions:
+            # Calculate holding period
+            holding_days = 0
+            if position.first_purchase_date:
+                # Handle both timezone-aware and naive datetimes
+                now = datetime.now(UTC) if position.first_purchase_date.tzinfo else datetime.utcnow()
+                holding_days = (now - position.first_purchase_date).days
+
+            # Format values
+            symbol = position.symbol
+            asset_type = position.asset_type.value if isinstance(position.asset_type, AssetType) else str(position.asset_type)
+            quantity = f"{float(position.quantity):.4f}" if position.quantity else "0"
+            entry_price = f"€{float(position.avg_cost_basis):.2f}" if position.avg_cost_basis else "€0.00"
+            current_price = f"€{float(position.current_price):.2f}" if position.current_price else "€0.00"
+            value = f"€{float(position.current_value):,.2f}" if position.current_value else "€0.00"
+            pnl = f"€{float(position.unrealized_pnl):,.2f}" if position.unrealized_pnl else "€0.00"
+            pnl_pct = f"{float(position.unrealized_pnl_percent):.2f}%" if position.unrealized_pnl_percent else "0.00%"
+            holding_period = f"{holding_days} days"
+
+            row = f"| {symbol} | {asset_type} | {quantity} | {entry_price} | {current_price} | {value} | {pnl} | {pnl_pct} | {holding_period} |"
+            lines.append(row)
+
+        return "\n".join(lines)
+
+    def _format_asset_allocation(self, allocation: Dict[str, Any]) -> str:
+        """
+        Format asset allocation dictionary as readable string.
+
+        Args:
+            allocation: Asset allocation dictionary from _calculate_asset_allocation
+
+        Returns:
+            Formatted string like "Stocks: 55% (€27,500), Crypto: 35% (€17,500)"
+        """
+        if not allocation:
+            return "No asset allocation data"
+
+        parts = []
+        for asset_type, data in allocation.items():
+            parts.append(
+                f"{asset_type}: {data['percentage']:.1f}% (€{data['value']:,.2f})"
+            )
+
+        return ", ".join(parts)
+
+    def _format_sector_allocation(self, allocation: Dict[str, Any]) -> str:
+        """
+        Format sector allocation dictionary as readable string.
+
+        Args:
+            allocation: Sector allocation dictionary from _calculate_sector_allocation
+
+        Returns:
+            Formatted string like "Technology: 75%, Finance: 20%, Consumer: 5%"
+        """
+        if not allocation:
+            return "Not available"
+
+        parts = []
+        for sector, data in allocation.items():
+            parts.append(f"{sector}: {data['percentage']:.1f}%")
+
+        return ", ".join(parts)

@@ -75,6 +75,30 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     }
   }, [mode, transaction]);
 
+  // Load prefill data from strategy recommendations
+  useEffect(() => {
+    if (mode === 'create' && isOpen) {
+      const prefillData = localStorage.getItem('transaction_prefill_data');
+      if (prefillData) {
+        try {
+          const data = JSON.parse(prefillData);
+          setFormData(prev => ({
+            ...prev,
+            transaction_type: data.transaction_type || prev.transaction_type,
+            symbol: data.symbol || prev.symbol,
+            quantity: data.quantity?.toString() || prev.quantity,
+            price_per_unit: data.price?.toString() || prev.price_per_unit,
+            notes: data.notes || prev.notes
+          }));
+          // Clear the prefill data after using it
+          localStorage.removeItem('transaction_prefill_data');
+        } catch (err) {
+          console.error('Failed to parse prefill data:', err);
+        }
+      }
+    }
+  }, [mode, isOpen]);
+
   // Load existing symbols for autocomplete
   useEffect(() => {
     const fetchSymbols = async () => {
