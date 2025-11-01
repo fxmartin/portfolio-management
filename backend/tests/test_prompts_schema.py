@@ -329,20 +329,21 @@ class TestSeedPrompts:
 
     @pytest.mark.asyncio
     async def test_seed_default_prompts_creates_all(self, db_session):
-        """Test seeding creates all 3 default prompts"""
+        """Test seeding creates all 4 default prompts"""
         result = await seed_default_prompts_async(db_session)
 
-        assert result["created"] == 3
+        assert result["created"] == 4
         assert result["skipped"] == 0
         assert result["updated"] == 0
-        assert result["total"] == 3
+        assert result["total"] == 4
 
         # Verify all prompts exist
         query = await db_session.execute(select(Prompt))
         prompts = query.scalars().all()
-        assert len(prompts) == 3
+        assert len(prompts) == 4
 
         prompt_names = [p.name for p in prompts]
+        assert "portfolio_rebalancing" in prompt_names
         assert "global_market_analysis" in prompt_names
         assert "position_analysis" in prompt_names
         assert "forecast_two_quarters" in prompt_names
@@ -377,17 +378,17 @@ class TestSeedPrompts:
         """Test seed script is idempotent (can run multiple times)"""
         # First run
         result1 = await seed_default_prompts_async(db_session)
-        assert result1["created"] == 3
+        assert result1["created"] == 4
 
         # Second run
         result2 = await seed_default_prompts_async(db_session)
         assert result2["created"] == 0
-        assert result2["skipped"] == 3
+        assert result2["skipped"] == 4
 
-        # Should still have exactly 3 prompts
+        # Should still have exactly 4 prompts
         query = await db_session.execute(select(Prompt))
         prompts = query.scalars().all()
-        assert len(prompts) == 3
+        assert len(prompts) == 4
 
     @pytest.mark.asyncio
     async def test_seed_prompts_updates_changed_text(self, db_session):
