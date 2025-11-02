@@ -1,4 +1,4 @@
-/* Settings page layout and styling */
+/* ABOUTME: Styles for the Settings page with tab navigation and responsive layout */
 
 .settings-page {
   padding: 2rem;
@@ -43,13 +43,54 @@
 .settings-content {
   background: white;
   border-radius: 8px;
-  padding: 2rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   min-height: 400px;
 }
 
-/* Empty state placeholder */
-.settings-content .empty-state {
+/* Tab Navigation */
+.settings-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1rem 0 1rem;
+  border-bottom: 2px solid #e5e7eb;
+  overflow-x: auto;
+}
+
+.settings-tab {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.settings-tab:hover {
+  color: #111827;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.settings-tab.active {
+  color: #007bff;
+  border-bottom-color: #007bff;
+}
+
+.settings-tab:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* Settings Panel */
+.settings-panel {
+  padding: 2rem;
+}
+
+/* Loading State */
+.settings-content .loading-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -59,19 +100,97 @@
   color: #6c757d;
 }
 
-.settings-content .empty-icon {
-  margin-bottom: 1.5rem;
-  opacity: 0.3;
+.settings-content .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #007bff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
 }
 
-.settings-content .empty-state h3 {
-  margin: 0 0 1rem 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #495057;
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.settings-content .empty-state p {
-  margin: 0;
+/* Error State */
+.settings-content .error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #6c757d;
+}
+
+.settings-content .error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.settings-content .error-state p {
+  margin: 0 0 1.5rem 0;
   font-size: 1rem;
+  color: #ef4444;
+}
+
+.settings-content .retry-button {
+  padding: 0.5rem 1.5rem;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.settings-content .retry-button:hover {
+  background: #0056b3;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .settings-page {
+    padding: 1rem;
+  }
+
+  .settings-page .header-text h1 {
+    font-size: 1.5rem;
+  }
+
+  .settings-tabs {
+    padding: 0.75rem 0.75rem 0 0.75rem;
+  }
+
+  .settings-tab {
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .settings-panel {
+    padding: 1.5rem 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-page .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .settings-tabs {
+    gap: 0.25rem;
+  }
+
+  .settings-tab {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
 }
