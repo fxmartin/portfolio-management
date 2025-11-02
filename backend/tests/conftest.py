@@ -7,10 +7,14 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 import sys
+import os
 from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Set test environment variables
+os.environ["SETTINGS_ENCRYPTION_KEY"] = "8LszS8I4wR1MMf5nj2yKDCx7USDTY0eITI9NGqgB_ns="
 
 from models import Base
 from database import get_async_db
@@ -65,8 +69,39 @@ def test_client(test_session):
         """Override database dependency to use test session"""
         yield test_session
 
-    # Override the dependency
+    # Create a mock Redis client
+    class MockRedis:
+        def __init__(self):
+            self._store = {}
+
+        async def get(self, key):
+            return self._store.get(key)
+
+        async def setex(self, key, ttl, value):
+            self._store[key] = value
+            return True
+
+        async def delete(self, *keys):
+            for key in keys:
+                self._store.pop(key, None)
+            return len(keys)
+
+        async def close(self):
+            pass
+
+    mock_redis = MockRedis()
+
+    # Override the dependencies
     app.dependency_overrides[get_async_db] = override_get_db
+
+    # Override CacheService creation to use mock Redis
+    from cache_service import CacheService
+    original_init = CacheService.__init__
+
+    def mock_cache_init(self):
+        self.client = mock_redis
+
+    CacheService.__init__ = mock_cache_init
 
     # Create test client
     with TestClient(app) as client:
@@ -74,3 +109,4 @@ def test_client(test_session):
 
     # Clean up overrides
     app.dependency_overrides.clear()
+    CacheService.__init__ = original_init
