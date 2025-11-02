@@ -295,8 +295,11 @@ export default function StrategyRecommendationsCard({
           <div className="suggestions-list">
             {recommendations.new_position_suggestions.map((suggestion, idx) => (
               <div key={idx} className="suggestion-item">
-                <strong>{suggestion.category}:</strong> {suggestion.symbols.join(', ')}
+                <strong>{suggestion.symbol}</strong> ({suggestion.asset_type})
                 <div className="suggestion-rationale">{suggestion.rationale}</div>
+                <div className="suggestion-details">
+                  Allocation: {suggestion.suggested_allocation} | {suggestion.entry_strategy}
+                </div>
               </div>
             ))}
           </div>
@@ -320,7 +323,11 @@ export default function StrategyRecommendationsCard({
               <div className="accordion-content">
                 <ul>
                   {recommendations.action_plan.immediate_actions.map((action, idx) => (
-                    <li key={idx}>{action}</li>
+                    <li key={idx}>
+                      <strong>Priority {action.priority}:</strong> {action.action}
+                      <div className="action-details">{action.details}</div>
+                      {action.expected_impact && <div className="expected-impact">Impact: {action.expected_impact}</div>}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -332,14 +339,28 @@ export default function StrategyRecommendationsCard({
               className="accordion-header"
               onClick={() => toggleSection('redeployment')}
             >
-              <span>Redeployment Options ({recommendations.action_plan.redeployment_options.length})</span>
+              <span>Redeployment Options ({recommendations.action_plan.redeployment?.length || 0})</span>
               {expandedSections.has('redeployment') ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </button>
-            {expandedSections.has('redeployment') && (
+            {expandedSections.has('redeployment') && recommendations.action_plan.redeployment && (
               <div className="accordion-content">
                 <ul>
-                  {recommendations.action_plan.redeployment_options.map((option, idx) => (
-                    <li key={idx}>{option}</li>
+                  {recommendations.action_plan.redeployment.map((option, idx) => (
+                    <li key={idx}>
+                      <strong>{option.source || 'Redeployment option'}</strong>
+                      {option.allocation && Array.isArray(option.allocation) ? (
+                        <ul className="allocation-list">
+                          {option.allocation.map((item, itemIdx) => (
+                            <li key={itemIdx}>→ {item}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <>
+                          {option.target && <div>→ {option.target}</div>}
+                          {option.rationale && <div className="rationale">{option.rationale}</div>}
+                        </>
+                      )}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -351,14 +372,18 @@ export default function StrategyRecommendationsCard({
               className="accordion-header"
               onClick={() => toggleSection('gradual')}
             >
-              <span>Gradual Adjustments ({recommendations.action_plan.gradual_adjustments.length})</span>
+              <span>Gradual Adjustments ({recommendations.action_plan.gradual_adjustments?.length || 0})</span>
               {expandedSections.has('gradual') ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </button>
-            {expandedSections.has('gradual') && (
+            {expandedSections.has('gradual') && recommendations.action_plan.gradual_adjustments && (
               <div className="accordion-content">
                 <ul>
                   {recommendations.action_plan.gradual_adjustments.map((adjustment, idx) => (
-                    <li key={idx}>{adjustment}</li>
+                    <li key={idx}>
+                      <strong>{adjustment.action}</strong>
+                      {adjustment.timeframe && <div className="adjustment-timeframe">Timeframe: {adjustment.timeframe}</div>}
+                      <div className="adjustment-details">{adjustment.details}</div>
+                    </li>
                   ))}
                 </ul>
               </div>

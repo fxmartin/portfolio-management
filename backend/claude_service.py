@@ -73,7 +73,8 @@ class ClaudeService:
         prompt: str,
         system_prompt: Optional[str] = None,
         temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None
+        max_tokens: Optional[int] = None,
+        timeout: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Generate analysis using Claude API.
@@ -83,6 +84,7 @@ class ClaudeService:
             system_prompt: Optional system prompt (uses default if not provided)
             temperature: Optional temperature override (0-1)
             max_tokens: Optional max tokens override
+            timeout: Optional timeout override in seconds (default: 30s)
 
         Returns:
             {
@@ -113,7 +115,7 @@ class ClaudeService:
                     temperature=temperature or self.temperature,
                     system=system_prompt or self._default_system_prompt(),
                     messages=messages,
-                    timeout=self.timeout
+                    timeout=timeout or self.timeout
                 )
 
                 end_time = time.time()
@@ -157,6 +159,87 @@ class ClaudeService:
                 await asyncio.sleep(wait_time)
 
         raise Exception("Max retries exceeded")
+
+    async def generate_analysis_stream(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        timeout: Optional[int] = None
+    ):
+        """
+        Generate analysis using Claude API with streaming.
+
+        Args:
+            prompt: User prompt to send to Claude
+            system_prompt: Optional system prompt (uses default if not provided)
+            temperature: Optional temperature override (0-1)
+            max_tokens: Optional max tokens override
+            timeout: Optional timeout override in seconds (default: 30s)
+
+        Yields:
+            Text chunks as they are generated
+
+        Raises:
+            ClaudeAPIError: On API errors
+            RateLimitError: On rate limit errors
+        """
+        await self._check_rate_limit()
+
+        start_time = time.time()
+
+        # Build message
+        messages = [{"role": "user", "content": prompt}]
+
+        # Retry logic with exponential backoff
+        for attempt in range(self.max_retries):
+            try:
+                async with self.client.messages.stream(
+                    model=self.model,
+                    max_tokens=max_tokens or self.max_tokens,
+                    temperature=temperature or self.temperature,
+                    system=system_prompt or self._default_system_prompt(),
+                    messages=messages,
+                    timeout=timeout or self.timeout
+                ) as stream:
+                    async for text in stream.text_stream:
+                        yield text
+
+                    # Get final message with usage stats
+                    final_message = await stream.get_final_message()
+                    end_time = time.time()
+
+                    logger.info(
+                        f"Streamed analysis: {final_message.usage.input_tokens + final_message.usage.output_tokens} tokens, "
+                        f"{int((end_time - start_time) * 1000)}ms"
+                    )
+
+                # Success, break retry loop
+                break
+
+            except Exception as e:
+                logger.warning(f"API streaming call failed (attempt {attempt + 1}/{self.max_retries}): {e}")
+
+                # Check if it's a rate limit error
+                if hasattr(e, '__class__') and 'RateLimitError' in e.__class__.__name__:
+                    if attempt == self.max_retries - 1:
+                        raise RateLimitError("Rate limit exceeded, try again later")
+
+                # Check if it's a timeout error
+                if hasattr(e, '__class__') and 'TimeoutError' in e.__class__.__name__:
+                    if attempt == self.max_retries - 1:
+                        raise ClaudeAPIError(f"Request timeout: {e}")
+
+                # Last attempt, raise the error
+                if attempt == self.max_retries - 1:
+                    logger.error(f"Claude API streaming error after {self.max_retries} attempts: {e}")
+                    raise ClaudeAPIError(f"Analysis generation failed: {e}")
+
+                # Exponential backoff: 1s, 2s, 4s
+                wait_time = 2 ** attempt
+                logger.debug(f"Waiting {wait_time}s before retry...")
+                await asyncio.sleep(wait_time)
 
     async def _check_rate_limit(self):
         """

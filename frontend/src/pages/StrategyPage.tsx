@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { StrategyEditorCard } from '../components/StrategyEditorCard';
 import StrategyRecommendationsCard from '../components/StrategyRecommendationsCard';
-import { getStrategy, createStrategy, updateStrategy, getRecommendations } from '../api/strategy';
+import { getStrategy, createStrategy, updateStrategy, getRecommendations, getRecommendationsStreaming } from '../api/strategy';
 import type { InvestmentStrategy, StrategyDrivenRecommendationResponse } from '../types/strategy';
 import './StrategyPage.css';
 
@@ -47,7 +47,8 @@ export default function StrategyPage({ onNavigateToTransactions }: StrategyPageP
   const loadRecommendations = async (forceRefresh = false) => {
     try {
       setLoadingRecommendations(true);
-      const data = await getRecommendations(forceRefresh);
+      // Use streaming endpoint to prevent timeout issues
+      const data = await getRecommendationsStreaming();
       setRecommendations(data);
     } catch (err) {
       // Don't set global error, show in recommendations card

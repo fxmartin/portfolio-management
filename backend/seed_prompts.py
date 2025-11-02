@@ -340,113 +340,26 @@ Format response as JSON:
 
 ## Response Format
 
-Return recommendations in this JSON structure:
+Return a valid JSON object with the following structure:
 
-```json
-{{
-  "summary": "2-3 sentence executive summary of portfolio alignment and key recommendations",
-
-  "alignment_score": 7.5,
-
-  "key_insights": [
-    "Portfolio has 15 positions, exceeding the 5 max limit from strategy",
-    "BTC at +132% has exceeded the +{profit_taking_threshold}% profit-taking threshold",
-    "Crypto allocation is 28%, higher than suggested 15% in strategy",
-    "Missing exposure to emerging markets as specified in strategy"
-  ],
-
-  "profit_taking_opportunities": [
-    {{
-      "symbol": "BTC",
-      "current_value": 8123.45,
-      "entry_cost": 3500.00,
-      "unrealized_gain": 4623.45,
-      "gain_percentage": 132.1,
-      "holding_period_days": 425,
-      "recommendation": "TAKE_PROFIT|HOLD_FOR_MORE|PARTIAL_SELL",
-      "rationale": "Position has exceeded {profit_taking_threshold}% threshold with 132% gain...",
-      "suggested_sell_percentage": 50,
-      "transaction_data": {{
-        "transaction_type": "SELL",
-        "symbol": "BTC",
-        "quantity": 0.05,
-        "price": 81234.56,
-        "total_value": 4061.73,
-        "currency": "EUR",
-        "notes": "Lock in 50% of gains while maintaining exposure"
-      }}
-    }}
-  ],
-
-  "position_assessments": [
-    {{
-      "symbol": "AAPL",
-      "current_allocation": 15.2,
-      "strategic_fit": "ALIGNED|OVERWEIGHT|UNDERWEIGHT|MISALIGNED",
-      "action_needed": "HOLD|REDUCE|INCREASE|SELL",
-      "rationale": "Explain why this position fits/doesn't fit the strategy..."
-    }}
-  ],
-
-  "new_position_suggestions": [
-    {{
-      "symbol": "VTI",
-      "asset_type": "STOCK",
-      "rationale": "US total market ETF provides broad diversification aligned with strategy...",
-      "suggested_allocation": 10.0,
-      "entry_strategy": "Dollar-cost average over 3 months"
-    }}
-  ],
-
-  "action_plan": {{
-    "immediate_actions": [
-      {{
-        "priority": 1,
-        "action": "Sell 50% of BTC position to lock in gains",
-        "symbol": "BTC",
-        "details": "Position has exceeded profit threshold with 132% gain...",
-        "expected_impact": "Reduce crypto allocation from 28% to 20%, lock in €4,000 gains",
-        "transaction_data": {{
-          "transaction_type": "SELL",
-          "symbol": "BTC",
-          "quantity": 0.05,
-          "price": 81234.56,
-          "total_value": 4061.73,
-          "currency": "EUR"
-        }}
-      }}
-    ],
-    "redeployment": [
-      {{
-        "priority": 2,
-        "action": "Invest BTC proceeds into emerging markets ETF",
-        "details": "Add missing emerging markets exposure per strategy...",
-        "expected_impact": "Align with geographic diversification goals"
-      }}
-    ],
-    "gradual_adjustments": [
-      {{
-        "priority": 3,
-        "action": "Consolidate from 15 positions to max 5",
-        "details": "Close or reduce smaller positions over 3-6 months...",
-        "expected_impact": "Simplify portfolio while maintaining core strategy"
-      }}
-    ]
-  }},
-
-  "target_annual_return_assessment": {{
-    "target_return": {target_annual_return},
-    "current_projected_return": 8.5,
-    "achievability": "ACHIEVABLE|CHALLENGING|UNREALISTIC",
-    "required_changes": "Specific changes needed to reach target...",
-    "risk_level": "Assessment of risk required to achieve target..."
-  }},
-
-  "risk_assessment": "Portfolio is moderately aligned with stated strategy. Main issues: crypto overweight (28% vs suggested 15%), insufficient diversification in stocks...",
-
-  "next_review_date": "2025-04-01"
-}}
-```
+**Required Fields**:
+- `summary` (string): 2-3 sentence executive summary of portfolio alignment and key recommendations
+- `alignment_score` (number): Score from 0-10 indicating how well portfolio aligns with strategy
+- `key_insights` (array of strings): 3-5 critical observations about the portfolio
+- `profit_taking_opportunities` (array of objects): Positions exceeding profit threshold
+  - Each with: symbol, current_value, entry_cost, unrealized_gain, gain_percentage, recommendation, rationale, transaction_data
+- `position_assessments` (array of objects): Evaluation of each position against strategy
+  - Each with: symbol, current_allocation, strategic_fit (ALIGNED/OVERWEIGHT/UNDERWEIGHT/MISALIGNED), action_needed (HOLD/REDUCE/INCREASE/SELL), rationale
+- `new_position_suggestions` (array of objects): Recommended new positions to improve alignment
+  - Each with: symbol, asset_type, rationale, suggested_allocation, entry_strategy
+- `action_plan` (object): Prioritized actions organized by timeframe
+  - `immediate_actions` (array): High priority actions to execute now (each with priority number, action, details, expected_impact, transaction_data if applicable)
+  - `redeployment` (array): How to reinvest proceeds from sales
+  - `gradual_adjustments` (array): Longer-term portfolio changes
+- `target_annual_return_assessment` (object): Evaluation of return goal achievability
+  - Fields: target_return, current_projected_return, achievability (ACHIEVABLE/CHALLENGING/UNREALISTIC), required_changes, risk_level
+- `risk_assessment` (string): Overall assessment of portfolio risk vs strategy
+- `next_review_date` (string): Recommended date for next review (YYYY-MM-DD format)
 
 ## Important Guidelines
 
