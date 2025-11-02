@@ -45,6 +45,15 @@
   gap: 0.75rem;
 }
 
+/* Input Container with Validation */
+.input-with-validation {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 400px;
+}
+
 /* Input Styles */
 .setting-input {
   padding: 0.625rem 0.875rem;
@@ -55,7 +64,7 @@
   color: #111827;
   transition: all 0.2s ease;
   width: 100%;
-  max-width: 400px;
+  flex: 1;
 }
 
 .setting-input:focus {
@@ -70,12 +79,63 @@
   cursor: not-allowed;
 }
 
+/* Validation States */
+.setting-input.validating {
+  border-color: #94a3b8;
+}
+
+.setting-input.valid {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.setting-input.invalid {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+/* Validation Spinner */
+.validation-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+}
+
+.spinner-icon {
+  animation: spin 0.8s linear infinite;
+  color: #94a3b8;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Validation Error Message */
+.validation-error {
+  padding: 0.5rem 0.75rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #ef4444;
+  font-size: 0.8125rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
 /* Password Input */
 .password-input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
-  max-width: 400px;
+  flex: 1;
 }
 
 .password-input {
@@ -210,6 +270,10 @@ select.setting-input {
 
   .setting-control {
     gap: 0.625rem;
+  }
+
+  .input-with-validation {
+    max-width: 100%;
   }
 
   .setting-input {
