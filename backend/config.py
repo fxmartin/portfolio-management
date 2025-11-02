@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # Anthropic Claude Configuration
     ANTHROPIC_API_KEY: Optional[str] = None
     ANTHROPIC_MODEL: str = "claude-sonnet-4-5-20250929"  # Latest Sonnet
-    ANTHROPIC_MAX_TOKENS: int = 4096
+    ANTHROPIC_MAX_TOKENS: int = 8192
     ANTHROPIC_TEMPERATURE: float = 0.3  # Lower for more factual analysis
     ANTHROPIC_TIMEOUT: int = 30  # seconds
     ANTHROPIC_MAX_RETRIES: int = 3

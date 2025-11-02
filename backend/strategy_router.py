@@ -13,6 +13,7 @@ Endpoints:
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from typing import Optional
@@ -313,4 +314,139 @@ async def get_strategy_recommendations(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate recommendations: {str(e)}"
+        )
+
+
+@router.get("/recommendations/stream")
+async def get_strategy_recommendations_stream(
+    force_refresh: bool = Query(False, description="Bypass cache and generate fresh recommendations"),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Get AI-powered strategy recommendations with streaming (SOLVES TIMEOUT ISSUE).
+
+    This endpoint streams the AI-generated recommendations as they're produced,
+    preventing timeout issues that occur with large responses. Use this when
+    the standard /recommendations endpoint times out.
+
+    **Caching**: Results cached for 12 hours (use force_refresh=true to bypass)
+
+    **Advantages**:
+    - No timeout issues (streams response progressively)
+    - Better UX (see results as they're generated)
+    - Handles large portfolios with many positions
+    - Cached responses return instantly (no API call)
+
+    **Requirements**:
+    - Investment strategy must exist (404 if none)
+    - Portfolio must have positions
+
+    **Response**: Plain text stream (JSON from Claude or cache)
+    """
+    # Import here to avoid circular dependency
+    from analysis_service import AnalysisService
+    from claude_service import ClaudeService
+    from prompt_service import PromptService
+    from prompt_renderer import PromptDataCollector
+    from portfolio_service import PortfolioService
+    from yahoo_finance_service import YahooFinanceService
+    from cache_service import CacheService
+    from config import get_settings
+
+    # Get strategy
+    result = await db.execute(
+        select(InvestmentStrategy).where(InvestmentStrategy.user_id == DEFAULT_USER_ID)
+    )
+    strategy = result.scalar_one_or_none()
+
+    if not strategy:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Investment strategy not found. Create one first using POST /api/strategy/"
+        )
+
+    # Initialize services
+    settings = get_settings()
+    claude_service = ClaudeService(settings)
+    prompt_service = PromptService(db)
+    portfolio_service = PortfolioService(db)
+    yahoo_service = YahooFinanceService()
+    cache_service = CacheService()
+
+    # Initialize market data services
+    twelve_data_service = None
+    if settings.TWELVE_DATA_API_KEY:
+        from twelve_data_service import TwelveDataService
+        twelve_data_service = TwelveDataService(
+            settings.TWELVE_DATA_API_KEY,
+            redis_client=cache_service.client
+        )
+
+    alpha_vantage_service = None
+    if settings.ALPHA_VANTAGE_API_KEY:
+        from alpha_vantage_service import AlphaVantageService
+        alpha_vantage_service = AlphaVantageService(settings.ALPHA_VANTAGE_API_KEY)
+
+    coingecko_service = None
+    try:
+        from coingecko_service import CoinGeckoService
+        coingecko_service = CoinGeckoService(
+            api_key=settings.COINGECKO_API_KEY,
+            redis_client=cache_service.client,
+            calls_per_minute=settings.COINGECKO_RATE_LIMIT_PER_MINUTE
+        )
+    except Exception:
+        pass
+
+    # Initialize data collector
+    data_collector = PromptDataCollector(
+        db,
+        portfolio_service,
+        yahoo_service,
+        twelve_data_service,
+        alpha_vantage_service,
+        coingecko_service
+    )
+
+    # Initialize analysis service
+    analysis_service = AnalysisService(
+        db,
+        claude_service,
+        prompt_service,
+        data_collector,
+        cache_service
+    )
+
+    # Get all positions
+    positions = await portfolio_service.get_all_positions()
+
+    if not positions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Portfolio has no positions. Import transactions first."
+        )
+
+    # Stream recommendations
+    try:
+        async def generate():
+            async for chunk in analysis_service.generate_strategy_recommendations_stream(
+                strategy,
+                positions,
+                force_refresh=force_refresh
+            ):
+                yield chunk
+
+        return StreamingResponse(
+            generate(),
+            media_type="text/plain",
+            headers={
+                "X-Content-Type-Options": "nosniff",
+                "Cache-Control": "no-cache"
+            }
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to stream recommendations: {str(e)}"
         )

@@ -68,3 +68,51 @@ export async function getRecommendations(
   if (!response.ok) throw new Error('Failed to fetch recommendations');
   return response.json();
 }
+
+export async function getRecommendationsStreaming(
+  onProgress?: (chunk: string) => void
+): Promise<StrategyDrivenRecommendationResponse> {
+  const url = `${API_BASE}/api/strategy/recommendations/stream`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch recommendations');
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error('Response body is not readable');
+  }
+
+  const decoder = new TextDecoder();
+  let accumulated = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      accumulated += chunk;
+
+      // Call progress callback if provided
+      if (onProgress) {
+        onProgress(chunk);
+      }
+    }
+
+    // Strip markdown code block markers if present
+    let jsonText = accumulated.trim();
+    if (jsonText.startsWith('```json')) {
+      jsonText = jsonText.replace(/^```json\s*/, '').replace(/```\s*$/, '');
+    } else if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/^```\s*/, '').replace(/```\s*$/, '');
+    }
+
+    // Parse the accumulated JSON
+    return JSON.parse(jsonText);
+  } catch (error) {
+    throw new Error(`Failed to parse streaming response: ${error}`);
+  }
+}
