@@ -2,6 +2,7 @@
 // ABOUTME: Modern UI with sidebar navigation and tab-based content organization
 
 import { useState } from 'react'
+import { ToastContainer } from 'react-toastify'
 import { PortfolioRefreshProvider } from './contexts/PortfolioRefreshContext'
 import Sidebar from './components/Sidebar'
 import TabView from './components/TabView'
@@ -16,6 +17,7 @@ import StrategyPage from './pages/StrategyPage'
 import SettingsPage from './pages/SettingsPage'
 import { DatabaseResetModal, useDatabaseReset } from './components/DatabaseResetModal'
 import DatabaseStats from './components/DatabaseStats'
+import 'react-toastify/dist/ReactToastify.css'
 import './App.css'
 
 function App() {
@@ -39,6 +41,18 @@ function App() {
 
   return (
     <PortfolioRefreshProvider>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <div className="app-layout">
         <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
 
