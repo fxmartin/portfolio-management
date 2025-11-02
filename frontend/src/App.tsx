@@ -13,6 +13,7 @@ import RealizedPnLCard from './components/RealizedPnLCard'
 import AnalysisPage from './pages/Analysis'
 import RebalancingPage from './pages/Rebalancing'
 import StrategyPage from './pages/StrategyPage'
+import SettingsPage from './pages/SettingsPage'
 import { DatabaseResetModal, useDatabaseReset } from './components/DatabaseResetModal'
 import DatabaseStats from './components/DatabaseStats'
 import './App.css'
@@ -74,6 +75,11 @@ function App() {
             {/* Strategy Tab */}
             <div data-tab="strategy" className="strategy-tab">
               <StrategyPage onNavigateToTransactions={() => setActiveTab('transactions')} />
+            </div>
+
+            {/* Settings Tab */}
+            <div data-tab="settings" className="settings-tab">
+              <SettingsPage />
             </div>
 
             {/* Database Stats Tab */}
