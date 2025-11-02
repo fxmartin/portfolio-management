@@ -1,0 +1,77 @@
+/* Settings page layout and styling */
+
+.settings-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.settings-page .page-header {
+  margin-bottom: 2rem;
+}
+
+.settings-page .header-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.settings-page .header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: var(--primary-color, #007bff);
+  border-radius: 8px;
+  color: white;
+}
+
+.settings-page .header-text h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.settings-page .header-text .subtitle {
+  margin: 0;
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+/* Settings content area */
+.settings-content {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-height: 400px;
+}
+
+/* Empty state placeholder */
+.settings-content .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #6c757d;
+}
+
+.settings-content .empty-icon {
+  margin-bottom: 1.5rem;
+  opacity: 0.3;
+}
+
+.settings-content .empty-state h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.settings-content .empty-state p {
+  margin: 0;
+  font-size: 1rem;
+}

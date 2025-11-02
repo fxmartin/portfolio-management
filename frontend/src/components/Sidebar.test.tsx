@@ -299,3 +299,55 @@ describe('Database Submenu', () => {
     })
   })
 })
+
+describe('Settings Navigation', () => {
+  describe('Settings Menu Item', () => {
+    it('renders Settings navigation item', () => {
+      const mockOnTabChange = vi.fn()
+      render(<Sidebar activeTab="portfolio" onTabChange={mockOnTabChange} />)
+
+      const settingsButton = screen.getByTitle('Settings')
+      expect(settingsButton).toBeInTheDocument()
+    })
+
+    it('Settings icon is visible', () => {
+      const mockOnTabChange = vi.fn()
+      render(<Sidebar activeTab="portfolio" onTabChange={mockOnTabChange} />)
+
+      const settingsButton = screen.getByTitle('Settings')
+      expect(settingsButton).toHaveAttribute('aria-label', 'Settings')
+    })
+
+    it('calls onTabChange with settings when clicked', async () => {
+      const user = userEvent.setup()
+      const mockOnTabChange = vi.fn()
+      render(<Sidebar activeTab="portfolio" onTabChange={mockOnTabChange} />)
+
+      const settingsButton = screen.getByTitle('Settings')
+      await user.click(settingsButton)
+
+      expect(mockOnTabChange).toHaveBeenCalledWith('settings')
+      expect(mockOnTabChange).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows active state when on Settings page', () => {
+      const mockOnTabChange = vi.fn()
+      render(<Sidebar activeTab="settings" onTabChange={mockOnTabChange} />)
+
+      const settingsButton = screen.getByTitle('Settings')
+      expect(settingsButton).toHaveClass('active')
+    })
+
+    it('is keyboard accessible with Enter key', async () => {
+      const user = userEvent.setup()
+      const mockOnTabChange = vi.fn()
+      render(<Sidebar activeTab="portfolio" onTabChange={mockOnTabChange} />)
+
+      const settingsButton = screen.getByTitle('Settings')
+      settingsButton.focus()
+      await user.keyboard('{Enter}')
+
+      expect(mockOnTabChange).toHaveBeenCalledWith('settings')
+    })
+  })
+})
