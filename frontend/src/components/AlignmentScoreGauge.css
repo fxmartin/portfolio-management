@@ -29,10 +29,18 @@
 }
 
 .gauge-label {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: #6b7280;
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
   text-align: center;
+  opacity: 0.75;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
 .gauge-progress {
