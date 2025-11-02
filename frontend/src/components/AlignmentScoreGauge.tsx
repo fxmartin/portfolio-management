@@ -76,7 +76,7 @@ export const AlignmentScoreGauge: React.FC<AlignmentScoreGaugeProps> = ({
       {/* Score display */}
       <div className="gauge-content">
         <div className="gauge-score">{formattedScore}</div>
-        <div className="gauge-label">Strategy Alignment</div>
+        <div className="gauge-label">Alignment</div>
       </div>
     </div>
   )

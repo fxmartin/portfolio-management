@@ -10,7 +10,7 @@ describe('AlignmentScoreGauge', () => {
     render(<AlignmentScoreGauge score={7.5} />)
 
     expect(screen.getByText('7.5')).toBeInTheDocument()
-    expect(screen.getByText('Strategy Alignment')).toBeInTheDocument()
+    expect(screen.getByText('Alignment')).toBeInTheDocument()
   })
 
   it('should render low score (red) correctly', () => {
