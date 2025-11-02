@@ -3,7 +3,7 @@
 
 from datetime import datetime
 from decimal import Decimal
-from sqlalchemy import Column, Integer, String, DateTime, Numeric, ForeignKey, Index, UniqueConstraint, JSON, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Numeric, ForeignKey, Index, UniqueConstraint, JSON, Enum, Text, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -286,6 +286,59 @@ class InvestmentStrategy(Base):
 
     def __repr__(self):
         return f"<InvestmentStrategy(user_id={self.user_id}, v{self.version})>"
+
+
+class SettingCategory(str, enum.Enum):
+    """Setting category enumeration for organizing application settings (Epic 9)"""
+    DISPLAY = "display"
+    API_KEYS = "api_keys"
+    PROMPTS = "prompts"
+    SYSTEM = "system"
+    ADVANCED = "advanced"
+
+
+class ApplicationSetting(Base):
+    """Application settings model for storing configuration (Epic 9 - F9.1-001)"""
+    __tablename__ = 'application_settings'
+
+    id = Column(Integer, primary_key=True)
+    key = Column(String(100), unique=True, nullable=False, index=True)
+    value = Column(Text, nullable=True)  # JSON string for complex values
+    category = Column(Enum(SettingCategory), nullable=False, index=True)
+    is_sensitive = Column(Boolean, default=False)  # Encrypted if True
+    is_editable = Column(Boolean, default=True)  # Some settings are read-only
+    description = Column(Text, nullable=True)
+    default_value = Column(Text, nullable=True)
+    validation_rules = Column(JSON, nullable=True)  # JSON schema for validation
+    last_modified_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime, default=func.now())
+
+    __table_args__ = (
+        Index('idx_settings_category', 'category'),
+    )
+
+    def __repr__(self):
+        return f"<ApplicationSetting(key={self.key}, category={self.category.value})>"
+
+
+class SettingHistory(Base):
+    """Setting change history model for audit trail (Epic 9 - F9.1-001)"""
+    __tablename__ = 'setting_history'
+
+    id = Column(Integer, primary_key=True)
+    setting_id = Column(Integer, ForeignKey('application_settings.id'), nullable=False)
+    old_value = Column(Text, nullable=True)
+    new_value = Column(Text, nullable=True)
+    changed_by = Column(String(100), default='system')  # Future: user tracking
+    changed_at = Column(DateTime, default=func.now())
+    change_reason = Column(Text, nullable=True)
+
+    __table_args__ = (
+        Index('idx_setting_history_setting', 'setting_id', 'changed_at'),
+    )
+
+    def __repr__(self):
+        return f"<SettingHistory(setting_id={self.setting_id}, at={self.changed_at})>"
 
 
 # Create indexes for better query performance
