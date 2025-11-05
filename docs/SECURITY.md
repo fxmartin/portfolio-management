@@ -140,6 +140,45 @@ Default values are provided with `:-` syntax:
 ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}  # Empty string if not set
 ```
 
+### Settings Encryption Key (Epic 9)
+
+As of Epic 9, sensitive settings (API keys, secrets) stored in the database are **encrypted at rest** using Fernet symmetric encryption.
+
+#### 5. Settings Encryption Key Setup
+
+Generate a secure encryption key for sensitive settings:
+
+```bash
+# Generate a new Fernet encryption key (44 characters)
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+
+# Add to .env
+SETTINGS_ENCRYPTION_KEY=zBXdV9yNpVC5NCkjKo9lsE0cID1dZYfQS2ZaHBjrdCA=
+```
+
+**CRITICAL SECURITY NOTES**:
+- ⚠️ **Keep this key secure!** If lost, encrypted settings **cannot be recovered**.
+- 🔒 Never commit this key to version control
+- 💾 Backup this key securely (1Password, encrypted vault, secure notes)
+- 🔄 Rotate this key every 90 days (see rotation guide below)
+- 📝 Document key location in your team's security procedures
+
+**What's Encrypted**:
+- `anthropic_api_key` - Claude AI API key
+- `alpha_vantage_api_key` - Market data API key
+- Any future API keys added to settings
+
+**How It Works**:
+1. When you save an API key in Settings UI → encrypted before storage
+2. When you view a setting → decrypted only if `reveal=true` (masked by default)
+3. When backend uses API key → automatically decrypted for use
+4. Database backups contain encrypted values (safe to store)
+
+**Key Recovery**:
+- If key is lost: You must re-enter all API keys in Settings UI
+- Database values remain encrypted but inaccessible
+- **Prevention**: Store key in secure password manager immediately
+
 ### Rotating Credentials
 
 If credentials are compromised:
@@ -178,6 +217,53 @@ docker-compose restart backend
 # Check monitoring to verify
 curl http://localhost:8000/monitoring/market-data
 ```
+
+4. **Settings Encryption Key** (Advanced):
+
+If your encryption key is compromised or you need to rotate it for compliance:
+
+```bash
+# 1. Generate a new encryption key
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+
+# 2. Backup your database first!
+make backup  # or: docker-compose exec postgres pg_dump -U trader portfolio > backup.sql
+
+# 3. Run the key rotation utility
+cd backend
+python rotate_encryption_key.py \
+    "OLD_KEY_HERE" \
+    "NEW_KEY_HERE"
+
+# The script will:
+# - Validate both keys
+# - Decrypt all sensitive settings with old key
+# - Re-encrypt with new key
+# - Verify successful rotation
+# - Prompt you to update .env
+
+# 4. Update .env with new key
+nano .env
+# Change: SETTINGS_ENCRYPTION_KEY=NEW_KEY_HERE
+
+# 5. Restart backend
+docker-compose restart backend
+
+# 6. Verify settings are accessible
+curl http://localhost:8000/api/settings/category/api_keys
+```
+
+**Key Rotation Safety**:
+- ✅ Atomic transaction - all settings rotate or none (no partial state)
+- ✅ Verification step confirms all settings decrypt with new key
+- ✅ Rollback if any errors occur
+- ✅ Database backup recommended before rotation
+- ⚠️ Downtime: ~10 seconds during rotation (settings unavailable)
+
+**Rotation Schedule**:
+- Every 90 days for compliance
+- Immediately if key is compromised
+- Before major production deployments
 
 ### Development vs Production
 
