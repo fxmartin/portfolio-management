@@ -7,7 +7,7 @@
 **Business Value**: Centralized settings management without manual .env file editing, secure credential storage, and customizable user experience
 **User Impact**: FX can modify settings through the UI instead of editing configuration files manually
 **Success Metrics**: All settings manageable via UI, API keys securely stored, changes applied without restart
-**Status**: 🔴 Not Started
+**Status**: 🟡 In Progress (68% complete)
 
 ## Features in this Epic
 - Feature 9.1: Settings Database & Backend API
@@ -21,10 +21,10 @@
 |---------|---------|--------|--------|----------|
 | F9.1: Settings Backend | 3 | 13 | ✅ Complete | 100% (13/13 pts) |
 | F9.2: Settings UI | 3 | 13 | ✅ Complete | 100% (13/13 pts) |
-| F9.3: API Key Security | 2 | 8 | 🔴 Not Started | 0% |
+| F9.3: API Key Security | 2 | 8 | 🟡 In Progress | 62.5% (5/8 pts) |
 | F9.4: Prompt Integration | 2 | 8 | 🔴 Not Started | 0% |
 | F9.5: Display Settings | 2 | 8 | 🔴 Not Started | 0% |
-| **Total** | **12** | **50** | **🟡 In Progress** | **52%** (26/50 pts) |
+| **Total** | **12** | **50** | **🟡 In Progress** | **68%** (34/50 pts) |
 
 ---
 
@@ -924,7 +924,7 @@ export const SettingItem: React.FC<SettingItemProps> = ({ setting, onUpdate }) =
 **Complexity**: 8 story points
 
 ### Story F9.3-001: Encryption Key Management
-**Status**: 🔴 Not Started
+**Status**: ✅ Complete (PR #55)
 **User Story**: As FX, I want API keys encrypted so that they're not stored in plain text
 
 **Acceptance Criteria**:
@@ -991,13 +991,29 @@ async def rotate_encryption_key(old_key: str, new_key: str):
 ```
 
 **Definition of Done**:
-- [ ] Fernet encryption implemented
-- [ ] Environment variable for key
-- [ ] Key generation script
-- [ ] Key rotation utility
-- [ ] Never log sensitive values
-- [ ] Unit tests (15+ tests)
-- [ ] Documentation for key management
+- [x] Fernet encryption implemented (working since F9.1-002)
+- [x] Environment variable for key (SETTINGS_ENCRYPTION_KEY in .env.example)
+- [x] Key generation script (Python one-liner provided)
+- [x] Key rotation utility (rotate_encryption_key.py - 270 lines)
+- [x] Never log sensitive values (audit completed - only keys logged, never values)
+- [x] Unit tests (16 rotation tests + 19 security tests passing)
+- [x] Documentation for key management (SECURITY.md +120 lines)
+
+**Implementation Summary**:
+- **Files Created**:
+  - `backend/rotate_encryption_key.py` (270 lines) - Key rotation utility with atomic transactions
+  - `backend/tests/test_rotate_encryption_key.py` (438 lines) - Comprehensive test suite
+- **Files Modified**:
+  - `docs/SECURITY.md` (+120 lines) - Encryption key management section
+- **Key Features**:
+  - Atomic database transactions (all-or-nothing rotation)
+  - Verification step before .env update
+  - Interactive CLI with safety prompts
+  - Automatic rollback on errors
+  - Comprehensive error handling
+- **Testing**: 19/19 existing security tests passing, 16 new rotation tests
+- **Documentation**: Setup guide, rotation procedure, security best practices
+- **PR**: #55 - Merged
 
 **Story Points**: 5
 **Priority**: Must Have
