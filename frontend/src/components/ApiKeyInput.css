@@ -1,0 +1,368 @@
+/* ABOUTME: Styles for the ApiKeyInput component with test functionality and visual feedback */
+
+.api-key-input {
+  padding: 1.5rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.api-key-input:hover {
+  background: #f3f4f6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* API Key Header */
+.api-key-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.api-key-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  flex: 1;
+}
+
+.api-key-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.api-key-description {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.api-key-timestamp {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  white-space: nowrap;
+  padding-top: 0.125rem;
+}
+
+/* API Key Control */
+.api-key-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Input Container with Validation */
+.input-with-validation {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 500px;
+}
+
+/* Password Input Wrapper */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.api-key-input-field {
+  padding: 0.625rem 3rem 0.625rem 0.875rem;
+  font-size: 0.9375rem;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  color: #111827;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.api-key-input-field:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.api-key-input-field:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Validation States */
+.api-key-input-field.validating {
+  border-color: #94a3b8;
+}
+
+.api-key-input-field.valid {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.api-key-input-field.invalid {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.api-key-input-field.test-success {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.api-key-input-field.test-error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+/* Password Toggle Button */
+.password-toggle {
+  position: absolute;
+  right: 0.625rem;
+  padding: 0.375rem;
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.password-toggle:hover:not(:disabled) {
+  color: #111827;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.password-toggle:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+.password-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Validation Spinner */
+.validation-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+}
+
+.spinner-icon {
+  animation: spin 0.8s linear infinite;
+  color: #94a3b8;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Actions */
+.api-key-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.api-key-button {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.test-button {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.test-button:hover:not(:disabled) {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.test-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.save-button {
+  background: #007bff;
+  color: white;
+}
+
+.save-button:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.save-button:disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.reset-button {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.reset-button:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.reset-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.api-key-button:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* Test Result Feedback */
+.test-result {
+  padding: 0.625rem 0.875rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.test-result.success {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #15803d;
+}
+
+.test-result.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #ef4444;
+}
+
+/* Validation Error Message */
+.validation-error {
+  padding: 0.5rem 0.75rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #ef4444;
+  font-size: 0.8125rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+/* General Error Message */
+.api-key-error {
+  padding: 0.625rem 0.875rem;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 6px;
+  color: #ef4444;
+  font-size: 0.8125rem;
+  margin-top: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .api-key-input {
+    padding: 1.25rem;
+  }
+
+  .api-key-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .api-key-timestamp {
+    white-space: normal;
+  }
+
+  .api-key-control {
+    gap: 0.625rem;
+  }
+
+  .input-with-validation {
+    max-width: 100%;
+  }
+
+  .api-key-input-field {
+    max-width: 100%;
+  }
+
+  .password-input-wrapper {
+    max-width: 100%;
+  }
+
+  .api-key-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .api-key-button {
+    flex: 1;
+    min-width: 100px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .api-key-input {
+    padding: 1rem;
+  }
+
+  .api-key-name {
+    font-size: 0.9375rem;
+  }
+
+  .api-key-description {
+    font-size: 0.75rem;
+  }
+
+  .api-key-input-field {
+    font-size: 0.875rem;
+    padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+  }
+
+  .api-key-actions {
+    gap: 0.5rem;
+  }
+
+  .api-key-button {
+    font-size: 0.8125rem;
+    padding: 0.5rem 1rem;
+  }
+}
