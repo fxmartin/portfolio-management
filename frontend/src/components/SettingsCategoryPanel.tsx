@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { API_CONFIG } from '../config/app.config'
 import { SettingItem } from './SettingItem'
+import { ApiKeyInput } from './ApiKeyInput'
 import './SettingsCategoryPanel.css'
 
 const API_URL = API_CONFIG.BASE_URL
@@ -115,14 +116,29 @@ export const SettingsCategoryPanel: React.FC<SettingsCategoryPanelProps> = ({
   return (
     <div className="settings-category-panel">
       <div className="settings-list">
-        {settings.map((setting) => (
-          <SettingItem
-            key={setting.key}
-            setting={setting}
-            onUpdate={handleSettingUpdate}
-            onReset={handleSettingReset}
-          />
-        ))}
+        {settings.map((setting) => {
+          // Use ApiKeyInput for API key settings
+          if (setting.category === 'api_keys' && setting.is_sensitive) {
+            return (
+              <ApiKeyInput
+                key={setting.key}
+                setting={setting}
+                onUpdate={handleSettingUpdate}
+                onReset={handleSettingReset}
+              />
+            )
+          }
+
+          // Use regular SettingItem for all other settings
+          return (
+            <SettingItem
+              key={setting.key}
+              setting={setting}
+              onUpdate={handleSettingUpdate}
+              onReset={handleSettingReset}
+            />
+          )
+        })}
       </div>
     </div>
   )
