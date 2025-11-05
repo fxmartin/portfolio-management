@@ -613,3 +613,154 @@ async def validate_setting_value(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error"
         )
+
+
+@router.post(
+    "/{key}/test",
+    response_model=ValidationResponse,
+    summary="Test API key",
+    description="Test if an API key is valid by making a test request",
+    responses={
+        200: {"description": "Test result returned"},
+        404: {"description": "Setting not found or not an API key"},
+        400: {"description": "Test failed"}
+    }
+)
+async def test_api_key(
+    key: str = Path(..., description="Setting key (must be an API key setting)"),
+    request: SettingValidateRequest = ...,
+    service: SettingsService = Depends(get_settings_service),
+    db: AsyncSession = Depends(get_async_db)
+) -> ValidationResponse:
+    """
+    Test if an API key is valid.
+
+    Supports:
+    - anthropic_api_key: Tests with Anthropic Claude API
+    - alpha_vantage_api_key: Tests with Alpha Vantage API
+
+    Args:
+        key: Setting key (must be API key type)
+        request: Test request with API key value
+
+    Returns:
+        ValidationResponse with test result
+
+    Raises:
+        404: Setting not found or not an API key
+        400: Test failed
+
+    Note:
+        - Makes lightweight test request to validate key
+        - Does not save value
+        - Returns specific error messages
+    """
+    try:
+        # Get setting
+        result = await db.execute(
+            select(ApplicationSetting).filter_by(key=key)
+        )
+        setting = result.scalar_one_or_none()
+
+        if not setting:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Setting '{key}' not found"
+            )
+
+        # Only API keys can be tested
+        if setting.category != SettingCategory.API_KEYS:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Setting '{key}' is not an API key"
+            )
+
+        api_key_value = str(request.value).strip()
+
+        # Test based on key type
+        if key == "anthropic_api_key":
+            # Test Anthropic API key
+            try:
+                from anthropic import AsyncAnthropic
+                client = AsyncAnthropic(api_key=api_key_value)
+
+                # Make a minimal test request
+                response = await client.messages.create(
+                    model="claude-sonnet-4-5-20250929",
+                    max_tokens=10,
+                    messages=[{"role": "user", "content": "test"}]
+                )
+
+                return ValidationResponse(
+                    valid=True,
+                    error=None,
+                    validated_value=api_key_value
+                )
+            except Exception as e:
+                error_msg = str(e)
+                if "authentication" in error_msg.lower() or "api_key" in error_msg.lower():
+                    return ValidationResponse(
+                        valid=False,
+                        error="Invalid API key - authentication failed",
+                        validated_value=None
+                    )
+                else:
+                    return ValidationResponse(
+                        valid=False,
+                        error=f"API key test failed: {error_msg[:100]}",
+                        validated_value=None
+                    )
+
+        elif key == "alpha_vantage_api_key":
+            # Test Alpha Vantage API key
+            try:
+                import aiohttp
+                async with aiohttp.ClientSession() as session:
+                    url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey={api_key_value}"
+                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as response:
+                        data = await response.json()
+
+                        # Check for error response
+                        if "Error Message" in data or "Note" in data:
+                            return ValidationResponse(
+                                valid=False,
+                                error="Invalid API key or rate limit exceeded",
+                                validated_value=None
+                            )
+
+                        # Check if we got valid data
+                        if "Global Quote" in data and data["Global Quote"]:
+                            return ValidationResponse(
+                                valid=True,
+                                error=None,
+                                validated_value=api_key_value
+                            )
+                        else:
+                            return ValidationResponse(
+                                valid=False,
+                                error="Unexpected response from Alpha Vantage API",
+                                validated_value=None
+                            )
+            except Exception as e:
+                return ValidationResponse(
+                    valid=False,
+                    error=f"API key test failed: {str(e)[:100]}",
+                    validated_value=None
+                )
+
+        else:
+            # Unknown API key type
+            return ValidationResponse(
+                valid=False,
+                error=f"Testing not supported for '{key}'",
+                validated_value=None
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error testing API key '{key}': {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )

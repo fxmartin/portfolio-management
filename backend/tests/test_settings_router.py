@@ -639,3 +639,147 @@ class TestValidateSettingEndpoint:
         assert data["valid"] is True
         assert data["validated_value"] == 3500
         assert isinstance(data["validated_value"], int)
+
+
+# ==================== API KEY TEST ENDPOINT TESTS ====================
+
+class TestAPIKeyTestEndpoint:
+    """Tests for POST /api/settings/{key}/test endpoint"""
+
+    @pytest.mark.asyncio
+    async def test_test_anthropic_key_success(self, test_client, seed_settings, mocker):
+        """Test POST /api/settings/anthropic_api_key/test with valid key"""
+        # Mock Anthropic client
+        mock_anthropic = mocker.patch('settings_router.AsyncAnthropic')
+        mock_client = mock_anthropic.return_value
+        mock_client.messages.create = mocker.AsyncMock(return_value={"text": "test"})
+
+        test_data = {
+            "value": "sk-ant-valid-key-12345"
+        }
+        response = test_client.post("/api/settings/anthropic_api_key/test", json=test_data)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["valid"] is True
+        assert data["error"] is None
+        assert data["validated_value"] == "sk-ant-valid-key-12345"
+
+        # Verify API was called
+        mock_client.messages.create.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_test_anthropic_key_invalid(self, test_client, seed_settings, mocker):
+        """Test POST /api/settings/anthropic_api_key/test with invalid key"""
+        # Mock Anthropic client to raise auth error
+        mock_anthropic = mocker.patch('settings_router.AsyncAnthropic')
+        mock_client = mock_anthropic.return_value
+        mock_client.messages.create = mocker.AsyncMock(
+            side_effect=Exception("authentication failed")
+        )
+
+        test_data = {
+            "value": "sk-ant-invalid-key"
+        }
+        response = test_client.post("/api/settings/anthropic_api_key/test", json=test_data)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["valid"] is False
+        assert "authentication failed" in data["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_test_alpha_vantage_key_success(self, test_client, seed_settings, mocker):
+        """Test POST /api/settings/alpha_vantage_api_key/test with valid key"""
+        # First add alpha_vantage_api_key to test data
+        from models import ApplicationSetting, SettingCategory
+        test_session = test_client.app.state.db_session
+
+        new_setting = ApplicationSetting(
+            key="alpha_vantage_api_key",
+            value=encrypt_value("test_av_key"),
+            category=SettingCategory.API_KEYS,
+            is_sensitive=True,
+            is_editable=True,
+            description="Alpha Vantage API key",
+            default_value=None
+        )
+        test_session.add(new_setting)
+        await test_session.commit()
+
+        # Mock aiohttp response
+        mock_response = mocker.MagicMock()
+        mock_response.json = mocker.AsyncMock(return_value={
+            "Global Quote": {"01. symbol": "AAPL", "05. price": "150.00"}
+        })
+
+        mock_session = mocker.MagicMock()
+        mock_session.get = mocker.AsyncMock(return_value=mocker.AsyncMock(
+            __aenter__=mocker.AsyncMock(return_value=mock_response),
+            __aexit__=mocker.AsyncMock()
+        ))
+
+        mocker.patch('aiohttp.ClientSession', return_value=mocker.AsyncMock(
+            __aenter__=mocker.AsyncMock(return_value=mock_session),
+            __aexit__=mocker.AsyncMock()
+        ))
+
+        test_data = {
+            "value": "valid_alpha_vantage_key"
+        }
+        response = test_client.post("/api/settings/alpha_vantage_api_key/test", json=test_data)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["valid"] is True
+        assert data["error"] is None
+
+    @pytest.mark.asyncio
+    async def test_test_non_api_key_setting(self, test_client, seed_settings):
+        """Test POST /api/settings/{key}/test returns 404 for non-API key settings"""
+        test_data = {
+            "value": "test"
+        }
+        response = test_client.post("/api/settings/base_currency/test", json=test_data)
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        data = response.json()
+        assert "not an API key" in data["detail"]
+
+    @pytest.mark.asyncio
+    async def test_test_non_existent_setting(self, test_client, seed_settings):
+        """Test POST /api/settings/{key}/test returns 404 for non-existent setting"""
+        test_data = {
+            "value": "test"
+        }
+        response = test_client.post("/api/settings/non_existent_key/test", json=test_data)
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    @pytest.mark.asyncio
+    async def test_test_unsupported_api_key_type(self, test_client, seed_settings, mocker):
+        """Test POST /api/settings/{key}/test with unsupported API key type"""
+        # Add a new API key type that's not supported
+        test_session = test_client.app.state.db_session
+
+        unsupported_setting = ApplicationSetting(
+            key="some_other_api_key",
+            value=encrypt_value("test_key"),
+            category=SettingCategory.API_KEYS,
+            is_sensitive=True,
+            is_editable=True,
+            description="Some other API key",
+            default_value=None
+        )
+        test_session.add(unsupported_setting)
+        await test_session.commit()
+
+        test_data = {
+            "value": "test_key"
+        }
+        response = test_client.post("/api/settings/some_other_api_key/test", json=test_data)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["valid"] is False
+        assert "not supported" in data["error"]
