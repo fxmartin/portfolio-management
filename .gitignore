@@ -57,7 +57,4 @@ Revolut_export*/
 revolut*/
 
 # Redis
-dump.rdb
-
-# Changelogs (may contain sensitive API keys)
-CHANGELOG-*.md
+dump.rdb.dev_time_cache.json
