@@ -19,6 +19,11 @@ interface Setting {
   max_value?: number
 }
 
+interface CategorySettingsResponse {
+  category: string
+  settings: Record<string, Setting>
+}
+
 interface SettingsContextType {
   // Display settings
   baseCurrency: string
@@ -61,12 +66,13 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
       // Fetch display and system settings in parallel
       const [displayResponse, systemResponse] = await Promise.all([
-        axios.get<Setting[]>(`${API_URL}/api/settings/category/display`),
-        axios.get<Setting[]>(`${API_URL}/api/settings/category/system`),
+        axios.get<CategorySettingsResponse>(`${API_URL}/api/settings/category/display`),
+        axios.get<CategorySettingsResponse>(`${API_URL}/api/settings/category/system`),
       ])
 
-      // Update display settings
-      displayResponse.data.forEach((setting) => {
+      // Convert settings object to array and update display settings
+      const displaySettings = Object.values(displayResponse.data.settings)
+      displaySettings.forEach((setting) => {
         switch (setting.key) {
           case 'base_currency':
             setBaseCurrency(String(setting.value))
@@ -80,8 +86,9 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
       })
 
-      // Update system settings
-      systemResponse.data.forEach((setting) => {
+      // Convert settings object to array and update system settings
+      const systemSettings = Object.values(systemResponse.data.settings)
+      systemSettings.forEach((setting) => {
         switch (setting.key) {
           case 'crypto_price_refresh_seconds':
             setCryptoRefreshSeconds(parseInt(String(setting.value), 10))

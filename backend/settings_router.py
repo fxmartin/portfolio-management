@@ -31,6 +31,7 @@ from settings_schemas import (
     SettingValidateRequest,
     SettingHistoryResponse,
     CategorySettingsResponse,
+    CategoryInfo,
     ValidationResponse,
     ErrorResponse
 )
@@ -61,20 +62,52 @@ async def get_settings_service(
 
 @router.get(
     "/categories",
-    response_model=List[str],
+    response_model=List[CategoryInfo],
     summary="List all setting categories",
-    description="Get list of all available setting categories"
+    description="Get list of all available setting categories with metadata"
 )
-async def list_categories() -> List[str]:
+async def list_categories() -> List[CategoryInfo]:
     """
-    Get all setting categories.
+    Get all setting categories with names and descriptions.
 
     Returns:
-        List of category names (display, api_keys, prompts, system, advanced)
+        List of category objects with key, name, and description
     """
     try:
-        # Return all enum values
-        categories = [category.value for category in SettingCategory]
+        # Define category metadata
+        category_metadata = {
+            "display": {
+                "name": "Display",
+                "description": "Customize how data is displayed in the application"
+            },
+            "api_keys": {
+                "name": "API Keys",
+                "description": "Configure API keys for external services"
+            },
+            "prompts": {
+                "name": "AI Prompts",
+                "description": "Manage AI analysis prompts and templates"
+            },
+            "system": {
+                "name": "System",
+                "description": "System performance and behavior settings"
+            },
+            "advanced": {
+                "name": "Advanced",
+                "description": "Advanced configuration options"
+            }
+        }
+
+        # Build response with metadata
+        categories = []
+        for category in SettingCategory:
+            metadata = category_metadata.get(category.value, {})
+            categories.append(CategoryInfo(
+                key=category.value,
+                name=metadata.get("name", category.value.replace("_", " ").title()),
+                description=metadata.get("description")
+            ))
+
         return categories
 
     except Exception as e:

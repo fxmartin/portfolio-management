@@ -4,7 +4,121 @@ This directory contains comprehensive documentation for the Portfolio Management
 
 ## 📚 Documentation Index
 
-### Core Technical Documentation
+### User Documentation (Start Here!)
+
+#### [QUICK-START.md](./QUICK-START.md) - Get Running in 5 Minutes ⚡
+**Installation & First Steps**
+
+Get your portfolio tracker up and running quickly:
+- **Prerequisites**: Docker, Docker Compose, CSV files
+- **Installation Steps**: Clone, configure, start (3 steps)
+- **First Actions**: Import transactions, view portfolio
+- **Quick Commands**: Essential commands reference
+- **Common Issues**: Port conflicts, connection problems
+
+**When to read**: First time setup, getting started quickly
+
+---
+
+#### [USER-GUIDE.md](./USER-GUIDE.md) - Complete Feature Walkthrough 📖
+**How to Use the Application**
+
+Complete user guide covering all features:
+- **Dashboard Overview**: Portfolio summary, positions, P&L, charts
+- **Importing Transactions**: CSV formats, multi-file uploads, duplicates
+- **Managing Transactions**: Create, edit, delete, audit trail
+- **Portfolio Tracking**: FIFO calculations, fees, multi-currency
+- **AI-Powered Analysis**: Global analysis, position insights, forecasts
+- **Rebalancing**: Target allocations, recommendations, alignment score
+- **Investment Strategy**: Define strategy, get AI-driven recommendations
+- **Settings**: Configure API keys, preferences, prompts
+
+**When to read**: Learning features, daily usage, exploring capabilities
+
+---
+
+#### [CSV-IMPORT-GUIDE.md](./CSV-IMPORT-GUIDE.md) - CSV Import Reference 📄
+**Complete CSV Format Documentation**
+
+Deep dive on all supported CSV formats:
+- **Revolut Metals**: Format, columns, transaction detection
+- **Revolut Stocks**: Format, columns, dividend handling
+- **Koinly Crypto**: Format, columns, staking/airdrops
+- **File Naming**: Detection rules, renaming guide
+- **Import Process**: Step-by-step workflow
+- **Troubleshooting**: Common errors, validation tips
+
+**When to read**: Preparing CSV exports, troubleshooting imports, understanding formats
+
+---
+
+#### [API-REFERENCE.md](./API-REFERENCE.md) - REST API Documentation 🔌
+**Complete Endpoint Reference**
+
+Full API documentation with examples:
+- **Import API**: Upload CSVs, check duplicates
+- **Portfolio API**: Summary, positions, prices, history
+- **Transactions API**: CRUD operations, bulk import
+- **Analysis API**: Global analysis, position analysis, forecasts
+- **Rebalancing API**: Generate recommendations
+- **Strategy API**: Define strategy, get recommendations
+- **Settings API**: Manage configuration
+- **Monitoring API**: Provider stats, rate limits
+- **Error Codes**: HTTP status codes, error format
+
+**When to read**: Integrating with API, automation, understanding endpoints
+
+---
+
+#### [CONFIGURATION.md](./CONFIGURATION.md) - Configuration Guide ⚙️
+**Environment & Settings Reference**
+
+Complete configuration documentation:
+- **Environment Variables**: Database, API keys, encryption
+- **Application Settings**: Currency, format, performance
+- **Market Data**: Provider configuration, rate limits
+- **Performance Tuning**: Cache optimization, resource limits
+- **Docker Configuration**: Ports, volumes, resource limits
+- **Security**: Credential rotation, best practices
+
+**When to read**: Initial setup, adding API keys, performance tuning
+
+---
+
+#### [COMMAND-REFERENCE.md](./COMMAND-REFERENCE.md) - Command Guide 💻
+**All Available Commands**
+
+Complete command reference:
+- **Makefile Commands**: dev, test, logs, clean, backup
+- **Docker Commands**: Container management, logs, exec
+- **Backend Commands**: Package management, testing, migrations
+- **Frontend Commands**: npm scripts, testing, linting
+- **Database Commands**: SQL queries, maintenance
+- **Git Workflow**: Conventional commits, branching
+
+**When to read**: Daily development, troubleshooting, learning workflows
+
+---
+
+#### [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Problem Solving 🔧
+**Common Problems & Solutions**
+
+User-friendly troubleshooting guide:
+- **Installation Problems**: Docker, permissions, dependencies
+- **Service Startup**: Port conflicts, container crashes
+- **Database Issues**: Connection, authentication, performance
+- **Import Errors**: File detection, columns, duplicates
+- **Price Data**: Updates, rate limits, symbols
+- **Performance**: Slow loading, memory, caching
+- **API Errors**: 500, 404, 400, timeouts
+- **Frontend Issues**: White screen, CORS, hot reload
+- **Recovery Procedures**: Reset, backup, restore
+
+**When to read**: Solving problems, debugging errors, recovering from failures
+
+---
+
+### Technical Documentation (Developers)
 
 #### [AI_ANALYSIS.md](./AI_ANALYSIS.md) - AI-Powered Market Analysis System
 **Epic 8 Complete Guide** (1,000+ lines)
@@ -124,10 +238,22 @@ Detailed story breakdowns for each epic:
 
 ## 🚀 Quick Navigation
 
+### For New Users (First Time Setup)
+1. Start with [QUICK-START.md](./QUICK-START.md) - Get running in 5 minutes
+2. Read [USER-GUIDE.md](./USER-GUIDE.md) - Learn all features
+3. Check [CSV-IMPORT-GUIDE.md](./CSV-IMPORT-GUIDE.md) - Import your transactions
+4. Review [CONFIGURATION.md](./CONFIGURATION.md) - Set up API keys
+
+### For Daily Usage
+1. [USER-GUIDE.md](./USER-GUIDE.md) - Feature reference
+2. [COMMAND-REFERENCE.md](./COMMAND-REFERENCE.md) - All commands
+3. [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Solve problems
+4. [API-REFERENCE.md](./API-REFERENCE.md) - API integration
+
 ### For New Developers
-1. Start with [ARCHITECTURE.md](./ARCHITECTURE.md) for system overview
-2. Read [DEBUGGING.md](./DEBUGGING.md) for environment setup
-3. Check [TESTING.md](./TESTING.md) for testing requirements
+1. Start with [QUICK-START.md](./QUICK-START.md) for environment setup
+2. Read [ARCHITECTURE.md](./ARCHITECTURE.md) for system overview
+3. Check [TESTING.md](./TESTING.MD) for testing requirements
 4. Review [SECURITY.md](./SECURITY.md) for credential setup
 
 ### For Feature Development
@@ -143,10 +269,11 @@ Detailed story breakdowns for each epic:
 4. See `backend/analysis_service.py` for orchestration flow
 
 ### For Troubleshooting
-1. Check [DEBUGGING.md](./DEBUGGING.md) for common issues
-2. Review logs: `make logs` or `docker-compose logs -f`
-3. Inspect database: `make shell-db` or pgAdmin (localhost:5050)
-4. Check test failures: `make test` for detailed output
+1. Check [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for user-level problems
+2. Check [DEBUGGING.md](./DEBUGGING.md) for developer-level debugging
+3. Review logs: `make logs` or `docker-compose logs -f`
+4. Inspect database: `make shell-db` or pgAdmin (localhost:5050)
+5. Check test failures: `make test` for detailed output
 
 ---
 
