@@ -6,6 +6,7 @@ import { toast } from 'react-toastify'
 import { promptService } from '../services/promptService'
 import { PromptsList } from './PromptsList'
 import { PromptEditor } from './PromptEditor'
+import { PromptVersionHistory } from './PromptVersionHistory'
 import type { PromptResponse, PromptCreate, PromptUpdate } from '../types/prompt.types'
 import './PromptsManager.css'
 
@@ -87,11 +88,10 @@ export const PromptsManager: React.FC = () => {
     }
   }
 
-  // Handle view history (placeholder for F9.4-002)
+  // Handle view history
   const handleViewHistory = (prompt: PromptResponse) => {
     setSelectedPrompt(prompt)
     setView('history')
-    toast.info('Version history coming in next story (F9.4-002)')
   }
 
   // Handle save prompt (create or update)
@@ -121,6 +121,19 @@ export const PromptsManager: React.FC = () => {
   const handleCancelEditor = () => {
     setView('list')
     setSelectedPrompt(null)
+  }
+
+  // Handle close history
+  const handleCloseHistory = () => {
+    setView('list')
+    setSelectedPrompt(null)
+  }
+
+  // Handle restore version
+  const handleRestoreVersion = async () => {
+    setView('list')
+    setSelectedPrompt(null)
+    await fetchPrompts() // Refresh list to show updated version
   }
 
   // Loading state
@@ -172,11 +185,11 @@ export const PromptsManager: React.FC = () => {
       )}
 
       {view === 'history' && selectedPrompt && (
-        <div className="prompts-history-placeholder">
-          <h3>Version History: {selectedPrompt.name}</h3>
-          <p>Version history will be implemented in Story F9.4-002</p>
-          <button onClick={() => setView('list')}>Back to List</button>
-        </div>
+        <PromptVersionHistory
+          prompt={selectedPrompt}
+          onClose={handleCloseHistory}
+          onRestore={handleRestoreVersion}
+        />
       )}
     </div>
   )
