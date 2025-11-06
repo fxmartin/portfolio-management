@@ -1,0 +1,214 @@
+/* ABOUTME: Styles for VersionTimeline component - chronological version display */
+
+.version-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.version-timeline-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: var(--text-tertiary, #666);
+  font-size: 0.95rem;
+}
+
+.version-card {
+  background: var(--background-secondary, #f8f9fa);
+  border: 2px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.version-card:hover {
+  border-color: var(--primary-color, #007bff);
+  background: var(--background-hover, #fff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.version-card:focus {
+  outline: 2px solid var(--primary-color, #007bff);
+  outline-offset: 2px;
+}
+
+.version-card.selected {
+  border-color: var(--primary-color, #007bff);
+  background: var(--primary-bg-light, #e3f2fd);
+  box-shadow: 0 2px 12px rgba(0, 123, 255, 0.15);
+}
+
+.version-card.current {
+  border-color: var(--success-color, #28a745);
+  background: var(--success-bg-light, #d4edda);
+}
+
+.version-card.current.selected {
+  border-color: var(--primary-color, #007bff);
+  background: linear-gradient(135deg, #d4edda 0%, #e3f2fd 100%);
+}
+
+.version-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.version-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.version-title h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
+.current-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  background: var(--success-color, #28a745);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.version-date {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #666);
+  white-space: nowrap;
+}
+
+.version-preview {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background: var(--background-tertiary, #fff);
+  border-radius: 6px;
+  border-left: 3px solid var(--border-color, #e0e0e0);
+}
+
+.version-preview p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-primary, #333);
+  line-height: 1.5;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  word-break: break-word;
+}
+
+.version-metadata {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.metadata-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.metadata-label {
+  font-weight: 600;
+  color: var(--text-secondary, #666);
+  min-width: 90px;
+}
+
+.metadata-value {
+  color: var(--text-primary, #333);
+  flex: 1;
+}
+
+/* Scrollbar styling */
+.version-timeline::-webkit-scrollbar {
+  width: 8px;
+}
+
+.version-timeline::-webkit-scrollbar-track {
+  background: var(--background-secondary, #f8f9fa);
+  border-radius: 4px;
+}
+
+.version-timeline::-webkit-scrollbar-thumb {
+  background: var(--border-color, #ccc);
+  border-radius: 4px;
+}
+
+.version-timeline::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary, #999);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .version-timeline {
+    max-height: 500px;
+  }
+
+  .version-card {
+    padding: 0.875rem;
+  }
+
+  .version-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .version-date {
+    font-size: 0.8rem;
+  }
+
+  .version-title h4 {
+    font-size: 0.95rem;
+  }
+
+  .version-preview {
+    padding: 0.625rem;
+  }
+
+  .version-preview p {
+    font-size: 0.85rem;
+  }
+
+  .metadata-label {
+    min-width: 80px;
+    font-size: 0.8rem;
+  }
+
+  .metadata-value {
+    font-size: 0.8rem;
+  }
+}
+
+/* Print styles */
+@media print {
+  .version-timeline {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .version-card {
+    page-break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #333;
+  }
+
+  .version-card:hover {
+    transform: none;
+  }
+}
