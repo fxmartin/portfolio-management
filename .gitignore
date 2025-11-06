@@ -57,4 +57,4 @@ Revolut_export*/
 revolut*/
 
 # Redis
-dump.rdb
+dump.rdb.dev_time_cache.json
