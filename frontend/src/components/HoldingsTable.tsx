@@ -4,14 +4,14 @@
 import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { formatCurrency, formatPercentage, getPnLClassName } from '../utils/formatters'
-import { API_CONFIG, PORTFOLIO_CONFIG, REFRESH_INTERVALS } from '../config/app.config'
+import { API_CONFIG, PORTFOLIO_CONFIG } from '../config/app.config'
 import { usePortfolioRefresh } from '../contexts/PortfolioRefreshContext'
+import { useSettings } from '../contexts/SettingsContext'
 import TransactionDetailsRow from './TransactionDetailsRow'
 import './HoldingsTable.css'
 
 const API_URL = API_CONFIG.BASE_URL
 const BASE_CURRENCY = PORTFOLIO_CONFIG.BASE_CURRENCY
-const DEFAULT_REFRESH_INTERVAL = REFRESH_INTERVALS.HOLDINGS_TABLE
 
 export interface Position {
   symbol: string
@@ -81,10 +81,11 @@ interface HoldingsTableProps {
 export default function HoldingsTable({
   onRefresh,
   autoRefresh = true,
-  refreshInterval = DEFAULT_REFRESH_INTERVAL,
+  refreshInterval,
   externalFilter = null,
 }: HoldingsTableProps) {
   const { refreshKey } = usePortfolioRefresh()
+  const { cryptoRefreshSeconds, stockRefreshSeconds } = useSettings()
   const [positions, setPositions] = useState<Position[]>([])
   const [filteredPositions, setFilteredPositions] = useState<Position[]>([])
   const [loading, setLoading] = useState(true)
@@ -94,6 +95,10 @@ export default function HoldingsTable({
   const [assetTypeFilter, setAssetTypeFilter] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+
+  // Calculate effective refresh interval based on portfolio composition
+  // Use the shorter interval (crypto) as base to ensure timely updates for all assets
+  const effectiveRefreshInterval = refreshInterval || (cryptoRefreshSeconds * 1000)
 
   const fetchPositions = useCallback(async () => {
     try {
@@ -126,17 +131,17 @@ export default function HoldingsTable({
     fetchPositions()
 
     if (autoRefresh) {
-      console.log(`[HoldingsTable] Setting up auto-refresh with interval: ${refreshInterval}ms`)
+      console.log(`[HoldingsTable] Setting up auto-refresh with interval: ${effectiveRefreshInterval}ms (crypto: ${cryptoRefreshSeconds}s, stock: ${stockRefreshSeconds}s)`)
       const interval = setInterval(() => {
         console.log('[HoldingsTable] Auto-refresh triggered - fetching new prices from Yahoo Finance')
         refreshPrices()
-      }, refreshInterval)
+      }, effectiveRefreshInterval)
       return () => {
         console.log('[HoldingsTable] Clearing auto-refresh interval')
         clearInterval(interval)
       }
     }
-  }, [autoRefresh, refreshInterval, fetchPositions, refreshPrices])
+  }, [autoRefresh, effectiveRefreshInterval, cryptoRefreshSeconds, stockRefreshSeconds, fetchPositions, refreshPrices])
 
   // Listen for manual refresh triggers (e.g., after transaction create/update/delete)
   useEffect(() => {
@@ -171,8 +176,8 @@ export default function HoldingsTable({
 
     // Apply sorting
     result.sort((a, b) => {
-      let aValue = a[sortKey]
-      let bValue = b[sortKey]
+      const aValue = a[sortKey]
+      const bValue = b[sortKey]
 
       // Handle string comparison for symbol
       if (typeof aValue === 'string' && typeof bValue === 'string') {

@@ -4,15 +4,15 @@
 import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { formatCurrency, formatPnLChange, formatDateTime, getPnLClassName } from '../utils/formatters'
-import { API_CONFIG, PORTFOLIO_CONFIG, REFRESH_INTERVALS, formatRefreshInterval } from '../config/app.config'
+import { API_CONFIG, PORTFOLIO_CONFIG, formatRefreshInterval } from '../config/app.config'
 import { getMarketStatus, getStatusIndicator, type MarketStatus } from '../utils/marketStatus'
 import { usePortfolioRefresh } from '../contexts/PortfolioRefreshContext'
+import { useSettings } from '../contexts/SettingsContext'
 import AssetAllocationChart from './AssetAllocationChart'
 import './OpenPositionsCard.css'
 
 const API_URL = API_CONFIG.BASE_URL
 const BASE_CURRENCY = PORTFOLIO_CONFIG.BASE_CURRENCY
-const DEFAULT_REFRESH_INTERVAL = REFRESH_INTERVALS.PORTFOLIO_SUMMARY
 
 interface AssetTypeMetrics {
   value: number
@@ -106,9 +106,10 @@ const getTrendClassName = (trend: TrendDirection): string => {
 export default function OpenPositionsCard({
   onAssetTypeFilter,
   autoRefresh = true,
-  refreshInterval = DEFAULT_REFRESH_INTERVAL,
+  refreshInterval,
 }: OpenPositionsCardProps) {
   const { refreshKey } = usePortfolioRefresh()
+  const { cryptoRefreshSeconds } = useSettings()
   const [data, setData] = useState<OpenPositionsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -122,6 +123,9 @@ export default function OpenPositionsCard({
     crypto: getMarketStatus('crypto'),
     metals: getMarketStatus('metals'),
   })
+
+  // Use crypto interval as baseline (faster updates for mixed portfolio)
+  const effectiveRefreshInterval = refreshInterval || (cryptoRefreshSeconds * 1000)
 
   const fetchData = useCallback(async () => {
     try {
@@ -164,17 +168,17 @@ export default function OpenPositionsCard({
     fetchData()
 
     if (autoRefresh) {
-      console.log(`[OpenPositionsCard] Setting up auto-refresh with interval: ${refreshInterval}ms`)
+      console.log(`[OpenPositionsCard] Setting up auto-refresh with interval: ${effectiveRefreshInterval}ms (${cryptoRefreshSeconds}s)`)
       const interval = setInterval(() => {
         console.log('[OpenPositionsCard] Auto-refresh triggered')
         refreshPrices()
-      }, refreshInterval)
+      }, effectiveRefreshInterval)
       return () => {
         console.log('[OpenPositionsCard] Clearing auto-refresh interval')
         clearInterval(interval)
       }
     }
-  }, [autoRefresh, refreshInterval, fetchData, refreshPrices])
+  }, [autoRefresh, effectiveRefreshInterval, cryptoRefreshSeconds, fetchData, refreshPrices])
 
   // Listen for manual refresh triggers (e.g., after transaction create/update/delete)
   useEffect(() => {

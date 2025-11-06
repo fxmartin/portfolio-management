@@ -5,14 +5,56 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import axios from 'axios'
 import OpenPositionsCard from './OpenPositionsCard'
+import { SettingsProvider } from '../contexts/SettingsContext'
+import { PortfolioRefreshProvider } from '../contexts/PortfolioRefreshContext'
 
 // Mock axios
 vi.mock('axios')
 const mockedAxios = axios as jest.Mocked<typeof axios>
 
+// Test wrapper with both providers
+const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <SettingsProvider>
+      <PortfolioRefreshProvider>
+        {children}
+      </PortfolioRefreshProvider>
+    </SettingsProvider>
+  )
+}
+
+// Custom render function with TestWrapper
+const renderWithProviders = (ui: React.ReactElement) => {
+  return render(ui, { wrapper: TestWrapper })
+}
+
 describe('OpenPositionsCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
+    // Mock settings API calls by default
+    mockedAxios.get.mockImplementation((url: string) => {
+      if (url.includes('/api/settings/category/display')) {
+        return Promise.resolve({
+          data: [
+            { key: 'base_currency', value: 'EUR', category: 'display' },
+            { key: 'date_format', value: 'YYYY-MM-DD', category: 'display' },
+            { key: 'number_format', value: 'en-US', category: 'display' },
+          ],
+        })
+      }
+      if (url.includes('/api/settings/category/system')) {
+        return Promise.resolve({
+          data: [
+            { key: 'crypto_price_refresh_seconds', value: '60', category: 'system' },
+            { key: 'stock_price_refresh_seconds', value: '120', category: 'system' },
+            { key: 'cache_ttl_hours', value: '1', category: 'system' },
+          ],
+        })
+      }
+      // Let other calls be handled by test-specific mocks
+      return Promise.reject(new Error('Unmocked URL: ' + url))
+    })
   })
 
   afterEach(() => {
@@ -83,7 +125,7 @@ describe('OpenPositionsCard', () => {
     it('should show loading spinner while fetching data', () => {
       mockedAxios.get.mockImplementation(() => new Promise(() => {})) // Never resolves
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       expect(screen.getByText(/loading open positions/i)).toBeInTheDocument()
       expect(document.querySelector('.loading-spinner')).toBeInTheDocument()
@@ -94,7 +136,7 @@ describe('OpenPositionsCard', () => {
     it('should show error message when API call fails', async () => {
       mockedAxios.get.mockRejectedValueOnce(new Error('Network error'))
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/failed to load open positions data/i)).toBeInTheDocument()
@@ -108,7 +150,7 @@ describe('OpenPositionsCard', () => {
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce({ data: mockEmptyPositions })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/failed to load/i)).toBeInTheDocument()
@@ -127,7 +169,7 @@ describe('OpenPositionsCard', () => {
     it('should display zero values when no positions exist', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockEmptyPositions })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /Open Positions/i })).toBeInTheDocument()
@@ -143,7 +185,7 @@ describe('OpenPositionsCard', () => {
     it('should display total value and unrealized P&L correctly', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/€ 26,525.00/)).toBeInTheDocument()
@@ -157,7 +199,7 @@ describe('OpenPositionsCard', () => {
     it('should display cost basis correctly', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Cost basis: € 25,000.00/)).toBeInTheDocument()
@@ -167,7 +209,7 @@ describe('OpenPositionsCard', () => {
     it('should show last updated timestamp', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Last updated:/)).toBeInTheDocument()
@@ -177,7 +219,7 @@ describe('OpenPositionsCard', () => {
     it('should display fee information with count and total', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         // Should show fee amount and transaction count
@@ -189,7 +231,7 @@ describe('OpenPositionsCard', () => {
     it('should display fee information for positions with loss', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithLoss })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         // Should show fee amount and transaction count
@@ -201,7 +243,7 @@ describe('OpenPositionsCard', () => {
     it('should show zero fees when count is zero', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockEmptyPositions })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /Open Positions/i })).toBeInTheDocument()
@@ -215,7 +257,7 @@ describe('OpenPositionsCard', () => {
     it('should not have green background on Total Value metric card', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Total Value/)).toBeInTheDocument()
@@ -229,7 +271,7 @@ describe('OpenPositionsCard', () => {
     it('should display unrealized P&L in green when positive', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/\+€ 1,525.00/)).toBeInTheDocument()
@@ -243,7 +285,7 @@ describe('OpenPositionsCard', () => {
     it('should display unrealized P&L in red when negative', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithLoss })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/-€ 2,000.00/)).toBeInTheDocument()
@@ -259,7 +301,7 @@ describe('OpenPositionsCard', () => {
     it('should display stocks breakdown correctly', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
@@ -272,7 +314,7 @@ describe('OpenPositionsCard', () => {
     it('should display crypto breakdown correctly', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Crypto/i)).toBeInTheDocument()
@@ -285,7 +327,7 @@ describe('OpenPositionsCard', () => {
     it('should display metals breakdown when present', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithMetals })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Metals/i)).toBeInTheDocument()
@@ -298,7 +340,7 @@ describe('OpenPositionsCard', () => {
     it('should display only non-zero asset type sections', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         const breakdownItems = document.querySelectorAll('.breakdown-item')
@@ -312,7 +354,7 @@ describe('OpenPositionsCard', () => {
     it('should show positive P&L in green', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         const pnlElements = document.querySelectorAll('.profit')
@@ -323,7 +365,7 @@ describe('OpenPositionsCard', () => {
     it('should show negative P&L in red', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithLoss })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         const pnlElements = document.querySelectorAll('.loss')
@@ -337,7 +379,7 @@ describe('OpenPositionsCard', () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
       const mockFilterCallback = vi.fn()
 
-      render(<OpenPositionsCard autoRefresh={false} onAssetTypeFilter={mockFilterCallback} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} onAssetTypeFilter={mockFilterCallback} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
@@ -354,7 +396,7 @@ describe('OpenPositionsCard', () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
       const mockFilterCallback = vi.fn()
 
-      render(<OpenPositionsCard autoRefresh={false} onAssetTypeFilter={mockFilterCallback} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} onAssetTypeFilter={mockFilterCallback} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Crypto/i)).toBeInTheDocument()
@@ -373,7 +415,7 @@ describe('OpenPositionsCard', () => {
     it('should add selected class to clicked breakdown item', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
@@ -392,7 +434,7 @@ describe('OpenPositionsCard', () => {
     it('should have proper ARIA roles for breakdown items', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         const breakdownItems = document.querySelectorAll('[role="button"]')
@@ -405,7 +447,7 @@ describe('OpenPositionsCard', () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
       const mockFilterCallback = vi.fn()
 
-      render(<OpenPositionsCard autoRefresh={false} onAssetTypeFilter={mockFilterCallback} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} onAssetTypeFilter={mockFilterCallback} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
@@ -427,7 +469,7 @@ describe('OpenPositionsCard', () => {
     it('should not auto-refresh when autoRefresh is false', async () => {
       mockedAxios.get.mockResolvedValue({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByRole('heading', { name: /Open Positions/i })).toBeInTheDocument()
@@ -447,7 +489,7 @@ describe('OpenPositionsCard', () => {
     it('should return neutral trend when no previous snapshot exists', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
@@ -470,7 +512,7 @@ describe('OpenPositionsCard', () => {
 
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Crypto/i)).toBeInTheDocument()
@@ -492,7 +534,7 @@ describe('OpenPositionsCard', () => {
 
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
@@ -514,7 +556,7 @@ describe('OpenPositionsCard', () => {
 
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
@@ -529,7 +571,7 @@ describe('OpenPositionsCard', () => {
     it('should update snapshot on each data fetch', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
@@ -556,7 +598,7 @@ describe('OpenPositionsCard', () => {
 
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
@@ -570,7 +612,7 @@ describe('OpenPositionsCard', () => {
     it('should display market status indicators for each asset type', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
@@ -584,7 +626,7 @@ describe('OpenPositionsCard', () => {
     it('should display status indicator emojis', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
@@ -598,7 +640,7 @@ describe('OpenPositionsCard', () => {
     it('should display status text for market hours', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
@@ -616,7 +658,7 @@ describe('OpenPositionsCard', () => {
     it('should show different market statuses for different asset types', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithMetals })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Stocks/i)).toBeInTheDocument()
@@ -635,7 +677,7 @@ describe('OpenPositionsCard', () => {
     it('should display 24/7 status for crypto', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositionsWithData })
 
-      render(<OpenPositionsCard autoRefresh={false} />)
+      renderWithProviders(<OpenPositionsCard autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/Crypto/i)).toBeInTheDocument()
