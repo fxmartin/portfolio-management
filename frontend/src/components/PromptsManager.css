@@ -1,0 +1,113 @@
+/* ABOUTME: Styles for PromptsManager container component */
+/* ABOUTME: Handles loading, error states, and overall layout */
+
+.prompts-manager {
+  width: 100%;
+  padding: 1.5rem;
+}
+
+/* Loading State */
+.prompts-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.prompts-loading .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.prompts-loading p {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* Error State */
+.prompts-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.prompts-error .error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.prompts-error p {
+  color: #ef4444;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.prompts-error .retry-button {
+  padding: 0.5rem 1.5rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.prompts-error .retry-button:hover {
+  background: #2563eb;
+}
+
+/* History Placeholder (for F9.4-002) */
+.prompts-history-placeholder {
+  padding: 2rem;
+  text-align: center;
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+.prompts-history-placeholder h3 {
+  margin-bottom: 1rem;
+  color: #111827;
+}
+
+.prompts-history-placeholder p {
+  margin-bottom: 1.5rem;
+  color: #6b7280;
+}
+
+.prompts-history-placeholder button {
+  padding: 0.5rem 1.5rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.prompts-history-placeholder button:hover {
+  background: #2563eb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .prompts-manager {
+    padding: 1rem;
+  }
+}
