@@ -5,14 +5,49 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import axios from 'axios'
 import PortfolioSummary, { PortfolioSummaryData } from './PortfolioSummary'
+import { SettingsProvider } from '../contexts/SettingsContext'
 
 // Mock axios
 vi.mock('axios')
 const mockedAxios = axios as jest.Mocked<typeof axios>
 
+// Test wrapper with SettingsProvider
+const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return <SettingsProvider>{children}</SettingsProvider>
+}
+
+// Custom render function with TestWrapper
+const renderWithProviders = (ui: React.ReactElement) => {
+  return render(ui, { wrapper: TestWrapper })
+}
+
 describe('PortfolioSummary', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
+    // Mock settings API calls by default
+    mockedAxios.get.mockImplementation((url: string) => {
+      if (url.includes('/api/settings/category/display')) {
+        return Promise.resolve({
+          data: [
+            { key: 'base_currency', value: 'EUR', category: 'display' },
+            { key: 'date_format', value: 'YYYY-MM-DD', category: 'display' },
+            { key: 'number_format', value: 'en-US', category: 'display' },
+          ],
+        })
+      }
+      if (url.includes('/api/settings/category/system')) {
+        return Promise.resolve({
+          data: [
+            { key: 'crypto_price_refresh_seconds', value: '60', category: 'system' },
+            { key: 'stock_price_refresh_seconds', value: '120', category: 'system' },
+            { key: 'cache_ttl_hours', value: '1', category: 'system' },
+          ],
+        })
+      }
+      // Let other calls be handled by test-specific mocks
+      return Promise.reject(new Error('Unmocked URL: ' + url))
+    })
   })
 
   afterEach(() => {
@@ -77,7 +112,7 @@ describe('PortfolioSummary', () => {
     it('should show loading spinner while fetching data', () => {
       mockedAxios.get.mockImplementation(() => new Promise(() => {})) // Never resolves
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       expect(screen.getByText(/loading portfolio/i)).toBeInTheDocument()
       expect(document.querySelector('.loading-spinner')).toBeInTheDocument()
@@ -88,7 +123,7 @@ describe('PortfolioSummary', () => {
     it('should show error message when API call fails', async () => {
       mockedAxios.get.mockRejectedValueOnce(new Error('Network error'))
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/failed to load portfolio data/i)).toBeInTheDocument()
@@ -102,7 +137,7 @@ describe('PortfolioSummary', () => {
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce({ data: mockEmptyPortfolio })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/failed to load portfolio data/i)).toBeInTheDocument()
@@ -121,7 +156,7 @@ describe('PortfolioSummary', () => {
     it('should display zero values for empty portfolio', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockEmptyPortfolio })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/portfolio summary/i)).toBeInTheDocument()
@@ -141,7 +176,7 @@ describe('PortfolioSummary', () => {
     it('should not show day change for zero change', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockEmptyPortfolio })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/portfolio summary/i)).toBeInTheDocument()
@@ -156,7 +191,7 @@ describe('PortfolioSummary', () => {
     it('should display total portfolio value correctly', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPortfolioWithData })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         const values = screen.getAllByText('€ 50,000.00')
@@ -167,7 +202,7 @@ describe('PortfolioSummary', () => {
     it('should display total P&L with correct styling for profit', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPortfolioWithData })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         const pnlElements = screen.getAllByText('€ 5,000.00')
@@ -182,7 +217,7 @@ describe('PortfolioSummary', () => {
     it('should display unrealized and realized P&L separately', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPortfolioWithData })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         const unrealizedLabels = screen.getAllByText(/unrealized p&l/i)
@@ -200,7 +235,7 @@ describe('PortfolioSummary', () => {
     it('should display positions count correctly', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPortfolioWithData })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/5 positions/i)).toBeInTheDocument()
@@ -214,7 +249,7 @@ describe('PortfolioSummary', () => {
       }
       mockedAxios.get.mockResolvedValueOnce({ data: singlePositionData })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/1 position$/i)).toBeInTheDocument()
@@ -224,7 +259,7 @@ describe('PortfolioSummary', () => {
     it('should display day change when non-zero', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPortfolioWithData })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/today/i)).toBeInTheDocument()
@@ -238,7 +273,7 @@ describe('PortfolioSummary', () => {
     it('should display last updated time', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPortfolioWithData })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/updated/i)).toBeInTheDocument()
@@ -250,7 +285,7 @@ describe('PortfolioSummary', () => {
     it('should display cash balances section with multiple currencies', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPortfolioWithData })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/cash balances/i)).toBeInTheDocument()
@@ -268,7 +303,7 @@ describe('PortfolioSummary', () => {
     it('should display total cash amount', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPortfolioWithData })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/total cash/i)).toBeInTheDocument()
@@ -281,7 +316,7 @@ describe('PortfolioSummary', () => {
     it('should not display cash balances section when no cash', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockEmptyPortfolio })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/portfolio summary/i)).toBeInTheDocument()
@@ -295,7 +330,7 @@ describe('PortfolioSummary', () => {
     it('should display investment breakdown with all values', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPortfolioWithData })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/investment value/i)).toBeInTheDocument()
@@ -313,7 +348,7 @@ describe('PortfolioSummary', () => {
     it('should display negative P&L with loss styling', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPortfolioWithLoss })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/portfolio summary/i)).toBeInTheDocument()
@@ -330,7 +365,7 @@ describe('PortfolioSummary', () => {
     it('should display negative day change correctly', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPortfolioWithLoss })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/today/i)).toBeInTheDocument()
@@ -346,7 +381,7 @@ describe('PortfolioSummary', () => {
     it('should call correct API endpoint', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockEmptyPortfolio })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(mockedAxios.get).toHaveBeenCalledWith(
@@ -361,7 +396,7 @@ describe('PortfolioSummary', () => {
 
       mockedAxios.get.mockResolvedValueOnce({ data: mockEmptyPortfolio })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(mockedAxios.get).toHaveBeenCalledWith(
@@ -378,7 +413,7 @@ describe('PortfolioSummary', () => {
       const onRefresh = vi.fn()
       mockedAxios.get.mockResolvedValueOnce({ data: mockEmptyPortfolio })
 
-      render(<PortfolioSummary onRefresh={onRefresh} />)
+      renderWithProviders(<PortfolioSummary onRefresh={onRefresh} />)
 
       await waitFor(() => {
         expect(onRefresh).toHaveBeenCalledTimes(1)
@@ -389,7 +424,7 @@ describe('PortfolioSummary', () => {
       const onRefresh = vi.fn()
       mockedAxios.get.mockRejectedValueOnce(new Error('Network error'))
 
-      render(<PortfolioSummary onRefresh={onRefresh} />)
+      renderWithProviders(<PortfolioSummary onRefresh={onRefresh} />)
 
       await waitFor(() => {
         expect(screen.getByText(/failed to load portfolio data/i)).toBeInTheDocument()
@@ -402,7 +437,7 @@ describe('PortfolioSummary', () => {
       vi.useFakeTimers()
       mockedAxios.get.mockResolvedValue({ data: mockEmptyPortfolio })
 
-      render(<PortfolioSummary autoRefresh={true} refreshInterval={5000} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={true} refreshInterval={5000} />)
 
       // Initial fetch
       await waitFor(() => {
@@ -423,7 +458,7 @@ describe('PortfolioSummary', () => {
       vi.useFakeTimers()
       mockedAxios.get.mockResolvedValue({ data: mockEmptyPortfolio })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       // Initial fetch
       await waitFor(() => {
@@ -448,7 +483,7 @@ describe('PortfolioSummary', () => {
       }
       mockedAxios.get.mockResolvedValueOnce({ data: dataWithNullUpdate })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/portfolio summary/i)).toBeInTheDocument()
@@ -466,7 +501,7 @@ describe('PortfolioSummary', () => {
       }
       mockedAxios.get.mockResolvedValueOnce({ data: largePortfolio })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         const largeValues = screen.getAllByText('€ 1,234,567.89')
@@ -484,7 +519,7 @@ describe('PortfolioSummary', () => {
       }
       mockedAxios.get.mockResolvedValueOnce({ data: neutralPortfolio })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/portfolio summary/i)).toBeInTheDocument()
@@ -502,7 +537,7 @@ describe('PortfolioSummary', () => {
       }
       mockedAxios.get.mockResolvedValueOnce({ data: dataWithoutCash })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/portfolio summary/i)).toBeInTheDocument()
@@ -517,7 +552,7 @@ describe('PortfolioSummary', () => {
     it('should have proper heading structure', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPortfolioWithData })
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading')
@@ -530,7 +565,7 @@ describe('PortfolioSummary', () => {
     it('should render retry button with proper role', async () => {
       mockedAxios.get.mockRejectedValueOnce(new Error('Network error'))
 
-      render(<PortfolioSummary autoRefresh={false} />)
+      renderWithProviders(<PortfolioSummary autoRefresh={false} />)
 
       await waitFor(() => {
         const retryButton = screen.getByRole('button', { name: /retry/i })
@@ -545,7 +580,7 @@ describe('PortfolioSummary', () => {
 
       mockedAxios.get.mockResolvedValue({ data: mockEmptyPortfolio })
 
-      const { unmount } = render(<PortfolioSummary autoRefresh={true} />)
+      const { unmount } = renderWithProviders(<PortfolioSummary autoRefresh={true} />)
 
       await waitFor(() => {
         expect(screen.getByText(/portfolio summary/i)).toBeInTheDocument()

@@ -4,12 +4,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import axios from 'axios'
 import { formatCurrency, formatPnLChange, formatDateTime, getPnLClassName } from '../utils/formatters'
-import { API_CONFIG, PORTFOLIO_CONFIG, REFRESH_INTERVALS, formatRefreshInterval } from '../config/app.config'
+import { API_CONFIG, PORTFOLIO_CONFIG, formatRefreshInterval } from '../config/app.config'
+import { useSettings } from '../contexts/SettingsContext'
 import './PortfolioSummary.css'
 
 const API_URL = API_CONFIG.BASE_URL
 const BASE_CURRENCY = PORTFOLIO_CONFIG.BASE_CURRENCY
-const DEFAULT_REFRESH_INTERVAL = REFRESH_INTERVALS.PORTFOLIO_SUMMARY
 
 export interface PortfolioSummaryData {
   total_value: number
@@ -36,12 +36,16 @@ interface PortfolioSummaryProps {
 export default function PortfolioSummary({
   onRefresh,
   autoRefresh = true,
-  refreshInterval = DEFAULT_REFRESH_INTERVAL,
+  refreshInterval,
 }: PortfolioSummaryProps) {
+  const { cryptoRefreshSeconds } = useSettings()
   const [summary, setSummary] = useState<PortfolioSummaryData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+
+  // Use crypto interval as baseline for portfolio summary (faster updates)
+  const effectiveRefreshInterval = refreshInterval || (cryptoRefreshSeconds * 1000)
 
   const fetchSummary = useCallback(async () => {
     try {
@@ -77,17 +81,17 @@ export default function PortfolioSummary({
     fetchSummary()
 
     if (autoRefresh) {
-      console.log(`Setting up auto-refresh with interval: ${refreshInterval}ms`)
+      console.log(`[PortfolioSummary] Setting up auto-refresh with interval: ${effectiveRefreshInterval}ms (${cryptoRefreshSeconds}s)`)
       const interval = setInterval(() => {
-        console.log('Auto-refresh triggered - fetching new prices from Yahoo Finance')
+        console.log('[PortfolioSummary] Auto-refresh triggered - fetching new prices from Yahoo Finance')
         refreshPrices()
-      }, refreshInterval)
+      }, effectiveRefreshInterval)
       return () => {
-        console.log('Clearing auto-refresh interval')
+        console.log('[PortfolioSummary] Clearing auto-refresh interval')
         clearInterval(interval)
       }
     }
-  }, [autoRefresh, refreshInterval, fetchSummary, refreshPrices])
+  }, [autoRefresh, effectiveRefreshInterval, cryptoRefreshSeconds, fetchSummary, refreshPrices])
 
   if (loading) {
     return (

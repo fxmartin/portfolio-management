@@ -6,12 +6,58 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import axios from 'axios'
 import HoldingsTable, { Position } from './HoldingsTable'
+import { SettingsProvider } from '../contexts/SettingsContext'
+import { PortfolioRefreshProvider } from '../contexts/PortfolioRefreshContext'
 
 // Mock axios
 vi.mock('axios')
 const mockedAxios = axios as jest.Mocked<typeof axios>
 
+// Test wrapper with both providers
+const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <SettingsProvider>
+      <PortfolioRefreshProvider>
+        {children}
+      </PortfolioRefreshProvider>
+    </SettingsProvider>
+  )
+}
+
+// Custom render function with TestWrapper
+const renderWithProviders = (ui: React.ReactElement) => {
+  return render(ui, { wrapper: TestWrapper })
+}
+
 describe('HoldingsTable', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    // Mock settings API calls by default
+    mockedAxios.get.mockImplementation((url: string) => {
+      if (url.includes('/api/settings/category/display')) {
+        return Promise.resolve({
+          data: [
+            { key: 'base_currency', value: 'EUR', category: 'display' },
+            { key: 'date_format', value: 'YYYY-MM-DD', category: 'display' },
+            { key: 'number_format', value: 'en-US', category: 'display' },
+          ],
+        })
+      }
+      if (url.includes('/api/settings/category/system')) {
+        return Promise.resolve({
+          data: [
+            { key: 'crypto_price_refresh_seconds', value: '60', category: 'system' },
+            { key: 'stock_price_refresh_seconds', value: '120', category: 'system' },
+            { key: 'cache_ttl_hours', value: '1', category: 'system' },
+          ],
+        })
+      }
+      // Let other calls be handled by test-specific mocks
+      return Promise.reject(new Error('Unmocked URL: ' + url))
+    })
+  })
+
   const mockPositions: Position[] = [
     {
       symbol: 'BTC',
@@ -81,7 +127,7 @@ describe('HoldingsTable', () => {
     it('should show loading spinner while fetching data', () => {
       mockedAxios.get.mockReturnValue(new Promise(() => {})) // Never resolves
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       expect(screen.getByText(/loading positions/i)).toBeInTheDocument()
       const spinner = document.querySelector('.loading-spinner')
@@ -94,7 +140,7 @@ describe('HoldingsTable', () => {
       const errorMessage = 'Network error'
       mockedAxios.get.mockRejectedValueOnce(new Error(errorMessage))
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/failed to load positions/i)).toBeInTheDocument()
@@ -107,7 +153,7 @@ describe('HoldingsTable', () => {
       const user = userEvent.setup()
       mockedAxios.get.mockRejectedValueOnce(new Error('Network error'))
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/failed to load positions/i)).toBeInTheDocument()
@@ -128,7 +174,7 @@ describe('HoldingsTable', () => {
     it('should show empty message when no positions exist', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: [] })
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/no positions to display/i)).toBeInTheDocument()
@@ -142,7 +188,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should render table with all positions', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -152,7 +198,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should display asset names for known symbols', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('Bitcoin')).toBeInTheDocument()
@@ -162,7 +208,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should show correct column headers', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/symbol/i)).toBeInTheDocument()
@@ -174,7 +220,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should display position count in footer', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/showing 3 of 3 positions/i)).toBeInTheDocument()
@@ -182,7 +228,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should format currency values correctly', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('€ 25,000.00')).toBeInTheDocument() // BTC value
@@ -191,7 +237,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should apply profit class to positive P&L', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         const btcRow = screen.getByText('BTC').closest('tr')
@@ -202,7 +248,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should apply loss class to negative P&L', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         const solRow = screen.getByText('SOL').closest('tr')
@@ -225,7 +271,7 @@ describe('HoldingsTable', () => {
     })
 
     it.skip('should sort by value descending by default', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -243,7 +289,7 @@ describe('HoldingsTable', () => {
 
     it.skip('should sort by symbol when symbol header is clicked', async () => {
       const user = userEvent.setup()
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -265,7 +311,7 @@ describe('HoldingsTable', () => {
     it.skip('should toggle sort direction when clicking same header twice', async () => {
       // Skipped: Timing issue with React re-rendering in test environment
       const user = userEvent.setup()
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -316,7 +362,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should show all positions by default', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -328,7 +374,7 @@ describe('HoldingsTable', () => {
 
     it('should filter by crypto when crypto filter is selected', async () => {
       const user = userEvent.setup()
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -347,7 +393,7 @@ describe('HoldingsTable', () => {
 
     it('should filter by stock when stock filter is selected', async () => {
       const user = userEvent.setup()
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('AAPL')).toBeInTheDocument()
@@ -365,7 +411,7 @@ describe('HoldingsTable', () => {
 
     it('should update footer count when filtering', async () => {
       const user = userEvent.setup()
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/showing 4 of 4 positions/i)).toBeInTheDocument()
@@ -387,7 +433,7 @@ describe('HoldingsTable', () => {
 
     it('should filter positions by symbol', async () => {
       const user = userEvent.setup()
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -405,7 +451,7 @@ describe('HoldingsTable', () => {
 
     it('should filter positions by asset name', async () => {
       const user = userEvent.setup()
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('Solana')).toBeInTheDocument()
@@ -423,7 +469,7 @@ describe('HoldingsTable', () => {
 
     it('should be case-insensitive', async () => {
       const user = userEvent.setup()
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('ETH')).toBeInTheDocument()
@@ -440,7 +486,7 @@ describe('HoldingsTable', () => {
 
     it('should show no results message when no matches', async () => {
       const user = userEvent.setup()
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -479,7 +525,7 @@ describe('HoldingsTable', () => {
         ],
       })
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -512,7 +558,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should display Fees column header', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText(/^Fees/i)).toBeInTheDocument()
@@ -520,7 +566,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should display fee values for each position', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -537,7 +583,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should show tooltip with transaction count on fee cells', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -550,7 +596,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should show singular transaction in tooltip when count is 1', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('ETH')).toBeInTheDocument()
@@ -563,7 +609,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should show plural transactions in tooltip when count is 0', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('SOL')).toBeInTheDocument()
@@ -577,7 +623,7 @@ describe('HoldingsTable', () => {
 
     it.skip('should sort by fees when Fees column header is clicked', async () => {
       const user = userEvent.setup()
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -598,7 +644,7 @@ describe('HoldingsTable', () => {
 
     it.skip('should toggle sort direction when Fees header is clicked twice', async () => {
       const user = userEvent.setup()
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -635,7 +681,7 @@ describe('HoldingsTable', () => {
       vi.useFakeTimers()
       mockedAxios.get.mockResolvedValue({ data: mockPositions })
 
-      const { unmount } = render(<HoldingsTable autoRefresh={true} refreshInterval={1000} />)
+      const { unmount } = renderWithProviders(<HoldingsTable autoRefresh={true} refreshInterval={1000} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -660,7 +706,7 @@ describe('HoldingsTable', () => {
       const onRefresh = vi.fn()
       mockedAxios.get.mockResolvedValue({ data: mockPositions })
 
-      render(<HoldingsTable onRefresh={onRefresh} />)
+      renderWithProviders(<HoldingsTable onRefresh={onRefresh} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -676,7 +722,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should display asset names from API for crypto assets', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('Bitcoin')).toBeInTheDocument()
@@ -709,7 +755,7 @@ describe('HoldingsTable', () => {
 
       mockedAxios.get.mockResolvedValue({ data: stockPositions })
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('MSTR')).toBeInTheDocument()
@@ -741,7 +787,7 @@ describe('HoldingsTable', () => {
 
       mockedAxios.get.mockResolvedValue({ data: positionWithNullName })
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('AAPL')).toBeInTheDocument()
@@ -753,7 +799,7 @@ describe('HoldingsTable', () => {
     it('should search by asset name from API', async () => {
       const user = userEvent.setup()
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -794,7 +840,7 @@ describe('HoldingsTable', () => {
 
       mockedAxios.get.mockResolvedValue({ data: positionWithNullName })
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('TSLA')).toBeInTheDocument()
@@ -816,7 +862,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should show expand indicator on all position rows', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -848,7 +894,7 @@ describe('HoldingsTable', () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
       mockedAxios.get.mockResolvedValueOnce({ data: mockTransactions })
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -886,7 +932,7 @@ describe('HoldingsTable', () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
       mockedAxios.get.mockResolvedValueOnce({ data: mockTransactions })
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -927,7 +973,7 @@ describe('HoldingsTable', () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
       mockedAxios.get.mockResolvedValueOnce({ data: mockTransactions })
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -964,7 +1010,7 @@ describe('HoldingsTable', () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
       mockedAxios.get.mockResolvedValueOnce({ data: mockTransactions })
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -1016,7 +1062,7 @@ describe('HoldingsTable', () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockBtcTransactions })
       mockedAxios.get.mockResolvedValueOnce({ data: mockEthTransactions })
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -1044,7 +1090,7 @@ describe('HoldingsTable', () => {
     })
 
     it('should have proper ARIA attributes for expandable rows', async () => {
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -1079,7 +1125,7 @@ describe('HoldingsTable', () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
       mockedAxios.get.mockResolvedValueOnce({ data: mockTransactions })
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -1118,7 +1164,7 @@ describe('HoldingsTable', () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
       mockedAxios.get.mockResolvedValueOnce({ data: mockTransactions })
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
@@ -1158,7 +1204,7 @@ describe('HoldingsTable', () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockPositions })
       mockedAxios.get.mockResolvedValueOnce({ data: mockTransactions })
 
-      render(<HoldingsTable autoRefresh={false} />)
+      renderWithProviders(<HoldingsTable autoRefresh={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('BTC')).toBeInTheDocument()
