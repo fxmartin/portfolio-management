@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { ToastContainer } from 'react-toastify'
 import { PortfolioRefreshProvider } from './contexts/PortfolioRefreshContext'
+import { SettingsProvider } from './contexts/SettingsContext'
 import Sidebar from './components/Sidebar'
 import TabView from './components/TabView'
 import TransactionImport from './components/TransactionImport'
@@ -40,21 +41,22 @@ function App() {
   }
 
   return (
-    <PortfolioRefreshProvider>
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-      <div className="app-layout">
-        <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
+    <SettingsProvider>
+      <PortfolioRefreshProvider>
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+        <div className="app-layout">
+          <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
 
         <main className="main-content">
           <TabView activeTab={activeTab}>
@@ -123,8 +125,9 @@ function App() {
           }}
           onReset={onDatabaseReset}
         />
-      </div>
-    </PortfolioRefreshProvider>
+        </div>
+      </PortfolioRefreshProvider>
+    </SettingsProvider>
   )
 }
 
