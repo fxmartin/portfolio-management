@@ -42,11 +42,6 @@ export const SettingsCategoryPanel: React.FC<SettingsCategoryPanelProps> = ({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Check if this is the prompts category
-  if (categoryKey === 'prompts') {
-    return <PromptsManager />
-  }
-
   const fetchSettings = useCallback(async () => {
     try {
       setLoading(true)
@@ -66,8 +61,17 @@ export const SettingsCategoryPanel: React.FC<SettingsCategoryPanelProps> = ({
   }, [categoryKey])
 
   useEffect(() => {
-    fetchSettings()
-  }, [fetchSettings])
+    // Only fetch settings if NOT prompts category (prompts are handled by PromptsManager)
+    if (categoryKey !== 'prompts') {
+      fetchSettings()
+    }
+  }, [fetchSettings, categoryKey])
+
+  // Check if this is the prompts category - render PromptsManager instead
+  // This MUST come after all hooks to comply with React's Rules of Hooks
+  if (categoryKey === 'prompts') {
+    return <PromptsManager />
+  }
 
   const handleSettingUpdate = async (key: string, newValue: string | number | boolean) => {
     try {
