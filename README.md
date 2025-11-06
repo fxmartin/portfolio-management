@@ -141,35 +141,6 @@ Interactive rebalancing recommendations with visual allocation adjustments and t
 
 *Run `python3 scripts/estimate_effort_v2.py` to see updated time estimates*
 
-## Recent Improvements
-
-### Critical Bug Fixes (Oct 26, 2025)
-- **Issue #13**: Fixed USD to EUR currency conversion bugs
-  - Problem 1: Position values multiplying by exchange rate instead of dividing (35% error)
-  - Problem 2: Cost basis aggregation mixing USD and EUR without conversion
-  - Impact: USD positions (MSTR) showing incorrect values and P&L calculations
-  - Result: 99.92% portfolio accuracy vs Revolut, all currency calculations now EUR-safe
-  - Enhancement: Added live exchange rate fetching with 1-hour cache
-
-### Earlier Fixes (Oct 24, 2025)
-- **Issue #3**: Fixed missing staking rewards in position calculations
-  - Impact: All STAKING, AIRDROP, and MINING transactions now properly included
-  - Result: SOL position corrected from 16.35579500 to 16.36990300 (0.01410800 SOL recovered)
-
-- **Issue #4**: Transaction fees now included in cost basis
-  - Impact: Accurate tax reporting and P&L calculations
-  - Method: Fees added to purchase cost basis (proper accounting methodology)
-  - Result: Cost basis calculations now match Koinly within 0.23%
-
-- **Auto-Recalculate**: Positions automatically recalculate after CSV imports
-  - No manual intervention needed after uploading transactions
-  - Ensures data consistency across all operations
-
-### Test Coverage
-- 27/27 FIFO calculator tests passing
-- 5 new fee handling test scenarios
-- Maintains 85%+ code coverage threshold
-
 ## Tech Stack
 
 - **Backend**: Python 3.12, FastAPI, PostgreSQL, Redis
