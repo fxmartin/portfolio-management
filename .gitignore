@@ -58,3 +58,6 @@ revolut*/
 
 # Redis
 dump.rdb
+
+# Changelogs (may contain sensitive API keys)
+CHANGELOG-*.md

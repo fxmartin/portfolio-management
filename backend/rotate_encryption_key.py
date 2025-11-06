@@ -19,8 +19,8 @@ Example:
 
     # Rotate to the new key
     python rotate_encryption_key.py \
-        "your_generated_encryption_key_here" \
-        "NEW_KEY_HERE"
+        "OLD_ENCRYPTION_KEY_HERE" \
+        "NEW_ENCRYPTION_KEY_HERE"
 
 Security Notes:
     - Run this script in a secure environment

@@ -152,7 +152,7 @@ Generate a secure encryption key for sensitive settings:
 # Generate a new Fernet encryption key (44 characters)
 python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 
-# Add to .env
+# Add to .env (use the generated key from above command)
 SETTINGS_ENCRYPTION_KEY=your_generated_encryption_key_here
 ```
 
