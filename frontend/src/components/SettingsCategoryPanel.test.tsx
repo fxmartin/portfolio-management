@@ -10,6 +10,11 @@ import { SettingsCategoryPanel } from './SettingsCategoryPanel'
 vi.mock('axios')
 const mockedAxios = axios as any
 
+// Mock PromptsManager
+vi.mock('./PromptsManager', () => ({
+  PromptsManager: () => <div data-testid="prompts-manager">PromptsManager Component</div>
+}))
+
 describe('SettingsCategoryPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -155,6 +160,22 @@ describe('SettingsCategoryPanel', () => {
           expect.stringContaining('/api/settings/category/api_keys')
         )
       })
+    })
+  })
+
+  describe('Prompts Category Integration', () => {
+    it('should render PromptsManager for prompts category', () => {
+      render(<SettingsCategoryPanel categoryKey="prompts" />)
+
+      expect(screen.getByTestId('prompts-manager')).toBeInTheDocument()
+      expect(screen.getByText('PromptsManager Component')).toBeInTheDocument()
+    })
+
+    it('should not fetch settings for prompts category', () => {
+      render(<SettingsCategoryPanel categoryKey="prompts" />)
+
+      // Should not call axios for prompts category
+      expect(mockedAxios.get).not.toHaveBeenCalled()
     })
   })
 })
