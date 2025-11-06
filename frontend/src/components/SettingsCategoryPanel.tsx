@@ -6,6 +6,7 @@ import axios from 'axios'
 import { API_CONFIG } from '../config/app.config'
 import { SettingItem } from './SettingItem'
 import { ApiKeyInput } from './ApiKeyInput'
+import { PromptsManager } from './PromptsManager'
 import './SettingsCategoryPanel.css'
 
 const API_URL = API_CONFIG.BASE_URL
@@ -35,6 +36,11 @@ export const SettingsCategoryPanel: React.FC<SettingsCategoryPanelProps> = ({
   const [settings, setSettings] = useState<Setting[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Check if this is the prompts category
+  if (categoryKey === 'prompts') {
+    return <PromptsManager />
+  }
 
   const fetchSettings = useCallback(async () => {
     try {
