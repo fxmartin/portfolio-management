@@ -22,7 +22,7 @@ The journey began with a common frustration: tracking investments across multipl
 
 Traditional solutions fell short:
 - Existing portfolio trackers lacked multi-asset support
-- CSV exports created data management headaches  
+- CSV exports created data management headaches
 - Manual calculations proved error-prone and time-consuming
 - Custom development seemed prohibitively expensive
 
@@ -48,7 +48,7 @@ Each agent received detailed personality traits, quality standards, and specific
 
 Traditional AI interactions often lack structure and repeatability. This experiment solved that problem by developing 11 custom commands that standardized AI behavior:
 
-**Strategic Commands**: 
+**Strategic Commands**:
 - `create-stories.md`: Transformed requirements into AGILE user stories
 - `resume-build-agents.md`: Orchestrated multi-agent development workflows
 
@@ -62,7 +62,7 @@ These commands evolved organically during development, proving that AI managemen
 
 ### The AI Development Workflow in Action
 
-![AI-Managed Development Session](1762456278404_Screenshot_2025-11-06_at_20_11_02.png)
+![AI-Managed Development Session](screenshots/1762456278404_Screenshot_2025-11-06_at_20_11_02.png)
 
 *Real-time AI development workflow: The screenshot captures a typical vibe coding session where Claude Code is simultaneously managing multiple tasks - executing git operations (left), creating GitHub issues for React hooks errors (center), and monitoring system performance (right). Notice the comprehensive documentation generation, automated issue creation with detailed descriptions, and the developer's role reduced to monitoring and directing rather than implementing.*
 
