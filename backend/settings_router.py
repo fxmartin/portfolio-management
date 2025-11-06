@@ -32,7 +32,8 @@ from settings_schemas import (
     SettingHistoryResponse,
     CategorySettingsResponse,
     ValidationResponse,
-    ErrorResponse
+    ErrorResponse,
+    CategoryInfo
 )
 from models import SettingCategory, ApplicationSetting
 from security_utils import decrypt_value
@@ -61,21 +62,53 @@ async def get_settings_service(
 
 @router.get(
     "/categories",
-    response_model=List[str],
+    response_model=List[CategoryInfo],
     summary="List all setting categories",
-    description="Get list of all available setting categories"
+    description="Get list of all available setting categories with metadata"
 )
-async def list_categories() -> List[str]:
+async def list_categories() -> List[CategoryInfo]:
     """
-    Get all setting categories.
+    Get all setting categories with human-readable names and descriptions.
 
     Returns:
-        List of category names (display, api_keys, prompts, system, advanced)
+        List of CategoryInfo objects with key, name, and description for each category.
+        Used by the frontend to render settings navigation tabs.
     """
     try:
-        # Return all enum values
-        categories = [category.value for category in SettingCategory]
-        return categories
+        # Category metadata for frontend display
+        category_metadata = {
+            "display": CategoryInfo(
+                key="display",
+                name="Display",
+                description="Customize how data is displayed in the application"
+            ),
+            "api_keys": CategoryInfo(
+                key="api_keys",
+                name="API Keys",
+                description="Configure API keys for external services (market data, AI)"
+            ),
+            "prompts": CategoryInfo(
+                key="prompts",
+                name="AI Prompts",
+                description="Manage AI analysis prompts and templates"
+            ),
+            "system": CategoryInfo(
+                key="system",
+                name="System",
+                description="System performance and behavior settings"
+            ),
+            "advanced": CategoryInfo(
+                key="advanced",
+                name="Advanced",
+                description="Advanced configuration options"
+            )
+        }
+
+        # Return categories in enum order
+        return [
+            category_metadata[category.value]
+            for category in SettingCategory
+        ]
 
     except Exception as e:
         logger.error(f"Error listing categories: {e}")
