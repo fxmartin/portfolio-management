@@ -96,6 +96,23 @@ portfolio-management/
 - **Dashboard**: Visualize holdings and performance with real-time updates
 - **Multi-Asset Support**: Handles stocks, crypto, metals, staking rewards, airdrops, mining
 
+## Screenshots
+
+### Portfolio Dashboard
+Real-time portfolio overview with live market data, performance metrics, and asset allocation.
+
+![Portfolio Dashboard](./screenshots/Portfolio-dashboard.png)
+
+### AI-Powered Analysis
+Comprehensive AI-driven market analysis, trend predictions, and investment insights powered by Claude.
+
+![AI-Powered Analysis](./screenshots/AI-powered-analysis.png)
+
+### Portfolio Rebalancing
+Interactive rebalancing recommendations with visual allocation adjustments and target portfolio modeling.
+
+![Portfolio Rebalancing](./screenshots/Portfolio-rebalancing.png)
+
 ## Project Metrics
 
 **Development Time**: ~43.7 hours active development (90 commits across 10 active days)
