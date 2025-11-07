@@ -26,6 +26,11 @@ export interface Setting {
   max_value?: number
 }
 
+interface CategorySettingsResponse {
+  category: string
+  settings: Record<string, Setting>
+}
+
 export interface SettingsCategoryPanelProps {
   categoryKey: string
 }
@@ -41,10 +46,12 @@ export const SettingsCategoryPanel: React.FC<SettingsCategoryPanelProps> = ({
     try {
       setLoading(true)
       setError(null)
-      const response = await axios.get<Setting[]>(
+      const response = await axios.get<CategorySettingsResponse>(
         `${API_URL}/api/settings/category/${categoryKey}`
       )
-      setSettings(response.data)
+      // Convert settings object to array
+      const settingsArray = Object.values(response.data.settings)
+      setSettings(settingsArray)
       setLoading(false)
     } catch (err) {
       console.error(`Failed to fetch settings for category ${categoryKey}:`, err)

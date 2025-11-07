@@ -96,6 +96,13 @@ class ValidationResponse(BaseModel):
     )
 
 
+class CategoryInfo(BaseModel):
+    """Response model for setting category information."""
+    key: str = Field(..., description="Category key identifier")
+    name: str = Field(..., description="Human-readable category name")
+    description: Optional[str] = Field(None, description="Category description")
+
+
 class ErrorResponse(BaseModel):
     """Standard error response."""
     detail: str = Field(..., description="Error message")

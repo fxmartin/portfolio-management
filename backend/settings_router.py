@@ -31,6 +31,7 @@ from settings_schemas import (
     SettingValidateRequest,
     SettingHistoryResponse,
     CategorySettingsResponse,
+    CategoryInfo,
     ValidationResponse,
     ErrorResponse,
     CategoryInfo
