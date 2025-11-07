@@ -33,7 +33,8 @@ from settings_schemas import (
     CategorySettingsResponse,
     CategoryInfo,
     ValidationResponse,
-    ErrorResponse
+    ErrorResponse,
+    CategoryInfo
 )
 from models import SettingCategory, ApplicationSetting
 from security_utils import decrypt_value
@@ -68,47 +69,47 @@ async def get_settings_service(
 )
 async def list_categories() -> List[CategoryInfo]:
     """
-    Get all setting categories with names and descriptions.
+    Get all setting categories with human-readable names and descriptions.
 
     Returns:
-        List of category objects with key, name, and description
+        List of CategoryInfo objects with key, name, and description for each category.
+        Used by the frontend to render settings navigation tabs.
     """
     try:
-        # Define category metadata
+        # Category metadata for frontend display
         category_metadata = {
-            "display": {
-                "name": "Display",
-                "description": "Customize how data is displayed in the application"
-            },
-            "api_keys": {
-                "name": "API Keys",
-                "description": "Configure API keys for external services"
-            },
-            "prompts": {
-                "name": "AI Prompts",
-                "description": "Manage AI analysis prompts and templates"
-            },
-            "system": {
-                "name": "System",
-                "description": "System performance and behavior settings"
-            },
-            "advanced": {
-                "name": "Advanced",
-                "description": "Advanced configuration options"
-            }
+            "display": CategoryInfo(
+                key="display",
+                name="Display",
+                description="Customize how data is displayed in the application"
+            ),
+            "api_keys": CategoryInfo(
+                key="api_keys",
+                name="API Keys",
+                description="Configure API keys for external services (market data, AI)"
+            ),
+            "prompts": CategoryInfo(
+                key="prompts",
+                name="AI Prompts",
+                description="Manage AI analysis prompts and templates"
+            ),
+            "system": CategoryInfo(
+                key="system",
+                name="System",
+                description="System performance and behavior settings"
+            ),
+            "advanced": CategoryInfo(
+                key="advanced",
+                name="Advanced",
+                description="Advanced configuration options"
+            )
         }
 
-        # Build response with metadata
-        categories = []
-        for category in SettingCategory:
-            metadata = category_metadata.get(category.value, {})
-            categories.append(CategoryInfo(
-                key=category.value,
-                name=metadata.get("name", category.value.replace("_", " ").title()),
-                description=metadata.get("description")
-            ))
-
-        return categories
+        # Return categories in enum order
+        return [
+            category_metadata[category.value]
+            for category in SettingCategory
+        ]
 
     except Exception as e:
         logger.error(f"Error listing categories: {e}")

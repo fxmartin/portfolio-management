@@ -117,28 +117,52 @@ class TestCategoriesEndpoint:
 
     @pytest.mark.asyncio
     async def test_get_categories_success(self, test_client, seed_settings):
-        """Test GET /api/settings/categories returns all categories"""
+        """Test GET /api/settings/categories returns all categories with metadata"""
         response = test_client.get("/api/settings/categories")
 
         assert response.status_code == status.HTTP_200_OK
         categories = response.json()
         assert isinstance(categories, list)
         assert len(categories) == 5
-        assert "display" in categories
-        assert "api_keys" in categories
-        assert "prompts" in categories
-        assert "system" in categories
-        assert "advanced" in categories
+
+        # Verify response structure - should be list of objects, not strings
+        category_keys = [cat["key"] for cat in categories]
+        assert "display" in category_keys
+        assert "api_keys" in category_keys
+        assert "prompts" in category_keys
+        assert "system" in category_keys
+        assert "advanced" in category_keys
+
+        # Verify each category has required fields
+        for category in categories:
+            assert "key" in category
+            assert "name" in category
+            assert "description" in category
+            assert isinstance(category["key"], str)
+            assert isinstance(category["name"], str)
+            assert isinstance(category["description"], str) or category["description"] is None
+
+        # Verify specific category metadata
+        display_cat = next(cat for cat in categories if cat["key"] == "display")
+        assert display_cat["name"] == "Display"
+        assert "displayed" in display_cat["description"].lower()
 
     @pytest.mark.asyncio
     async def test_get_categories_empty_database(self, test_client):
-        """Test GET /api/settings/categories with no settings returns all enum values"""
+        """Test GET /api/settings/categories with no settings returns all enum values as objects"""
         response = test_client.get("/api/settings/categories")
 
         assert response.status_code == status.HTTP_200_OK
         categories = response.json()
         assert isinstance(categories, list)
         assert len(categories) == 5  # All SettingCategory enum values
+
+        # Verify all categories are objects with proper structure
+        for category in categories:
+            assert isinstance(category, dict)
+            assert "key" in category
+            assert "name" in category
+            assert "description" in category
 
 
 class TestCategorySettingsEndpoint:
