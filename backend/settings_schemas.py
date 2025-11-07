@@ -107,3 +107,15 @@ class ErrorResponse(BaseModel):
     """Standard error response."""
     detail: str = Field(..., description="Error message")
     error_code: Optional[str] = Field(None, description="Machine-readable error code")
+
+
+class CategoryInfo(BaseModel):
+    """
+    Response model for setting category information.
+
+    Provides human-readable metadata about each settings category
+    for frontend display (tab labels, descriptions, etc).
+    """
+    key: str = Field(..., description="Category key identifier (e.g., 'display', 'api_keys')")
+    name: str = Field(..., description="Human-readable category name (e.g., 'Display', 'API Keys')")
+    description: Optional[str] = Field(None, description="Category description for tooltips/help text")
